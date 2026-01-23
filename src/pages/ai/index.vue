@@ -182,6 +182,11 @@ const handleUpload = async (options: any) => {
   startFakeProgress()
   const formData = new FormData()
   formData.append('file', options.file)
+  
+  // 如果有选中的歌曲信息，也传递给后端
+  if (selectedSongInfo.value) {
+    formData.append('songName', selectedSongInfo.value)
+  }
 
   try {
     const res = await generateVideoApi(formData)
@@ -228,6 +233,10 @@ const handleGenerateFromUrl = async () => {
     // 创建 FormData 并上传
     const formData = new FormData()
     formData.append('file', file)
+    // 传递歌曲名给后端
+    if (selectedSongInfo.value) {
+      formData.append('songName', selectedSongInfo.value)
+    }
 
     const res = await generateVideoApi(formData)
     const data = res.data || res
