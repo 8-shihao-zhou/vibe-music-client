@@ -48,6 +48,25 @@ const router = createRouter({
       path: '/user',
       component: () => import('@/pages/user/index.vue'),
     },
+
+    //AI创作页面路由
+    {
+      path: '/ai',
+      name: 'AiCreate',
+      component: () => import('@/pages/ai/index.vue'),
+      meta: {
+        title: 'AI 创作',
+      },
+    },
+
+    //社区页面路由
+    {
+      path: '/community',
+      name: 'Community',
+      // 下一步我们会创建这个文件
+      component: () => import('@/pages/community/index.vue'),
+      meta: { title: '音乐社区' },
+    },
   ],
 })
 

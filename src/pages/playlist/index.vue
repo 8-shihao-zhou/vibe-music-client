@@ -68,7 +68,7 @@ const getPlaylists = async () => {
         name: item.title,
         coverImgUrl: item.coverUrl ?? coverImg,
         creator: {
-          nickname: selected.value === 'favorite' ? 'Vibe Music' : 'Vibe Music',
+          nickname: selected.value === 'favorite' ? 'AI Music' : 'AI Music',
           avatarUrl: coverImg
         },
         playCount: 0,
@@ -136,17 +136,17 @@ onMounted(() => {
 })
 </script>
 <template>
-  <div class="flex flex-col h-full flex-1 overflow-hidden bg-background px-4 py-2">
+  <div class="flex flex-col h-full flex-1 overflow-hidden bg-background px-4 py-2 playlist-container">
     <div class="py-4">
       <div class="flex flex-col sm:flex-row gap-4">
         <div class="relative flex-grow">
           <icon-mdi:magnify
-            class="lucide lucide-search absolute left-2 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
+            class="lucide lucide-search absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground search-icon" />
           <input v-model="searchKeyword" @keydown="handleKeyPress"
-            class="flex h-10 rounded-lg border border-input transform duration-300 bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-0 pl-10 w-72"
+            class="search-input flex h-10 rounded-xl border border-input transform duration-300 bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-0 pl-10 w-72"
             placeholder="搜索歌单..." type="search" />
         </div>
-        <el-select class="w-48" v-model="selectedTag" @change="getPlaylists">
+        <el-select class="w-48 custom-select" v-model="selectedTag" @change="getPlaylists">
           <el-option v-for="item in playTags" :key="item.name" :label="item.name" :value="item.name" />
         </el-select>
       </div>
@@ -154,13 +154,13 @@ onMounted(() => {
     <div class="flex-grow flex flex-col overflow-x-hidden cursor-pointer">
       <div class="border-b pb-1">
         <div
-          class="inline-flex h-10 items-center rounded-lg bg-muted/70 p-1 text-muted-foreground w-full justify-start mb-2 overflow-x-auto">
+          class="inline-flex h-10 items-center rounded-xl bg-muted/70 p-1 text-muted-foreground w-full justify-start mb-2 overflow-x-auto tab-container">
           <button v-for="playlist in playlistsList" :key="playlist.value" @click="selectPlaylist(playlist.value)"
             :class="{
-              'bg-activeMenuBg text-foreground shadow-sm':
+              'bg-activeMenuBg text-foreground shadow-sm tab-active':
                 selected === playlist.value,
             }"
-            class="inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50">
+            class="tab-button inline-flex items-center justify-center whitespace-nowrap rounded-lg px-4 py-2 text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50">
             {{ playlist.name }}
           </button>
         </div>
@@ -168,23 +168,23 @@ onMounted(() => {
       <div class="flex-1 overflow-x-hidden my-2">
         <div class="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-6">
           <div v-for="playlist in playlists" :key="playlist.id" @click="router.push('/playlist/' + playlist.id)"
-            class="rounded-lg hover:bg-background transition duration-300 border bg-card text-card-foreground shadow-sm overflow-hidden hover:shadow-lg">
+            class="playlist-card rounded-xl hover:bg-background transition duration-300 border bg-card text-card-foreground shadow-sm overflow-hidden">
             <div class="flex flex-col space-y-1.5 p-0">
-              <div class="relative">
-                <el-image lazy :alt="playlist.name" class="w-full aspect-square object-cover"
+              <div class="relative playlist-cover-wrapper">
+                <el-image lazy :alt="playlist.name" class="w-full aspect-square object-cover playlist-cover"
                   :src="playlist.coverImgUrl + '?param=330y330'" />
                 <button
-                  class="inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 bg-secondary text-secondary-foreground hover:bg-secondary/80 h-10 w-10 absolute bottom-2 right-2 rounded-full">
+                  class="play-button inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 bg-secondary text-secondary-foreground hover:bg-secondary/80 h-12 w-12 absolute bottom-3 right-3 rounded-full">
                   <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
                     stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                    class="lucide lucide-play h-4 w-4">
+                    class="lucide lucide-play h-5 w-5">
                     <polygon points="6 3 20 12 6 21 6 3"></polygon>
                   </svg>
                 </button>
               </div>
             </div>
-            <div class="px-4 pb-2">
-              <h3 class="font-semibold tracking-tight text-base mb-2 line-clamp-1">
+            <div class="px-4 pb-3 pt-2">
+              <h3 class="font-semibold tracking-tight text-base mb-2 line-clamp-1 playlist-title">
                 {{ playlist.name }}
               </h3>
               <div class="flex items-center text-sm text-muted-foreground">
@@ -192,7 +192,7 @@ onMounted(() => {
                   <el-avatar class="aspect-square h-full w-full" :alt="playlist.creator.nickname"
                     :src="playlist.creator.avatarUrl" />
                 </span>
-                <span>{{ playlist.creator.nickname }}</span>
+                <span class="creator-name">{{ playlist.creator.nickname }}</span>
               </div>
             </div>
           </div>
@@ -201,7 +201,204 @@ onMounted(() => {
     </div>
     <nav class="mx-auto flex w-full justify-center mt-3">
       <el-pagination v-model:page-size="pageSize" v-model:currentPage="currentPage" v-bind="state"
-        @size-change="handleSizeChange" @current-change="handleCurrentChange" class="mb-3" />
+        @size-change="handleSizeChange" @current-change="handleCurrentChange" class="mb-3 custom-pagination" />
     </nav>
   </div>
 </template>
+
+<style scoped>
+.playlist-container {
+  backdrop-filter: blur(20px);
+}
+
+html.light .playlist-container {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(248, 249, 255, 0.9) 100%);
+}
+
+html.dark .playlist-container {
+  background: linear-gradient(135deg, rgba(30, 30, 46, 0.6) 0%, rgba(26, 26, 46, 0.6) 100%);
+}
+
+.search-input {
+  border: 1px solid rgba(102, 126, 234, 0.2);
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.1);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+html.light .search-input {
+  background: rgba(255, 255, 255, 0.95);
+}
+
+html.dark .search-input {
+  background: rgba(40, 40, 60, 0.95);
+  color: #e0e0e0;
+}
+
+.search-input:focus {
+  border-color: #667eea;
+  box-shadow: 0 4px 16px rgba(102, 126, 234, 0.25);
+  width: 20rem;
+}
+
+html.light .search-input:focus {
+  background: rgba(255, 255, 255, 1);
+}
+
+html.dark .search-input:focus {
+  background: rgba(50, 50, 70, 1);
+}
+
+.search-icon {
+  transition: all 0.3s ease;
+}
+
+.search-input:focus + .search-icon {
+  color: #667eea;
+}
+
+.tab-container {
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(102, 126, 234, 0.1);
+}
+
+html.light .tab-container {
+  background: rgba(255, 255, 255, 0.6);
+}
+
+html.dark .tab-container {
+  background: rgba(40, 40, 60, 0.6);
+}
+
+.tab-button {
+  transition: all 0.3s ease;
+}
+
+.tab-button:hover {
+  background: rgba(102, 126, 234, 0.1);
+}
+
+.tab-active {
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.2) 0%, rgba(118, 75, 162, 0.2) 100%) !important;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.2);
+}
+
+.playlist-card {
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(102, 126, 234, 0.1);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+html.light .playlist-card {
+  background: rgba(255, 255, 255, 0.95);
+}
+
+html.dark .playlist-card {
+  background: rgba(40, 40, 60, 0.95);
+}
+
+.playlist-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 12px 32px rgba(102, 126, 234, 0.25);
+  border-color: rgba(102, 126, 234, 0.4);
+}
+
+.playlist-cover-wrapper {
+  overflow: hidden;
+  border-radius: 12px 12px 0 0;
+}
+
+.playlist-cover {
+  transition: all 0.5s ease;
+}
+
+.playlist-card:hover .playlist-cover {
+  transform: scale(1.1);
+}
+
+.play-button {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+  opacity: 0;
+  transform: translateY(10px);
+  transition: all 0.3s ease;
+}
+
+.playlist-card:hover .play-button {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.play-button:hover {
+  transform: scale(1.1);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
+}
+
+.playlist-title {
+  transition: all 0.3s ease;
+}
+
+.playlist-card:hover .playlist-title {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.creator-name {
+  transition: all 0.3s ease;
+}
+
+.playlist-card:hover .creator-name {
+  color: #667eea;
+}
+
+:deep(.custom-select .el-input__wrapper) {
+  border-radius: 12px;
+  border: 1px solid rgba(102, 126, 234, 0.2);
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.1);
+  transition: all 0.3s ease;
+}
+
+html.light :deep(.custom-select .el-input__wrapper) {
+  background: rgba(255, 255, 255, 0.95);
+}
+
+html.dark :deep(.custom-select .el-input__wrapper) {
+  background: rgba(40, 40, 60, 0.95);
+}
+
+:deep(.custom-select .el-input__wrapper:hover) {
+  border-color: #667eea;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
+}
+
+:deep(.custom-pagination .el-pagination__total),
+:deep(.custom-pagination .el-pagination__jump) {
+  color: #667eea;
+  font-weight: 500;
+}
+
+:deep(.custom-pagination .el-pager li) {
+  border-radius: 8px;
+  margin: 0 4px;
+  transition: all 0.3s ease;
+}
+
+html.light :deep(.custom-pagination .el-pager li) {
+  background: rgba(255, 255, 255, 0.8);
+}
+
+html.dark :deep(.custom-pagination .el-pager li) {
+  background: rgba(40, 40, 60, 0.8);
+}
+
+:deep(.custom-pagination .el-pager li:hover) {
+  background: rgba(102, 126, 234, 0.15);
+  color: #667eea;
+}
+
+:deep(.custom-pagination .el-pager li.is-active) {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+</style>

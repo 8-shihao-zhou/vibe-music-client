@@ -107,9 +107,16 @@ function switchToReset() {
 }
 
 .form-subtitle {
-  color: #666;
   margin-bottom: 24px;
   font-size: 14px;
+}
+
+html.light .form-subtitle {
+  color: #666;
+}
+
+html.dark .form-subtitle {
+  color: #a0a0a0;
 }
 
 :deep(.el-form-item) {
@@ -117,29 +124,81 @@ function switchToReset() {
 }
 
 :deep(.el-input__wrapper) {
-  border-radius: 8px;
+  border-radius: 12px;
+  border: 1px solid rgba(102, 126, 234, 0.2);
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.1);
+  transition: all 0.3s ease;
+}
+
+html.light :deep(.el-input__wrapper) {
+  background: rgba(255, 255, 255, 0.95);
+}
+
+html.dark :deep(.el-input__wrapper) {
+  background: rgba(50, 50, 70, 0.95);
+}
+
+:deep(.el-input__wrapper:hover) {
+  border-color: #667eea;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
+}
+
+:deep(.el-input__wrapper.is-focus) {
+  border-color: #667eea;
+  box-shadow: 0 4px 16px rgba(102, 126, 234, 0.25);
+}
+
+:deep(.el-input__inner) {
+  color: inherit;
+}
+
+html.dark :deep(.el-input__inner) {
+  color: #e0e0e0;
+}
+
+html.dark :deep(.el-input__inner::placeholder) {
+  color: #909399;
 }
 
 .submit-btn {
   width: 100%;
-  border-radius: 8px;
-  height: 40px;
+  border-radius: 12px;
+  height: 44px;
   font-size: 16px;
+  font-weight: 600;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: none;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+  transition: all 0.3s ease;
+}
+
+.submit-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
 }
 
 .signup-text {
   text-align: center;
   margin-top: 16px;
+}
+
+html.light .signup-text {
   color: #666;
 }
 
+html.dark .signup-text {
+  color: #a0a0a0;
+}
+
 .signup-text a {
-  color: #2a68fa;
+  color: #667eea;
   font-weight: 600;
   text-decoration: none;
+  transition: all 0.3s ease;
 }
 
 .signup-text a:hover {
+  color: #764ba2;
   text-decoration: underline;
 }
 
@@ -149,13 +208,21 @@ function switchToReset() {
 }
 
 .forgot-password a {
-  color: #666;
   font-size: 14px;
   text-decoration: none;
+  transition: all 0.3s ease;
+}
+
+html.light .forgot-password a {
+  color: #666;
+}
+
+html.dark .forgot-password a {
+  color: #a0a0a0;
 }
 
 .forgot-password a:hover {
-  color: #2a68fa;
+  color: #667eea;
   text-decoration: underline;
 }
 </style>

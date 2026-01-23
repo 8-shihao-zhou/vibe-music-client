@@ -49,7 +49,7 @@ watch(
     <button class="flex relative w-60" @click="router.push('/')">
       <img src="\logo.svg" alt="logo" class="w-10 h-10 ml-2" />
       <span class="ml-3 text-2xl font-bold flex justify-center items-center"
-        >Vibe Music</span
+        >AI Music</span
       >
     </button>
     <!-- 输入框和头像 -->
@@ -76,7 +76,65 @@ watch(
 </template>
 
 <style scoped>
+/* 浅色模式 */
+html.light header {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(102, 126, 234, 0.1);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
+  position: relative;
+  z-index: 100;
+}
+
+/* 暗色模式 */
+html.dark header {
+  background: rgba(30, 30, 46, 0.85);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(102, 126, 234, 0.2);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
+  position: relative;
+  z-index: 100;
+}
+
 .search-bg {
-  background-color: #e3e3e3;
+  border: 1px solid rgba(102, 126, 234, 0.2);
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.1);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+html.light .search-bg {
+  background: rgba(255, 255, 255, 0.95);
+}
+
+html.dark .search-bg {
+  background: rgba(40, 40, 60, 0.95);
+  color: #e0e0e0;
+}
+
+.search-bg:focus {
+  border-color: #667eea;
+  box-shadow: 0 4px 16px rgba(102, 126, 234, 0.25);
+}
+
+html.light .search-bg:focus {
+  background: rgba(255, 255, 255, 1);
+}
+
+html.dark .search-bg:focus {
+  background: rgba(50, 50, 70, 1);
+}
+
+button {
+  transition: all 0.3s ease;
+}
+
+button:hover {
+  transform: scale(1.05);
+}
+
+span {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 </style>

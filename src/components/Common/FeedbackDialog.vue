@@ -62,7 +62,17 @@ defineExpose({ openDialog })
 </script>
 
 <template>
-  <el-dialog v-model="dialogVisible" title="意见反馈" width="500px" :close-on-click-modal="false" @close="closeDialog">
+  <el-dialog 
+    v-model="dialogVisible" 
+    title="意见反馈" 
+    width="500px" 
+    :close-on-click-modal="false" 
+    @close="closeDialog"
+    class="feedback-dialog"
+    align-center
+    append-to-body
+    :z-index="3000"
+  >
     <el-form ref="formRef" :model="formData" :rules="rules" label-width="0px">
       <el-form-item prop="content">
         <el-input v-model="formData.content" type="textarea" :rows="7" placeholder="请输入您的宝贵意见或建议（10-200字）"
@@ -81,6 +91,19 @@ defineExpose({ openDialog })
 </template>
 
 <style scoped>
+/* 对话框层级样式 */
+.feedback-dialog {
+  z-index: 3000 !important;
+}
+
+.feedback-dialog :deep(.el-overlay) {
+  z-index: 2999 !important;
+}
+
+.feedback-dialog :deep(.el-dialog) {
+  z-index: 3000 !important;
+}
+
 .dialog-footer {
   text-align: right;
 }

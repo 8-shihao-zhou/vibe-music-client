@@ -1,48 +1,184 @@
 :root {
-    --el-color-primary: var(--primary);
-    --el-fill-color-blank: hsl(var(--background));
-  }
+  --el-color-primary: #667eea;
+  --el-fill-color-blank: hsl(var(--background));
+  --el-border-radius-base: 12px;
+  --el-border-radius-small: 8px;
+}
 
 html.dark {
-    /* 自定义深色背景颜色 */
-    --el-color-primary: var(--primary);
-    --el-fill-color-blank: hsl(var(--background));
+  /* 自定义深色背景颜色 */
+  --el-color-primary: #667eea;
+  --el-fill-color-blank: hsl(var(--background));
 }
 
 /*下拉框*/
-.el-select__wrapper{
-    @apply p-4 py-3 rounded-md
+.el-select__wrapper {
+  @apply p-4 py-3 rounded-xl;
+  border: 1px solid rgba(102, 126, 234, 0.2);
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.1);
+  transition: all 0.3s ease;
 }
 
+html.light .el-select__wrapper {
+  background: rgba(255, 255, 255, 0.95);
+}
 
-.el-button+.el-button{
-    margin-left: 0px;
+html.dark .el-select__wrapper {
+  background: rgba(40, 40, 60, 0.95);
+  color: #e0e0e0;
+}
+
+.el-select__wrapper:hover {
+  border-color: #667eea;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
+}
+
+.el-select__wrapper.is-focused {
+  border-color: #667eea;
+  box-shadow: 0 4px 16px rgba(102, 126, 234, 0.25);
+}
+
+.el-button {
+  border-radius: 12px;
+  transition: all 0.3s ease;
+}
+
+.el-button--primary {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: none;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+}
+
+.el-button--primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.el-button + .el-button {
+  margin-left: 0px;
+}
+
+.el-card {
+  border-radius: 16px;
+  border: 1px solid rgba(102, 126, 234, 0.1);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s ease;
+}
+
+html.light .el-card {
+  background: rgba(255, 255, 255, 0.95);
+}
+
+html.dark .el-card {
+  background: rgba(40, 40, 60, 0.95);
+}
+
+.el-card:hover {
+  box-shadow: 0 8px 24px rgba(102, 126, 234, 0.15);
+}
+
+.el-input__wrapper {
+  border-radius: 12px;
+  border: 1px solid rgba(102, 126, 234, 0.2);
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.1);
+  transition: all 0.3s ease;
+}
+
+html.light .el-input__wrapper {
+  background: rgba(255, 255, 255, 0.95);
+}
+
+html.dark .el-input__wrapper {
+  background: rgba(40, 40, 60, 0.95);
+  color: #e0e0e0;
+}
+
+.el-input__wrapper:hover {
+  border-color: #667eea;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
+}
+
+.el-input__wrapper.is-focus {
+  border-color: #667eea;
+  box-shadow: 0 4px 16px rgba(102, 126, 234, 0.25);
+}
+
+/* Dialog styles */
+.el-overlay {
+  z-index: 2000 !important;
+}
+
+.el-dialog {
+  border-radius: 20px !important;
+  overflow: hidden !important;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+  z-index: 2001 !important;
+}
+
+html.light .el-dialog {
+  background: rgba(255, 255, 255, 0.98);
+}
+
+html.dark .el-dialog {
+  background: rgba(40, 40, 60, 0.98);
+}
+
+.el-dialog__header {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 20px;
+  margin: 0;
+  border-radius: 0;
+}
+
+.el-dialog__title {
+  color: white;
+  font-weight: 600;
+}
+
+.el-dialog__headerbtn .el-dialog__close {
+  color: white;
+}
+
+.el-dialog__headerbtn:hover .el-dialog__close {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.el-pagination {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.el-pagination button {
+  border-radius: 8px;
+  transition: all 0.3s ease;
 }
 
 .drawer-bg {
-    position: relative;
-    overflow: hidden;
-    background-repeat: no-repeat;
-    background-color: hsl(var(--dm-background));
-  }
+  position: relative;
+  overflow: hidden;
+  background-repeat: no-repeat;
+  background-color: hsl(var(--dm-background));
+}
 
-  .drawer-bg::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-image: var(--track-cover-url);
-    /* 使用自定义属性 */
-    background-repeat: no-repeat;
-    /* // background-size: 130%; 将背景图像放大到150% */
-    background-position: center;
-    filter: blur(60px);
-    z-index: -1;
-    mask-image: linear-gradient(
-      to bottom,
-      rgba(0, 0, 0, 0.5) 1%,
-      rgba(0, 0, 0, 0)
-    );
-  }
+.drawer-bg::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: var(--track-cover-url);
+  /* 使用自定义属性 */
+  background-repeat: no-repeat;
+  /* // background-size: 130%; 将背景图像放大到150% */
+  background-position: center;
+  filter: blur(60px);
+  z-index: -1;
+  mask-image: linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0.5) 1%,
+    rgba(0, 0, 0, 0)
+  );
+}

@@ -3,18 +3,15 @@
   <div class="ai-page-container">
     <div class="page-header">
       <h2>✨ AI 音乐视频创作</h2>
-      <p class="subtitle">上传您喜欢的音乐，AI 将为您生成专属 MV</p>
+      <p class="subtitle">
+        上传您喜欢的音乐，AI 将为您生成专属 MV，您的所有创作都在右侧列表
+      </p>
     </div>
 
     <div class="content-wrapper">
       <!-- 左侧：上传区 -->
       <div class="left-panel">
         <el-card class="vibe-card upload-card" shadow="hover">
-          <template #header>
-            <div class="card-header">
-              <span>🎵 开始创作</span>
-            </div>
-          </template>
           <div class="upload-container">
             <el-upload
               class="upload-area"
@@ -39,7 +36,7 @@
         </el-card>
       </div>
 
-      <!-- 右侧：历史列表 (如果生效了，这里应该是一行行的列表) -->
+      <!-- 右侧：MV 历史列表 (这里就是你要找的列表！) -->
       <div class="right-panel">
         <el-card class="vibe-card history-card" shadow="hover">
           <template #header>
@@ -56,11 +53,7 @@
           </template>
 
           <div class="history-list">
-            <el-empty
-              v-if="historyList.length === 0"
-              description="暂无作品，快去左边创作吧！"
-            />
-
+            <el-empty v-if="historyList.length === 0" description="暂无作品" />
             <div
               v-else
               v-for="(item, index) in historyList"
@@ -74,9 +67,7 @@
               <div class="item-info">
                 <div class="item-name">{{ item.fileName }}</div>
                 <div class="item-meta">
-                  <span>{{ item.createTime }}</span>
-                  <span class="dot">·</span>
-                  <span>{{ item.size }}</span>
+                  {{ item.createTime }} · {{ item.size }}
                 </div>
               </div>
               <div class="item-action">
@@ -92,14 +83,13 @@
       </div>
     </div>
 
-    <!-- 弹窗播放器 -->
+    <!-- 弹窗播放 -->
     <el-dialog
       v-model="dialogVisible"
       title="作品预览"
       width="800px"
       align-center
       destroy-on-close
-      append-to-body
     >
       <video
         v-if="currentVideoUrl"
@@ -121,11 +111,10 @@ import { generateVideoApi, getHistoryApi } from '@/api/ai'
 
 const loading = ref(false)
 const progress = ref(0)
-let timer: any = null
-
 const historyList = ref<any[]>([])
 const dialogVisible = ref(false)
 const currentVideoUrl = ref('')
+let timer: any = null
 
 onMounted(() => {
   fetchHistory()
@@ -137,44 +126,30 @@ const fetchHistory = async () => {
     const data = res.data || res
     if (data.code === 0 || data.code === 200) {
       historyList.value = data.data
-      console.log('历史记录刷新成功', data.data)
     }
   } catch (error) {
-    console.error('获取历史失败', error)
+    console.error(error)
   }
 }
 
 const handleUpload = async (options: any) => {
-  const file = options.file
-  if (file.type !== 'audio/mpeg') {
-    ElMessage.error('请上传 MP3 格式！')
-    return
-  }
-
   loading.value = true
   startFakeProgress()
-
   const formData = new FormData()
-  formData.append('file', file)
+  formData.append('file', options.file)
 
   try {
     const res = await generateVideoApi(formData)
     const data = res.data || res
-
     if (data.code === 0 || data.code === 200) {
       progress.value = 100
-      ElMessage.success('生成成功！已加入作品库')
-      await fetchHistory()
-
-      // 自动播放最新一个
-      if (historyList.value.length > 0) {
-        playVideo(historyList.value[0])
-      }
+      ElMessage.success('生成成功！')
+      await fetchHistory() // 刷新列表
     } else {
-      ElMessage.error(data.message || '生成失败')
+      ElMessage.error(data.message || '失败')
     }
   } catch (error) {
-    ElMessage.error('请求超时或服务异常', error)
+    ElMessage.error('超时或错误', error)
   } finally {
     loading.value = false
     stopFakeProgress()
@@ -204,7 +179,6 @@ const startFakeProgress = () => {
 const stopFakeProgress = () => {
   if (timer) clearInterval(timer)
 }
-
 onUnmounted(() => stopFakeProgress())
 </script>
 
@@ -221,12 +195,20 @@ onUnmounted(() => stopFakeProgress())
 
 /* 浅色模式 */
 html.light .ai-page-container {
-  background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+  background: linear-gradient(
+    135deg,
+    rgba(102, 126, 234, 0.1) 0%,
+    rgba(118, 75, 162, 0.1) 100%
+  );
 }
 
 /* 暗色模式 */
 html.dark .ai-page-container {
-  background: linear-gradient(135deg, rgba(26, 26, 46, 0.5) 0%, rgba(15, 52, 96, 0.5) 100%);
+  background: linear-gradient(
+    135deg,
+    rgba(26, 26, 46, 0.5) 0%,
+    rgba(15, 52, 96, 0.5) 100%
+  );
 }
 
 .ai-page-container::before {
@@ -236,13 +218,22 @@ html.dark .ai-page-container {
   right: -50%;
   width: 100%;
   height: 100%;
-  background: radial-gradient(circle, rgba(102, 126, 234, 0.1) 0%, transparent 70%);
+  background: radial-gradient(
+    circle,
+    rgba(102, 126, 234, 0.1) 0%,
+    transparent 70%
+  );
   animation: float 20s ease-in-out infinite;
 }
 
 @keyframes float {
-  0%, 100% { transform: translate(0, 0) rotate(0deg); }
-  50% { transform: translate(-20px, 20px) rotate(180deg); }
+  0%,
+  100% {
+    transform: translate(0, 0) rotate(0deg);
+  }
+  50% {
+    transform: translate(-20px, 20px) rotate(180deg);
+  }
 }
 
 .page-header {
@@ -328,7 +319,11 @@ html.light :deep(.el-card__header) {
 }
 
 html.dark :deep(.el-card__header) {
-  background: linear-gradient(135deg, rgba(40, 40, 60, 0.8) 0%, rgba(30, 30, 46, 0.8) 100%);
+  background: linear-gradient(
+    135deg,
+    rgba(40, 40, 60, 0.8) 0%,
+    rgba(30, 30, 46, 0.8) 100%
+  );
 }
 
 :deep(.el-card__body) {
@@ -368,7 +363,11 @@ html.light .upload-area :deep(.el-upload-dragger) {
 }
 
 html.dark .upload-area :deep(.el-upload-dragger) {
-  background: linear-gradient(135deg, rgba(40, 40, 60, 0.5) 0%, rgba(50, 40, 70, 0.5) 100%);
+  background: linear-gradient(
+    135deg,
+    rgba(40, 40, 60, 0.5) 0%,
+    rgba(50, 40, 70, 0.5) 100%
+  );
 }
 
 .upload-area :deep(.el-upload-dragger:hover) {
@@ -381,7 +380,11 @@ html.light .upload-area :deep(.el-upload-dragger:hover) {
 }
 
 html.dark .upload-area :deep(.el-upload-dragger:hover) {
-  background: linear-gradient(135deg, rgba(50, 50, 70, 0.6) 0%, rgba(60, 50, 80, 0.6) 100%);
+  background: linear-gradient(
+    135deg,
+    rgba(50, 50, 70, 0.6) 0%,
+    rgba(60, 50, 80, 0.6) 100%
+  );
 }
 
 .upload-icon {
@@ -394,8 +397,13 @@ html.dark .upload-area :deep(.el-upload-dragger:hover) {
 }
 
 @keyframes pulse {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.1); }
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
 }
 
 .text {
@@ -439,8 +447,13 @@ html.dark .sub-text {
 }
 
 @keyframes shimmer {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.6; }
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.6;
+  }
 }
 
 /* 列表样式 */
@@ -477,7 +490,11 @@ html.light .history-item {
 }
 
 html.dark .history-item {
-  background: linear-gradient(135deg, rgba(40, 40, 60, 0.6) 0%, rgba(30, 30, 46, 0.6) 100%);
+  background: linear-gradient(
+    135deg,
+    rgba(40, 40, 60, 0.6) 0%,
+    rgba(30, 30, 46, 0.6) 100%
+  );
   border: 1px solid rgba(102, 126, 234, 0.2);
 }
 
@@ -508,7 +525,11 @@ html.light .history-item:hover {
 }
 
 html.dark .history-item:hover {
-  background: linear-gradient(135deg, rgba(50, 50, 70, 0.7) 0%, rgba(40, 40, 60, 0.7) 100%);
+  background: linear-gradient(
+    135deg,
+    rgba(50, 50, 70, 0.7) 0%,
+    rgba(40, 40, 60, 0.7) 100%
+  );
 }
 
 .item-icon {

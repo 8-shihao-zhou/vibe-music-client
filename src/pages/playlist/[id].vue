@@ -196,7 +196,7 @@ watch(
           description: playlistData.introduction,
           coverImgUrl: playlistData.coverUrl || coverImg,
           creator: {
-            nickname: 'Vibe Music',
+            nickname: 'AI Music',
             avatarUrl: coverImg
           },
           trackCount: playlistData.songs.length,
