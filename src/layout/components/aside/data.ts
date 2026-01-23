@@ -24,7 +24,7 @@ export const MenuData = [
 
       // 原有的其他菜单
       { title: '曲库', icon: 'ri:music-2-line', router: '/library' },
-      { title: '通知', icon: 'ri:notification-3-line', router: '/artist' },
+      { title: '歌手', icon: 'ri:user-star-line', router: '/artist' },
       { title: '歌单', icon: 'ri:album-line', router: '/playlist' },
     ],
   },

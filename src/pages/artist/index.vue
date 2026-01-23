@@ -14,13 +14,23 @@ const currentPage = ref(1)
 const pageSize = ref(12)
 const total = ref(0)
 
+// 根据每页数量计算列数和间距
+const gridCols = computed(() => {
+  return 'grid-cols-4' // 统一使用4列布局
+})
+
+const gridGap = computed(() => {
+  if (pageSize.value === 24) return 'gap-x-12 gap-y-6' // 24条/页使用较小间距
+  return 'gap-x-16 gap-y-8' // 12条/页使用较大间距
+})
+
 const state = reactive({
   size: 'default',
   disabled: false,
   background: false,
   layout: 'total, sizes, prev, pager, next, jumper',
   total: 0,
-  pageSizes: [12, 24, 36, 48],
+  pageSizes: [12, 24],
 })
 
 const searchKeyword = ref('')
@@ -125,7 +135,7 @@ onMounted(() => {
   <div class="flex h-full artist-page-container">
     <div class="w-64 sidebar-panel p-4">
       <div class="flex items-center justify-between mb-4">
-        <h2 class="text-lg font-semibold page-title">通知分类</h2>
+        <h2 class="text-lg font-semibold page-title">歌手分类</h2>
         <button @click="handleReset"
           class="inline-flex items-center text-sm text-muted-foreground hover:text-foreground reset-btn">
           <icon-bx:reset class="mr-1 h-4 w-4" />
@@ -139,7 +149,7 @@ onMounted(() => {
             class="lucide lucide-search absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
           <input v-model="searchKeyword" @keyup.enter="handleSearch"
             class="search-input flex h-10 rounded-xl border border-input transform duration-300 bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-0 pl-10 w-56"
-            placeholder="搜索通知" />
+            placeholder="搜索歌手" />
         </div>
 
         <div class="mb-2 mt-4">
@@ -182,10 +192,10 @@ onMounted(() => {
         </div>
       </nav>
     </div>
-    <main class="flex-1 main-content">
+    <main class="flex-1 main-content overflow-y-auto">
       <div class="p-2 md:p-4 lg:p-6">
         <div class="w-[86%] mx-auto">
-          <div class="grid grid-cols-4 gap-x-16 gap-y-8">
+          <div :class="['grid', gridCols, gridGap]">
             <div v-for="(artist, index) in artistList" :key="index"
               class="artist-card group relative rounded-full text-card-foreground shadow-md hover:shadow-xl">
               <button @click="router.push(`/artist/${artist.artistId}`)" class="w-full h-full overflow-hidden rounded-full">
@@ -326,6 +336,19 @@ html.dark .main-content {
 :deep(.custom-pagination .el-pagination__jump) {
   color: #667eea;
   font-weight: 500;
+}
+
+/* 固定分页大小选择器的宽度，防止跳动 */
+:deep(.custom-pagination .el-pagination__sizes) {
+  min-width: 120px;
+}
+
+:deep(.custom-pagination .el-select) {
+  width: 120px;
+}
+
+:deep(.custom-pagination .el-input__wrapper) {
+  width: 120px;
 }
 
 :deep(.custom-pagination .el-pager li) {

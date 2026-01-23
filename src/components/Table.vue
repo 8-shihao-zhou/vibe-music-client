@@ -26,10 +26,17 @@ watch(() => props.data, (newData) => {
 // 转换歌曲实体
 const convertToTrackModel = (song: Song) => {
   // console.log('原始歌曲数据:', song)
-  if (!song.songId || !song.songName || !song.audioUrl) {
+  if (!song.songId || !song.songName) {
     console.error('歌曲数据不完整:', song)
     return null
   }
+  
+  // 如果没有音频 URL，返回 null（不添加到播放列表）
+  if (!song.audioUrl) {
+    console.warn('歌曲没有音频文件，无法播放:', song.songName)
+    return null
+  }
+  
   return {
     id: song.songId.toString(),
     title: song.songName,
