@@ -10,6 +10,7 @@ import { UserStore } from '@/stores/modules/user'
 const audio = AudioStore()
 const userStore = UserStore()
 const { loadTrack, play } = useAudioPlayer()
+const router = useRouter()
 
 const props = defineProps({
   data: {
@@ -145,6 +146,33 @@ const isCurrentPlaying = (songId: number) => {
   const currentTrack = audio.trackList[audio.currentSongIndex]
   return currentTrack && Number(currentTrack.id) === songId
 }
+
+// 创作 MV - 跳转到 AI 创作页面并传递音频 URL
+const handleCreateMV = (row: Song, e: Event) => {
+  e.stopPropagation() // 阻止事件冒泡
+  
+  if (!userStore.isLoggedIn) {
+    ElMessage.warning('请先登录')
+    return
+  }
+
+  if (!row.audioUrl) {
+    ElMessage.error('该歌曲没有音频文件')
+    return
+  }
+
+  // 跳转到 AI 创作页面，并通过 query 传递音频 URL 和歌曲信息
+  router.push({
+    path: '/ai',
+    query: {
+      audioUrl: row.audioUrl,
+      songName: row.songName,
+      artistName: row.artistName
+    }
+  })
+  
+  ElMessage.success('正在跳转到 AI 创作页面...')
+}
 </script>
 
 <template>
@@ -157,7 +185,7 @@ const isCurrentPlaying = (songId: number) => {
     " class="!rounded-lg !h-full transition duration-300">
     <el-table-column>
       <template #header>
-        <div class="grid grid-cols-[auto_4fr_3fr_3fr_1fr_2fr_1fr] items-center gap-6 w-full text-left mt-2">
+        <div class="grid grid-cols-[auto_4fr_3fr_3fr_1fr_2fr_1fr_1fr] items-center gap-6 w-full text-left mt-2">
           <div class="ml-3">标题</div>
           <div class="w-12"></div>
           <div class="ml-1">歌手</div>
@@ -165,11 +193,12 @@ const isCurrentPlaying = (songId: number) => {
           <div>喜欢</div>
           <div class="ml-7">时长</div>
           <div>下载</div>
+          <div>创作</div>
         </div>
       </template>
       <template #default="{ row }">
         <div
-          class="grid grid-cols-[auto_4fr_3fr_3fr_1fr_2fr_1fr] items-center gap-6 w-full group transition duration-300 rounded-2xl p-2"
+          class="grid grid-cols-[auto_4fr_3fr_3fr_1fr_2fr_1fr_1fr] items-center gap-6 w-full group transition duration-300 rounded-2xl p-2"
           :class="[
             isCurrentPlaying(row.songId) ? 'bg-[hsl(var(--hover-menu-bg))]' : 'hover:bg-[hsl(var(--hover-menu-bg))]',
             'cursor-pointer'
@@ -215,6 +244,13 @@ const isCurrentPlaying = (songId: number) => {
           <div class="flex items-center ml-1">
             <el-button text circle @click.stop="downLoadMusic(row, $event)">
               <icon-material-symbols:download class="text-lg" />
+            </el-button>
+          </div>
+
+          <!-- 创作 MV -->
+          <div class="flex items-center ml-1">
+            <el-button text circle @click.stop="handleCreateMV(row, $event)" title="AI 创作 MV">
+              <icon-ri:magic-line class="text-lg text-purple-500" />
             </el-button>
           </div>
         </div>

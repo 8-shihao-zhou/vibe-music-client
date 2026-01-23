@@ -20,12 +20,35 @@
               :http-request="handleUpload"
               :show-file-list="false"
               accept=".mp3"
-              :disabled="loading"
+              :disabled="loading || !!selectedSongInfo"
             >
-              <div v-if="!loading" class="upload-placeholder">
+              <div v-if="!loading && !selectedSongInfo" class="upload-placeholder">
                 <el-icon class="upload-icon"><Headset /></el-icon>
                 <div class="text">点击或拖拽 MP3 到此处</div>
                 <div class="sub-text">支持 15-60秒 音频</div>
+              </div>
+              <div v-else-if="!loading && selectedSongInfo" class="selected-song-info">
+                <el-icon class="selected-icon"><Headset /></el-icon>
+                <div class="selected-text">已选择歌曲</div>
+                <div class="selected-name">{{ selectedSongInfo }}</div>
+                <div class="selected-actions">
+                  <el-button 
+                    type="primary" 
+                    size="large"
+                    @click.stop="handleGenerateFromUrl"
+                    class="generate-btn"
+                  >
+                    <icon-ri:magic-line class="mr-2" />
+                    开始生成 MV
+                  </el-button>
+                  <el-button 
+                    size="large"
+                    @click.stop="selectedSongInfo = ''; selectedAudioUrl = ''"
+                    class="cancel-btn"
+                  >
+                    取消选择
+                  </el-button>
+                </div>
               </div>
               <div v-else class="loading-placeholder">
                 <el-progress type="dashboard" :percentage="progress" />
@@ -109,12 +132,34 @@ import { Headset, VideoPlay, Download, Refresh } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { generateVideoApi, getHistoryApi } from '@/api/ai'
 
+const route = useRoute()
 const loading = ref(false)
 const progress = ref(0)
 const historyList = ref<any[]>([])
 const dialogVisible = ref(false)
 const currentVideoUrl = ref('')
+const selectedSongInfo = ref<string>('')
+const selectedAudioUrl = ref<string>('')
 let timer: any = null
+
+// 处理从曲库跳转过来的歌曲选择
+const handleSongSelection = () => {
+  if (route.query.audioUrl) {
+    const audioUrl = route.query.audioUrl as string
+    const songName = route.query.songName as string || '未知歌曲'
+    const artistName = route.query.artistName as string || '未知歌手'
+    
+    selectedSongInfo.value = `${songName} - ${artistName}`
+    selectedAudioUrl.value = audioUrl
+    
+    ElMessage.success(`已选择：${selectedSongInfo.value}`)
+  }
+}
+
+// 监听路由变化
+watch(() => route.query, () => {
+  handleSongSelection()
+}, { immediate: true })
 
 onMounted(() => {
   fetchHistory()
@@ -145,11 +190,58 @@ const handleUpload = async (options: any) => {
       progress.value = 100
       ElMessage.success('生成成功！')
       await fetchHistory() // 刷新列表
+      selectedSongInfo.value = '' // 清空选中的歌曲信息
+      selectedAudioUrl.value = ''
     } else {
       ElMessage.error(data.message || '失败')
     }
   } catch (error) {
-    ElMessage.error('超时或错误', error)
+    ElMessage.error('超时或错误')
+  } finally {
+    loading.value = false
+    stopFakeProgress()
+  }
+}
+
+// 手动触发从 URL 生成 MV
+const handleGenerateFromUrl = async () => {
+  if (!selectedAudioUrl.value) {
+    ElMessage.warning('请先选择一首歌曲')
+    return
+  }
+
+  try {
+    ElMessage.info('正在准备音频文件...')
+    loading.value = true
+    startFakeProgress()
+
+    // 使用 fetch 下载音频文件
+    const response = await fetch(selectedAudioUrl.value)
+    if (!response.ok) {
+      throw new Error('下载音频文件失败')
+    }
+
+    const blob = await response.blob()
+    const fileName = selectedSongInfo.value ? `${selectedSongInfo.value}.mp3` : 'audio.mp3'
+    const file = new File([blob], fileName, { type: 'audio/mpeg' })
+
+    // 创建 FormData 并上传
+    const formData = new FormData()
+    formData.append('file', file)
+
+    const res = await generateVideoApi(formData)
+    const data = res.data || res
+    if (data.code === 0 || data.code === 200) {
+      progress.value = 100
+      ElMessage.success('AI 正在为您生成 MV！')
+      await fetchHistory()
+      selectedSongInfo.value = ''
+      selectedAudioUrl.value = ''
+    } else {
+      ElMessage.error(data.message || '生成失败')
+    }
+  } catch (error: any) {
+    ElMessage.error(error.message || '处理音频文件失败')
   } finally {
     loading.value = false
     stopFakeProgress()
@@ -454,6 +546,113 @@ html.dark .sub-text {
   50% {
     opacity: 0.6;
   }
+}
+
+/* 选中歌曲信息样式 */
+.selected-song-info {
+  text-align: center;
+}
+
+.selected-icon {
+  font-size: 64px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin-bottom: 24px;
+  animation: bounce 1s ease-in-out infinite;
+}
+
+@keyframes bounce {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+.selected-text {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 12px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.selected-name {
+  font-size: 16px;
+  font-weight: 500;
+  margin-bottom: 24px;
+}
+
+html.light .selected-name {
+  color: #303133;
+}
+
+html.dark .selected-name {
+  color: #e0e0e0;
+}
+
+.selected-actions {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  margin-top: 24px;
+}
+
+.generate-btn {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+  border: none !important;
+  color: white !important;
+  padding: 12px 32px !important;
+  font-size: 16px !important;
+  font-weight: 600 !important;
+  border-radius: 12px !important;
+  transition: all 0.3s ease !important;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3) !important;
+}
+
+.generate-btn:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4) !important;
+}
+
+.cancel-btn {
+  padding: 12px 32px !important;
+  font-size: 16px !important;
+  border-radius: 12px !important;
+  transition: all 0.3s ease !important;
+}
+
+html.light .cancel-btn {
+  background: rgba(0, 0, 0, 0.05) !important;
+  border: 1px solid rgba(0, 0, 0, 0.1) !important;
+  color: #606266 !important;
+}
+
+html.dark .cancel-btn {
+  background: rgba(255, 255, 255, 0.05) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  color: #e0e0e0 !important;
+}
+
+.cancel-btn:hover {
+  transform: translateY(-2px) !important;
+}
+
+.selected-tip {
+  font-size: 14px;
+  animation: shimmer 2s ease-in-out infinite;
+}
+
+html.light .selected-tip {
+  color: #909399;
+}
+
+html.dark .selected-tip {
+  color: #a0a0a0;
 }
 
 /* 列表样式 */

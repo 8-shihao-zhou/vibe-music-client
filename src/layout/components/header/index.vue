@@ -46,12 +46,12 @@ watch(
 </script>
 <template>
   <header class="px-4 py-2 border-b flex items-center">
-    <button class="flex relative w-60" @click="router.push('/')">
+    <div class="flex relative w-60">
       <img src="\logo.svg" alt="logo" class="w-10 h-10 ml-2" />
       <span class="ml-3 text-2xl font-bold flex justify-center items-center"
         >AI Music</span
       >
-    </button>
+    </div>
     <!-- 输入框和头像 -->
     <div class="flex items-center gap-3">
       <div class="relative mr-6">
@@ -124,11 +124,11 @@ html.dark .search-bg:focus {
   background: rgba(50, 50, 70, 1);
 }
 
-button {
+button:not(.flex) {
   transition: all 0.3s ease;
 }
 
-button:hover {
+button:not(.flex):hover {
   transform: scale(1.05);
 }
 
