@@ -59,13 +59,14 @@
         </el-card>
       </div>
 
-      <!-- 右侧：MV 历史列表 (这里就是你要找的列表！) -->
+      <!-- 右侧：MV 历史列表 -->
       <div class="right-panel">
         <el-card class="vibe-card history-card" shadow="hover">
           <template #header>
             <div class="card-header">
               <span>💿 我的作品库</span>
               <el-button
+                v-if="isLoggedIn"
                 link
                 type="primary"
                 :icon="Refresh"
@@ -76,7 +77,19 @@
           </template>
 
           <div class="history-list">
-            <el-empty v-if="historyList.length === 0" description="暂无作品" />
+            <!-- 未登录提示 -->
+            <el-empty 
+              v-if="!isLoggedIn" 
+              description="请先登录查看您的作品"
+            >
+              <el-button type="primary" @click="handleLogin">立即登录</el-button>
+            </el-empty>
+            <!-- 已登录但无作品 -->
+            <el-empty 
+              v-else-if="historyList.length === 0" 
+              description="暂无作品" 
+            />
+            <!-- 作品列表 -->
             <div
               v-else
               v-for="(item, index) in historyList"
@@ -127,12 +140,15 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { Headset, VideoPlay, Download, Refresh } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { generateVideoApi, getHistoryApi } from '@/api/ai'
+import { UserStore } from '@/stores/modules/user'
 
 const route = useRoute()
+const router = useRouter()
+const userStore = UserStore()
 const loading = ref(false)
 const progress = ref(0)
 const historyList = ref<any[]>([])
@@ -141,6 +157,18 @@ const currentVideoUrl = ref('')
 const selectedSongInfo = ref<string>('')
 const selectedAudioUrl = ref<string>('')
 let timer: any = null
+
+// 检查登录状态 - 使用 Pinia store
+const isLoggedIn = computed(() => {
+  return userStore.isLoggedIn && !!userStore.userInfo?.token
+})
+
+// 处理登录按钮点击
+const handleLogin = () => {
+  // 触发登录对话框（通过事件总线或其他方式）
+  // 这里假设你有一个全局的登录对话框
+  ElMessage.info('请点击右上角登录按钮进行登录')
+}
 
 // 处理从曲库跳转过来的歌曲选择
 const handleSongSelection = () => {
@@ -162,18 +190,32 @@ watch(() => route.query, () => {
 }, { immediate: true })
 
 onMounted(() => {
-  fetchHistory()
+  // 只有登录用户才获取作品历史
+  if (isLoggedIn.value) {
+    fetchHistory()
+  }
 })
 
 const fetchHistory = async () => {
+  // 检查是否登录
+  if (!isLoggedIn.value) {
+    historyList.value = []
+    return
+  }
+  
   try {
     const res = await getHistoryApi()
-    const data = res.data || res
-    if (data.code === 0 || data.code === 200) {
-      historyList.value = data.data
+    console.log('📦 [fetchHistory] 收到响应:', res)
+    
+    // res 已经是完整的响应对象 {code, message, data}
+    if (res.code === 0 || res.code === 200) {
+      console.log('📦 [fetchHistory] 设置 historyList，数量:', res.data.length)
+      historyList.value = res.data
+    } else {
+      console.warn('📦 [fetchHistory] 响应码不正确:', res.code, res.message)
     }
   } catch (error) {
-    console.error(error)
+    console.error('❌ [fetchHistory] 错误:', error)
   }
 }
 
@@ -190,15 +232,15 @@ const handleUpload = async (options: any) => {
 
   try {
     const res = await generateVideoApi(formData)
-    const data = res.data || res
-    if (data.code === 0 || data.code === 200) {
+    // res 已经是完整的响应对象 {code, message, data}
+    if (res.code === 0 || res.code === 200) {
       progress.value = 100
       ElMessage.success('生成成功！')
       await fetchHistory() // 刷新列表
       selectedSongInfo.value = '' // 清空选中的歌曲信息
       selectedAudioUrl.value = ''
     } else {
-      ElMessage.error(data.message || '失败')
+      ElMessage.error(res.message || '失败')
     }
   } catch (error) {
     ElMessage.error('超时或错误')
@@ -239,15 +281,15 @@ const handleGenerateFromUrl = async () => {
     }
 
     const res = await generateVideoApi(formData)
-    const data = res.data || res
-    if (data.code === 0 || data.code === 200) {
+    // res 已经是完整的响应对象 {code, message, data}
+    if (res.code === 0 || res.code === 200) {
       progress.value = 100
       ElMessage.success('AI 正在为您生成 MV！')
       await fetchHistory()
       selectedSongInfo.value = ''
       selectedAudioUrl.value = ''
     } else {
-      ElMessage.error(data.message || '生成失败')
+      ElMessage.error(res.message || '生成失败')
     }
   } catch (error: any) {
     ElMessage.error(error.message || '处理音频文件失败')
@@ -831,14 +873,43 @@ html.dark .card-header {
 }
 
 :deep(.el-dialog__header) {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: #fff;
-  padding: 20px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+  color: #fff !important;
+  padding: 20px !important;
 }
 
 :deep(.el-dialog__title) {
-  color: #fff;
-  font-weight: 600;
+  color: #fff !important;
+  font-weight: 600 !important;
+}
+
+:deep(.el-dialog__headerbtn) {
+  top: 20px !important;
+  right: 20px !important;
+  width: 32px !important;
+  height: 32px !important;
+}
+
+:deep(.el-dialog__headerbtn .el-dialog__close) {
+  color: white !important;
+  font-size: 22px !important;
+  font-weight: bold !important;
+  width: 100% !important;
+  height: 100% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  transition: all 0.3s ease !important;
+}
+
+:deep(.el-dialog__headerbtn:hover) {
+  background: rgba(255, 255, 255, 0.2) !important;
+  border-radius: 8px !important;
+}
+
+:deep(.el-dialog__headerbtn:hover .el-dialog__close) {
+  color: white !important;
+  transform: scale(1.1) !important;
 }
 
 :deep(.el-dialog__body) {

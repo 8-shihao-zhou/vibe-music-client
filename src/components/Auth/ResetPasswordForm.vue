@@ -130,7 +130,7 @@ onUnmounted(() => {
     <el-form ref="resetFormRef" :model="resetForm" :rules="resetRules" label-width="0" size="large"
       @keyup.enter="handleReset">
       <el-form-item prop="email">
-        <el-input v-model="resetForm.email" placeholder="邮箱" :prefix-icon="Message">
+        <el-input v-model="resetForm.email" placeholder="邮箱" :prefix-icon="Message" autocomplete="off">
           <template #append>
             <el-button :disabled="!!countdown || loading" @click="handleSendCode">
               {{ countdown ? `${countdown}s后重试` : '获取验证码' }}
@@ -140,16 +140,16 @@ onUnmounted(() => {
       </el-form-item>
 
       <el-form-item prop="verificationCode" class="mt-6">
-        <el-input v-model="resetForm.verificationCode" placeholder="验证码" :prefix-icon="Key" />
+        <el-input v-model="resetForm.verificationCode" placeholder="验证码" :prefix-icon="Key" autocomplete="off" />
       </el-form-item>
 
       <el-form-item prop="newPassword" class="mt-6">
-        <el-input v-model="resetForm.newPassword" type="password" placeholder="新密码" :prefix-icon="Lock" show-password />
+        <el-input v-model="resetForm.newPassword" type="password" placeholder="新密码" :prefix-icon="Lock" show-password autocomplete="new-password" />
       </el-form-item>
 
       <el-form-item prop="repeatPassword" class="mt-6">
         <el-input v-model="resetForm.repeatPassword" type="password" placeholder="确认密码" :prefix-icon="Lock"
-          show-password />
+          show-password autocomplete="new-password" />
       </el-form-item>
 
       <el-form-item class="mt-6">

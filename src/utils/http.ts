@@ -40,8 +40,14 @@ instance.interceptors.request.use(
       if (!config.headers) {
         config.headers = {} as AxiosRequestHeaders
       }
-      // 添加Bearer前缀
-      config.headers.Authorization = token
+      // 添加Bearer前缀（后端期望的格式）
+      config.headers.Authorization = `Bearer ${token}`
+      console.log(
+        '🔑 [HTTP] 设置 Authorization 头:',
+        config.headers.Authorization.substring(0, 20) + '...'
+      )
+    } else {
+      console.warn('⚠️ [HTTP] 未找到 token，用户可能未登录')
     }
 
     // console.log('请求URL:', config.url)

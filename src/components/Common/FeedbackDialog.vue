@@ -91,19 +91,6 @@ defineExpose({ openDialog })
 </template>
 
 <style scoped>
-/* 对话框层级样式 */
-.feedback-dialog {
-  z-index: 3000 !important;
-}
-
-.feedback-dialog :deep(.el-overlay) {
-  z-index: 2999 !important;
-}
-
-.feedback-dialog :deep(.el-dialog) {
-  z-index: 3000 !important;
-}
-
 .dialog-footer {
   text-align: right;
 }
@@ -126,5 +113,47 @@ defineExpose({ openDialog })
   margin-top: 6px;
   border-radius: 8px;
   resize: none;
+}
+
+/* 对话框样式优化 */
+.feedback-dialog :deep(.el-dialog__header) {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+  color: white !important;
+  padding: 20px !important;
+}
+
+.feedback-dialog :deep(.el-dialog__title) {
+  color: white !important;
+  font-weight: 600 !important;
+  font-size: 18px !important;
+}
+
+.feedback-dialog :deep(.el-dialog__headerbtn) {
+  top: 20px !important;
+  right: 20px !important;
+  width: 32px !important;
+  height: 32px !important;
+}
+
+.feedback-dialog :deep(.el-dialog__headerbtn .el-dialog__close) {
+  color: white !important;
+  font-size: 22px !important;
+  font-weight: bold !important;
+  width: 100% !important;
+  height: 100% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  transition: all 0.3s ease !important;
+}
+
+.feedback-dialog :deep(.el-dialog__headerbtn:hover) {
+  background: rgba(255, 255, 255, 0.2) !important;
+  border-radius: 8px !important;
+}
+
+.feedback-dialog :deep(.el-dialog__headerbtn:hover .el-dialog__close) {
+  color: white !important;
+  transform: scale(1.1) !important;
 }
 </style>
