@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, watch } from 'vue'
 import type { FormInstance, FormRules } from 'element-plus'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { UserStore } from '@/stores/modules/user'
@@ -9,6 +9,7 @@ import 'vue-cropper/dist/index.css'
 import { VueCropper } from "vue-cropper";
 import { useRouter } from 'vue-router'
 import AuthTabs from '@/components/Auth/AuthTabs.vue'
+import { http } from '@/utils/http'
 
 const router = useRouter()
 const userStore = UserStore()
@@ -18,6 +19,7 @@ const cropperVisible = ref(false)
 const cropperImg = ref('')
 const cropper = ref<any>(null)
 const authVisible = ref(false)
+const unreadCount = ref(0)
 
 const userForm = reactive({
   userId: userStore.userInfo.userId,
@@ -53,8 +55,43 @@ const userRules = reactive<FormRules>({
 onMounted(() => {
   if (!userStore.isLoggedIn) {
     authVisible.value = true
+  } else {
+    loadUnreadCount()
   }
 })
+
+// 监听用户变化，自动刷新未读数量
+watch(
+  () => userStore.userInfo.userId,
+  (newUserId, oldUserId) => {
+    // 当用户ID变化时，重新加载未读数量
+    if (newUserId !== oldUserId) {
+      console.log('用户切换，重新加载未读数量')
+      if (newUserId) {
+        loadUnreadCount()
+      } else {
+        unreadCount.value = 0
+      }
+    }
+  }
+)
+
+// 加载未读消息数量
+const loadUnreadCount = async () => {
+  try {
+    const response: any = await http('get', '/notification/user/unread-count')
+    if (response.code === 0) {
+      unreadCount.value = response.data?.count || 0
+    }
+  } catch (error) {
+    console.error('加载未读消息数量失败:', error)
+  }
+}
+
+// 跳转到通知页面
+const goToNotifications = () => {
+  router.push('/notification')
+}
 
 // 处理头像上传
 const handleAvatarClick = () => {
@@ -200,6 +237,18 @@ const handleDelete = async () => {
   <div class="user-container">
     <h2 class="username">个人中心</h2>
 
+    <!-- 通知入口 -->
+    <div class="notification-entry" @click="goToNotifications">
+      <div class="notification-content">
+        <icon-ep:bell class="notification-icon" />
+        <span class="notification-text">我的通知</span>
+      </div>
+      <div class="notification-right">
+        <el-badge v-if="unreadCount > 0" :value="unreadCount" :max="99" class="mr-4" />
+        <icon-ep:arrow-right class="arrow-icon" />
+      </div>
+    </div>
+
     <div class="section">
       <div class="section-title">头像</div>
       <div class="user-header">
@@ -240,7 +289,7 @@ const handleDelete = async () => {
               </el-button>
             </div>
             <div class="flex">
-              <el-button size="mini" type="warning" plain @click="cropperVisible = false" class="mr-1">取消</el-button>
+              <el-button size="mini" type="warning" plain @click="cropperVisible = false" class="mr-3">取消</el-button>
               <el-button size="mini" type="primary" @click="handleCropConfirm">确认</el-button>
             </div>
           </div>
@@ -316,6 +365,50 @@ const handleDelete = async () => {
   font-size: 20px;
   color: var(--el-text-color-primary);
   font-weight: normal;
+}
+
+.notification-entry {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  margin-bottom: 24px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.3s;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.notification-entry:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
+}
+
+.notification-content {
+  display: flex;
+  align-items: center;
+  color: white;
+}
+
+.notification-icon {
+  font-size: 24px;
+  margin-right: 12px;
+}
+
+.notification-text {
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.notification-right {
+  display: flex;
+  align-items: center;
+  color: white;
+}
+
+.arrow-icon {
+  font-size: 20px;
 }
 
 .user-form {

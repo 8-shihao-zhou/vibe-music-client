@@ -58,6 +58,19 @@ html.dark .el-select__wrapper {
   margin-left: 0px;
 }
 
+/* MessageBox 按钮间距 */
+.el-message-box__btns {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  padding: 15px 20px;
+}
+
+.el-message-box__btns .el-button {
+  margin-left: 0 !important;
+  min-width: 80px;
+}
+
 .el-card {
   border-radius: 16px;
   border: 1px solid rgba(102, 126, 234, 0.1);

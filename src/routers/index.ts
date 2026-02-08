@@ -67,6 +67,20 @@ const router = createRouter({
       component: () => import('@/pages/community/index.vue'),
       meta: { title: '音乐社区' },
     },
+
+    // 通知页面路由
+    {
+      path: '/notification',
+      name: 'Notification',
+      component: () => import('@/pages/notification/index.vue'),
+      meta: { title: '我的通知' },
+    },
+    {
+      path: '/notification/:id',
+      name: 'NotificationDetail',
+      component: () => import('@/pages/notification/[id].vue'),
+      meta: { title: '通知详情' },
+    },
   ],
 })
 
