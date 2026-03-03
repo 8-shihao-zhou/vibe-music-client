@@ -297,6 +297,11 @@ const getTypeText = (type: string) => {
   }
 }
 
+// 返回个人中心
+const goBack = () => {
+  router.push('/user')
+}
+
 onMounted(() => {
   loadNotifications()
 })
@@ -327,7 +332,13 @@ watch(
 <template>
   <div class="notification-container">
     <div class="header">
-      <h2 class="title">我的通知</h2>
+      <div class="header-left">
+        <el-button class="back-btn" @click="goBack">
+          <icon-ep:arrow-left class="mr-1" />
+          返回
+        </el-button>
+        <h2 class="title">我的通知</h2>
+      </div>
       <div class="stats">
         <span class="unread-count">未读: {{ unreadCount }}</span>
         <span class="total-count">总计: {{ notifications.length }}</span>
@@ -537,6 +548,16 @@ watch(
   margin-bottom: 24px;
   padding-bottom: 16px;
   border-bottom: 1px solid var(--el-border-color-lighter);
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.back-btn {
+  border-radius: 8px;
 }
 
 .title {

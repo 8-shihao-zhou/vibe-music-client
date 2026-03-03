@@ -60,6 +60,18 @@ onMounted(() => {
   }
 })
 
+// 监听路由变化，当从通知页面返回时刷新未读数量
+watch(
+  () => router.currentRoute.value.path,
+  (newPath, oldPath) => {
+    // 当从通知页面返回到个人中心时，刷新未读数量
+    if (newPath === '/user' && oldPath?.startsWith('/notification')) {
+      console.log('从通知页面返回，刷新未读数量')
+      loadUnreadCount()
+    }
+  }
+)
+
 // 监听用户变化，自动刷新未读数量
 watch(
   () => userStore.userInfo.userId,

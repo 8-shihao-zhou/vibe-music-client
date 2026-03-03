@@ -76,11 +76,11 @@ watch(
       </div>
 
       <!-- 收藏的歌单 -->
-      <div class="w-full flex flex-col gap-1" v-if="user.isLoggedIn">
+      <div class="w-full flex flex-col gap-1 flex-1 overflow-hidden" v-if="user.isLoggedIn">
         <h3 class="ml-4 text-sm font-semibold text-inactive menu-title">
           收藏的歌单（{{ favoriteStore.favoritePlaylists.length }}）
         </h3>
-        <el-scrollbar>
+        <el-scrollbar class="flex-1">
           <el-skeleton
             :loading="favoriteStore.loading"
             animated

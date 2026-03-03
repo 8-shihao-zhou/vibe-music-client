@@ -1,189 +1,522 @@
-/* eslint-disable */
+<script setup lang="ts">
+import { ref, watch, onMounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { ElMessage } from 'element-plus'
+import { getPostList } from '@/api/community'
+import { UserStore } from '@/stores/modules/user'
+
+const userStore = UserStore()
+const route = useRoute()
+const router = useRouter()
+
+// 分类选项
+const categories = [
+  { label: '全部', value: '' },
+  { label: '创作分享', value: 'SHARE' },
+  { label: '技术交流', value: 'TECH' },
+  { label: '问答互助', value: 'QA' },
+  { label: '灌水闲聊', value: 'CHAT' },
+]
+
+// 排序选项
+const sortOptions = [
+  { label: '最新', value: 'latest' },
+  { label: '最热', value: 'hot' },
+  { label: '浏览最多', value: 'view' },
+]
+
+// 状态
+const loading = ref(false)
+const postList = ref<any[]>([])
+const currentCategory = ref('')
+const currentSort = ref('latest')
+const keyword = ref('')
+const currentPage = ref(1)
+const pageSize = ref(10)
+const total = ref(0)
+
+// 获取帖子列表
+const fetchPosts = async () => {
+  loading.value = true
+  try {
+    const res = await getPostList({
+      category: currentCategory.value,
+      keyword: keyword.value,
+      sortBy: currentSort.value,
+      pageNum: currentPage.value,
+      pageSize: pageSize.value,
+    })
+
+    console.log('帖子列表响应:', res)
+
+    if (res.code === 0 && res.data) {
+      // MyBatis-Plus的IPage返回的是records，不是items
+      postList.value = res.data.records || []
+      total.value = res.data.total || 0
+      console.log('帖子数量:', postList.value.length)
+    } else if (res.code !== 0) {
+      // 只在后端返回错误码时显示错误
+      console.error('获取帖子列表失败:', res.msg)
+      ElMessage.error(res.msg || '获取帖子列表失败')
+    }
+  } catch (error) {
+    // 网络错误或其他异常
+    console.error('获取帖子列表异常:', error)
+    ElMessage.error('网络错误，请稍后重试')
+  } finally {
+    loading.value = false
+  }
+}
+
+// 切换分类
+const handleCategoryChange = (category: string) => {
+  currentCategory.value = category
+  currentPage.value = 1
+  fetchPosts()
+}
+
+// 切换排序
+const handleSortChange = (sort: string) => {
+  currentSort.value = sort
+  currentPage.value = 1
+  fetchPosts()
+}
+
+// 搜索
+const handleSearch = () => {
+  currentPage.value = 1
+  fetchPosts()
+}
+
+// 分页变化
+const handlePageChange = (page: number) => {
+  currentPage.value = page
+  fetchPosts()
+}
+
+// 跳转到帖子详情
+const goToDetail = (postId: number) => {
+  router.push(`/community/${postId}`)
+}
+
+// 跳转到发布页面
+const goToCreate = () => {
+  if (!userStore.userInfo?.userId) {
+    ElMessage.warning('请先登录')
+    return
+  }
+  router.push('/community/create')
+}
+
+// 格式化时间
+const formatTime = (time: string) => {
+  const date = new Date(time)
+  const now = new Date()
+  const diff = now.getTime() - date.getTime()
+
+  const minute = 60 * 1000
+  const hour = 60 * minute
+  const day = 24 * hour
+
+  if (diff < minute) {
+    return '刚刚'
+  } else if (diff < hour) {
+    return `${Math.floor(diff / minute)}分钟前`
+  } else if (diff < day) {
+    return `${Math.floor(diff / hour)}小时前`
+  } else if (diff < 7 * day) {
+    return `${Math.floor(diff / day)}天前`
+  } else {
+    return date.toLocaleDateString()
+  }
+}
+
+// 监听路由变化，从其他页面返回时刷新
+watch(
+  () => route.path,
+  (newPath, oldPath) => {
+    // 当路由变为 /community 时刷新（从详情页或发布页返回）
+    if (newPath === '/community' && oldPath && oldPath !== '/community') {
+      fetchPosts()
+    }
+  }
+)
+
+// 初始化
+onMounted(() => {
+  fetchPosts()
+})
+</script>
+
 <template>
   <div class="community-container">
-    <div class="page-header">
-      <h2>🌏 音乐灵感社区</h2>
-      <p class="subtitle">探索大家的 AI 创作，分享你的音乐故事</p>
+    <!-- 头部 -->
+    <div class="community-header">
+      <div class="header-left">
+        <h1 class="title">社区</h1>
+        <p class="subtitle">分享你的创作，交流你的想法</p>
+      </div>
+      <el-button type="primary" class="create-btn" @click="goToCreate">
+        <i class="i-carbon-add mr-1" />
+        发布帖子
+      </el-button>
+    </div>
+
+    <!-- 筛选栏 -->
+    <div class="filter-bar">
+      <!-- 分类 -->
+      <div class="category-tabs">
+        <div
+          v-for="cat in categories"
+          :key="cat.value"
+          class="category-tab"
+          :class="{ active: currentCategory === cat.value }"
+          @click="handleCategoryChange(cat.value)"
+        >
+          {{ cat.label }}
+        </div>
+      </div>
+
+      <!-- 搜索和排序 -->
+      <div class="search-sort">
+        <el-input
+          v-model="keyword"
+          placeholder="搜索帖子..."
+          class="search-input"
+          clearable
+          @keyup.enter="handleSearch"
+        >
+          <template #prefix>
+            <i class="i-carbon-search" />
+          </template>
+        </el-input>
+
+        <el-select
+          v-model="currentSort"
+          class="sort-select"
+          @change="handleSortChange"
+        >
+          <el-option
+            v-for="option in sortOptions"
+            :key="option.value"
+            :label="option.label"
+            :value="option.value"
+          />
+        </el-select>
+      </div>
     </div>
 
     <!-- 帖子列表 -->
-    <div class="post-list">
-      <el-card
+    <div v-loading="loading" class="post-list">
+      <div
         v-for="post in postList"
         :key="post.id"
         class="post-card"
-        shadow="hover"
+        @click="goToDetail(post.id)"
       >
-        <div class="user-info">
-          <el-avatar :size="40" :src="post.avatar" />
-          <div class="user-meta">
-            <span class="username">{{ post.username }}</span>
-            <span class="time">{{ post.time }}</span>
-          </div>
-          <el-button class="follow-btn" type="primary" link>+ 关注</el-button>
+        <!-- 封面图 -->
+        <div v-if="post.coverUrl" class="post-cover">
+          <img :src="post.coverUrl" alt="封面" />
         </div>
 
+        <!-- 内容 -->
         <div class="post-content">
-          <p class="post-text">{{ post.content }}</p>
-          <div class="media-box" v-if="post.videoUrl">
-            <video
-              :src="post.videoUrl"
-              controls
-              preload="metadata"
-              class="post-video"
-            ></video>
+          <!-- 标题和标签 -->
+          <div class="post-header">
+            <div class="post-title-row">
+              <span v-if="post.isTop" class="tag-top">置顶</span>
+              <span v-if="post.isHot" class="tag-hot">热门</span>
+              <h3 class="post-title">{{ post.title }}</h3>
+            </div>
+            <p class="post-excerpt">{{ post.content.substring(0, 150) }}...</p>
           </div>
-        </div>
 
-        <div class="action-bar">
-          <div
-            class="action-item"
-            :class="{ active: post.isLiked }"
-            @click="toggleLike(post)"
-          >
-            <el-icon><Pointer /></el-icon>
-            <span>{{ post.likes }}</span>
-          </div>
-          <div class="action-item" @click="openComments(post)">
-            <el-icon><ChatLineRound /></el-icon>
-            <span>{{ post.comments }}</span>
-          </div>
-          <div class="action-item" @click="handleShare(post)">
-            <el-icon><Share /></el-icon>
-            <span>分享</span>
+          <!-- 底部信息 -->
+          <div class="post-footer">
+            <div class="author-info">
+              <img
+                :src="post.userAvatar || '/src/assets/user.jpg'"
+                class="avatar"
+              />
+              <span class="username">{{ post.username }}</span>
+              <span class="time">{{ formatTime(post.createTime) }}</span>
+            </div>
+
+            <div class="post-stats">
+              <span class="stat-item">
+                <i class="i-carbon-view" />
+                <span class="stat-label">浏览</span>
+                {{ post.viewCount }}
+              </span>
+              <span class="stat-item">
+                <i class="i-carbon-thumbs-up" />
+                <span class="stat-label">点赞</span>
+                {{ post.likeCount }}
+              </span>
+              <span class="stat-item">
+                <i class="i-carbon-chat" />
+                <span class="stat-label">评论</span>
+                {{ post.commentCount }}
+              </span>
+            </div>
           </div>
         </div>
-      </el-card>
+      </div>
+
+      <!-- 空状态 -->
+      <el-empty
+        v-if="!loading && postList.length === 0"
+        description="暂无帖子"
+      />
+    </div>
+
+    <!-- 分页 -->
+    <div v-if="total > 0" class="pagination">
+      <el-pagination
+        v-model:current-page="currentPage"
+        v-model:page-size="pageSize"
+        :total="total"
+        layout="total, prev, pager, next"
+        @current-change="handlePageChange"
+      />
     </div>
   </div>
 </template>
 
-<script setup lang="ts">
-import { ref } from 'vue'
-import { Pointer, ChatLineRound, Share } from '@element-plus/icons-vue'
-import { ElMessage } from 'element-plus'
+<style scoped lang="scss">
+.community-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 24px;
+}
 
-const postList = ref([
-  {
-    id: 1,
-    username: '赛博莫扎特',
-    avatar:
-      'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png',
-    time: '2小时前',
-    content: '用 AI 生成了一段赛博朋克风格的 MV，感觉这个鼓点卡得太准了！',
-    videoUrl: 'http://localhost:8080/files/mv_test.mp4',
-    likes: 128,
-    comments: 32,
-    isLiked: false,
-  },
-])
+.community-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 32px;
 
-const toggleLike = (post: any) => {
-  post.isLiked = !post.isLiked
-  if (post.isLiked) {
-    post.likes++
-    ElMessage.success('点赞成功')
-  } else {
-    post.likes--
+  .header-left {
+    .title {
+      font-size: 32px;
+      font-weight: 700;
+      margin: 0 0 8px 0;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .subtitle {
+      font-size: 14px;
+      color: var(--el-text-color-secondary);
+      margin: 0;
+    }
+  }
+
+  .create-btn {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border: none;
+    padding: 12px 24px;
+    font-size: 14px;
+    font-weight: 500;
+    border-radius: 12px;
+    transition: all 0.3s ease;
+
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 16px rgba(102, 126, 234, 0.3);
+    }
   }
 }
 
-const openComments = (post: any) => {
-  console.log(post.id)
-  ElMessage.info('评论区功能开发中...')
-}
-
-// 👇👇👇 【修复点】 👇👇👇
-const handleShare = (post: any) => {
-  // 这里使用了 post 变量，就不会报错了
-  console.log('分享帖子:', post.id)
-  ElMessage.success('链接已复制到剪贴板')
-}
-</script>
-
-<style scoped>
-.community-container {
+.filter-bar {
+  background: var(--el-bg-color);
+  border-radius: 16px;
   padding: 20px;
-  max-width: 800px;
-  margin: 0 auto;
-  height: 100%;
-  overflow-y: auto;
-}
-.page-header {
   margin-bottom: 24px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
+
+  .category-tabs {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+
+    .category-tab {
+      padding: 8px 20px;
+      border-radius: 20px;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      background: var(--el-fill-color-light);
+      color: var(--el-text-color-regular);
+
+      &:hover {
+        background: rgba(102, 126, 234, 0.1);
+        color: #667eea;
+      }
+
+      &.active {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+      }
+    }
+  }
+
+  .search-sort {
+    display: flex;
+    gap: 12px;
+
+    .search-input {
+      flex: 1;
+      max-width: 400px;
+    }
+
+    .sort-select {
+      width: 120px;
+    }
+  }
 }
-.page-header h2 {
-  font-size: 24px;
-  font-weight: 600;
-  color: #303133;
+
+.post-list {
+  min-height: 400px;
+
+  .post-card {
+    background: var(--el-bg-color);
+    border-radius: 16px;
+    padding: 20px;
+    margin-bottom: 16px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
+    display: flex;
+    gap: 20px;
+
+    &:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 8px 24px rgba(102, 126, 234, 0.15);
+    }
+
+    .post-cover {
+      width: 200px;
+      height: 150px;
+      border-radius: 12px;
+      overflow: hidden;
+      flex-shrink: 0;
+
+      img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+    }
+
+    .post-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+
+      .post-header {
+        .post-title-row {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          margin-bottom: 12px;
+
+          .tag-top,
+          .tag-hot {
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+          }
+
+          .tag-top {
+            background: #f56c6c;
+            color: white;
+          }
+
+          .tag-hot {
+            background: #e6a23c;
+            color: white;
+          }
+
+          .post-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin: 0;
+            color: var(--el-text-color-primary);
+          }
+        }
+
+        .post-excerpt {
+          font-size: 14px;
+          color: var(--el-text-color-secondary);
+          line-height: 1.6;
+          margin: 0;
+        }
+      }
+
+      .post-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 12px;
+
+        .author-info {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+
+          .avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            object-fit: cover;
+          }
+
+          .username {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--el-text-color-primary);
+          }
+
+          .time {
+            font-size: 12px;
+            color: var(--el-text-color-secondary);
+          }
+        }
+
+        .post-stats {
+          display: flex;
+          gap: 16px;
+
+          .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 14px;
+            color: var(--el-text-color-secondary);
+
+            i {
+              font-size: 16px;
+            }
+
+            .stat-label {
+              font-size: 13px;
+              color: var(--el-text-color-regular);
+            }
+          }
+        }
+      }
+    }
+  }
 }
-.subtitle {
-  color: #909399;
-  font-size: 14px;
-  margin-top: 5px;
-}
-.post-card {
-  margin-bottom: 20px;
-  border-radius: 12px;
-}
-.user-info {
+
+.pagination {
   display: flex;
-  align-items: center;
-  margin-bottom: 12px;
-}
-.user-meta {
-  margin-left: 12px;
-  display: flex;
-  flex-direction: column;
-}
-.username {
-  font-size: 15px;
-  font-weight: 600;
-}
-.time {
-  font-size: 12px;
-  color: #909399;
-}
-.follow-btn {
-  margin-left: auto;
-}
-.post-text {
-  font-size: 15px;
-  line-height: 1.6;
-  margin-bottom: 12px;
-}
-.media-box {
-  width: 100%;
-  border-radius: 8px;
-  overflow: hidden;
-  background: #000;
-}
-.post-video {
-  width: 100%;
-  max-height: 400px;
-  display: block;
-}
-.action-bar {
-  display: flex;
-  justify-content: space-around;
-  border-top: 1px solid #f2f3f5;
-  padding-top: 12px;
-}
-.action-item {
-  display: flex;
-  align-items: center;
-  cursor: pointer;
-  color: #606266;
-  font-size: 14px;
-}
-.action-item:hover {
-  color: #409eff;
-}
-.action-item .el-icon {
-  font-size: 18px;
-  margin-right: 4px;
-}
-.action-item.active {
-  color: #f56c6c;
+  justify-content: center;
+  margin-top: 32px;
 }
 </style>

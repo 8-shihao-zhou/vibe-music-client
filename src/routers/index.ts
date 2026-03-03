@@ -63,9 +63,20 @@ const router = createRouter({
     {
       path: '/community',
       name: 'Community',
-      // 下一步我们会创建这个文件
       component: () => import('@/pages/community/index.vue'),
       meta: { title: '音乐社区' },
+    },
+    {
+      path: '/community/create',
+      name: 'CommunityCreate',
+      component: () => import('@/pages/community/create.vue'),
+      meta: { title: '发布帖子' },
+    },
+    {
+      path: '/community/:id',
+      name: 'CommunityDetail',
+      component: () => import('@/pages/community/[id].vue'),
+      meta: { title: '帖子详情' },
     },
 
     // 通知页面路由

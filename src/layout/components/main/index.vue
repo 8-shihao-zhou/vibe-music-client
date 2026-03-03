@@ -1,5 +1,5 @@
 <template>
-  <main class="flex-1 overflow-x-hidden bg-themeBgColor">
+  <main class="flex-1 overflow-x-hidden overflow-y-auto bg-themeBgColor">
     <router-view v-slot="{ Component }">
       <keep-alive>
         <component :is="Component" />
