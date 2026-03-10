@@ -189,6 +189,21 @@ watch(() => route.query, () => {
   handleSongSelection()
 }, { immediate: true })
 
+// 监听用户信息变化（切换账号时刷新作品库）
+watch(
+  () => userStore.userInfo?.userId,
+  (newUserId, oldUserId) => {
+    if (newUserId !== oldUserId) {
+      // 清空当前列表
+      historyList.value = []
+      // 如果新用户已登录，重新获取作品历史
+      if (isLoggedIn.value) {
+        fetchHistory()
+      }
+    }
+  }
+)
+
 onMounted(() => {
   // 只有登录用户才获取作品历史
   if (isLoggedIn.value) {

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch, onMounted } from 'vue'
+import { ref, watch, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { getPostList } from '@/api/community'
@@ -37,6 +37,7 @@ const total = ref(0)
 
 // 获取帖子列表
 const fetchPosts = async () => {
+  console.log('>>> [列表页] 开始获取帖子列表')
   loading.value = true
   try {
     const res = await getPostList({
@@ -47,21 +48,21 @@ const fetchPosts = async () => {
       pageSize: pageSize.value,
     })
 
-    console.log('帖子列表响应:', res)
+    console.log('>>> [列表页] 帖子列表响应:', res)
 
     if (res.code === 0 && res.data) {
       // MyBatis-Plus的IPage返回的是records，不是items
       postList.value = res.data.records || []
       total.value = res.data.total || 0
-      console.log('帖子数量:', postList.value.length)
+      console.log('>>> [列表页] 帖子数量:', postList.value.length)
     } else if (res.code !== 0) {
       // 只在后端返回错误码时显示错误
-      console.error('获取帖子列表失败:', res.msg)
+      console.error('>>> [列表页] 获取帖子列表失败:', res.msg)
       ElMessage.error(res.msg || '获取帖子列表失败')
     }
   } catch (error) {
     // 网络错误或其他异常
-    console.error('获取帖子列表异常:', error)
+    console.error('>>> [列表页] 获取帖子列表异常:', error)
     ElMessage.error('网络错误，请稍后重试')
   } finally {
     loading.value = false
@@ -96,6 +97,7 @@ const handlePageChange = (page: number) => {
 
 // 跳转到帖子详情
 const goToDetail = (postId: number) => {
+  console.log('>>> [列表页] 点击帖子，跳转到详情页, postId:', postId)
   router.push(`/community/${postId}`)
 }
 
@@ -135,8 +137,37 @@ const formatTime = (time: string) => {
 watch(
   () => route.path,
   (newPath, oldPath) => {
+    console.log('>>> [列表页路由监听] 路径变化:', oldPath, '->', newPath)
     // 当路由变为 /community 时刷新（从详情页或发布页返回）
     if (newPath === '/community' && oldPath && oldPath !== '/community') {
+      console.log('>>> [列表页路由监听] 触发刷新')
+      fetchPosts()
+    }
+  }
+)
+
+// 监听路由的完整路径（包括参数），用于检测从详情页返回
+watch(
+  () => route.fullPath,
+  (newPath, oldPath) => {
+    // 当从详情页 (/community/123) 返回到列表页 (/community) 时刷新
+    if (
+      newPath === '/community' &&
+      oldPath &&
+      oldPath.match(/^\/community\/\d+$/)
+    ) {
+      console.log('>>> [列表页] 从详情页返回，刷新列表')
+      fetchPosts()
+    }
+  }
+)
+
+// 监听用户信息变化（切换账号时刷新）
+watch(
+  () => userStore.userInfo?.userId,
+  (newUserId, oldUserId) => {
+    if (newUserId !== oldUserId) {
+      console.log('>>> [列表页用户监听] 用户切换:', oldUserId, '->', newUserId)
       fetchPosts()
     }
   }
@@ -156,10 +187,23 @@ onMounted(() => {
         <h1 class="title">社区</h1>
         <p class="subtitle">分享你的创作，交流你的想法</p>
       </div>
-      <el-button type="primary" class="create-btn" @click="goToCreate">
-        <i class="i-carbon-add mr-1" />
-        发布帖子
-      </el-button>
+      <div class="header-actions">
+        <el-button
+          class="drafts-btn"
+          @click="router.push('/community/favorite')"
+        >
+          <i class="i-carbon-star mr-1" />
+          我的收藏
+        </el-button>
+        <el-button class="drafts-btn" @click="router.push('/community/drafts')">
+          <i class="i-carbon-document mr-1" />
+          草稿箱
+        </el-button>
+        <el-button type="primary" class="create-btn" @click="goToCreate">
+          <i class="i-carbon-add mr-1" />
+          发布帖子
+        </el-button>
+      </div>
     </div>
 
     <!-- 筛选栏 -->
@@ -313,18 +357,36 @@ onMounted(() => {
     }
   }
 
-  .create-btn {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    border: none;
-    padding: 12px 24px;
-    font-size: 14px;
-    font-weight: 500;
-    border-radius: 12px;
-    transition: all 0.3s ease;
+  .header-actions {
+    display: flex;
+    gap: 12px;
 
-    &:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 8px 16px rgba(102, 126, 234, 0.3);
+    .drafts-btn {
+      padding: 12px 24px;
+      font-size: 14px;
+      font-weight: 500;
+      border-radius: 12px;
+      transition: all 0.3s ease;
+
+      &:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      }
+    }
+
+    .create-btn {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border: none;
+      padding: 12px 24px;
+      font-size: 14px;
+      font-weight: 500;
+      border-radius: 12px;
+      transition: all 0.3s ease;
+
+      &:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 16px rgba(102, 126, 234, 0.3);
+      }
     }
   }
 }
@@ -468,6 +530,8 @@ onMounted(() => {
           display: flex;
           align-items: center;
           gap: 8px;
+          padding: 4px 8px;
+          border-radius: 8px;
 
           .avatar {
             width: 32px;

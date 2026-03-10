@@ -6,8 +6,12 @@ import {
   getPostDetail,
   likePost,
   unlikePost,
+  favoritePost,
+  unfavoritePost,
   commentPost,
   deletePostComment,
+  likeComment,
+  unlikeComment,
 } from '@/api/community'
 import { UserStore } from '@/stores/modules/user'
 
@@ -24,11 +28,22 @@ const post = ref<any>(null)
 const commentContent = ref('')
 const replyTo = ref<any>(null)
 
-// 监听路由变化，切换帖子时清空评论框
+// 监听路由变化，切换帖子时刷新
 watch(
   () => route.params.id,
   (newId, oldId) => {
-    if (newId && newId !== oldId) {
+    // 只有当路由路径是帖子详情页（/community/:id）且ID发生变化时才刷新
+    // 避免跳转到其他页面（如 /community/user/:id、/community/favorite）时触发
+    if (
+      route.path.startsWith('/community/') &&
+      !route.path.includes('/user/') &&
+      !route.path.includes('/create') &&
+      !route.path.includes('/drafts') &&
+      !route.path.includes('/favorite') &&
+      newId &&
+      newId !== oldId
+    ) {
+      console.log('>>> [路由监听] 帖子ID变化:', oldId, '->', newId)
       commentContent.value = ''
       replyTo.value = null
       fetchPostDetail()
@@ -40,30 +55,33 @@ watch(
 const fetchPostDetail = async (silent = false) => {
   // 如果postId无效，不发送请求
   if (!postId.value || postId.value === 0) {
-    console.warn('Invalid postId:', postId.value)
+    console.warn('>>> [详情页] Invalid postId:', postId.value)
     return
   }
 
+  console.log('>>> [详情页] 开始获取帖子详情, postId:', postId.value)
   loading.value = true
   try {
     const res = await getPostDetail(postId.value)
-    console.log('帖子详情响应:', res)
+    console.log('>>> [详情页] 帖子详情响应:', res)
     if (res.code === 0 && res.data) {
       post.value = res.data
       console.log(
-        'isLiked状态:',
+        '>>> [详情页] 设置帖子数据成功, isLiked:',
         res.data.isLiked,
         '点赞数:',
-        res.data.likeCount
+        res.data.likeCount,
+        '浏览数:',
+        res.data.viewCount
       )
     } else if (res.code !== 0 && !silent) {
       // silent模式下不显示错误（用于点赞后刷新）
-      console.error('获取帖子详情失败:', res.msg)
+      console.error('>>> [详情页] 获取帖子详情失败:', res.msg)
       ElMessage.error(res.msg || '获取帖子详情失败')
     }
   } catch (error) {
     if (!silent) {
-      console.error('获取帖子详情异常:', error)
+      console.error('>>> [详情页] 获取帖子详情异常:', error)
       ElMessage.error('网络错误，请稍后重试')
     }
   } finally {
@@ -124,6 +142,63 @@ const handleLike = async () => {
     post.value.isLiked = originalIsLiked
     post.value.likeCount = originalLikeCount
     console.error('点赞操作失败:', error)
+    ElMessage.error('操作失败')
+  }
+}
+
+// 收藏/取消收藏
+const handleFavorite = async () => {
+  if (!userStore.userInfo?.userId) {
+    ElMessage.warning('请先登录')
+    return
+  }
+
+  // 保存当前状态，用于回滚
+  const originalIsFavorited = post.value.isFavorited
+  const originalFavoriteCount = post.value.favoriteCount || 0
+
+  try {
+    if (post.value.isFavorited) {
+      // 乐观更新：先更新UI
+      post.value.isFavorited = false
+      post.value.favoriteCount = Math.max(0, originalFavoriteCount - 1)
+
+      const res = await unfavoritePost(postId.value)
+      if (res.code === 0) {
+        ElMessage.success('取消收藏成功')
+      } else {
+        // 失败时回滚
+        post.value.isFavorited = originalIsFavorited
+        post.value.favoriteCount = originalFavoriteCount
+        ElMessage.error(res.msg || '操作失败')
+      }
+    } else {
+      // 乐观更新：先更新UI
+      post.value.isFavorited = true
+      post.value.favoriteCount = originalFavoriteCount + 1
+
+      const res = await favoritePost(postId.value)
+      if (res.code === 0) {
+        ElMessage.success('收藏成功')
+      } else {
+        // 失败时回滚
+        post.value.isFavorited = originalIsFavorited
+        post.value.favoriteCount = originalFavoriteCount
+
+        // 如果是"已经收藏过了"，说明状态不同步，重新获取
+        if (res.msg && res.msg.includes('已经收藏')) {
+          ElMessage.warning('您已经收藏过了')
+          await fetchPostDetail(true)
+        } else {
+          ElMessage.error(res.msg || '操作失败')
+        }
+      }
+    }
+  } catch (error) {
+    // 网络错误时回滚
+    post.value.isFavorited = originalIsFavorited
+    post.value.favoriteCount = originalFavoriteCount
+    console.error('收藏操作失败:', error)
     ElMessage.error('操作失败')
   }
 }
@@ -221,12 +296,44 @@ const handleDeleteComment = async (commentId: number) => {
   }
 }
 
-// 返回列表（直接刷新）
+// 点赞评论
+const handleLikeComment = async (comment: any) => {
+  if (!userStore.userInfo?.userId) {
+    ElMessage.warning('请先登录')
+    return
+  }
+
+  // 乐观更新
+  const originalLiked = comment.isLiked
+  const originalCount = comment.likeCount
+
+  comment.isLiked = !comment.isLiked
+  comment.likeCount = comment.isLiked ? originalCount + 1 : originalCount - 1
+
+  try {
+    if (originalLiked) {
+      await unlikeComment(comment.commentId)
+    } else {
+      await likeComment(comment.commentId)
+    }
+  } catch (error) {
+    // 失败时回滚
+    comment.isLiked = originalLiked
+    comment.likeCount = originalCount
+    console.error('评论点赞操作失败:', error)
+    ElMessage.error('操作失败')
+  }
+}
+
+// 返回上一页
 const goBack = () => {
-  router.push('/community').then(() => {
-    // 路由跳转完成后，通过事件总线或直接调用刷新
-    // 这里简单地让列表页在mounted时自动加载
-  })
+  // 使用浏览器历史记录返回，这样可以返回到之前的页面（论坛首页、用户主页等）
+  router.back()
+}
+
+// 跳转到用户主页
+const goToUserProfile = (userId: number) => {
+  router.push(`/community/user/${userId}`)
 }
 
 // 格式化时间
@@ -249,6 +356,16 @@ onMounted(() => {
     }
   })
 })
+
+// 监听用户信息变化（切换账号时刷新）
+watch(
+  () => userStore.userInfo?.userId,
+  (newUserId, oldUserId) => {
+    if (newUserId !== oldUserId && postId.value && postId.value > 0) {
+      fetchPostDetail()
+    }
+  }
+)
 </script>
 
 <template>
@@ -257,7 +374,7 @@ onMounted(() => {
       <!-- 返回按钮 -->
       <el-button class="back-btn" @click="goBack">
         <i class="i-carbon-arrow-left mr-1" />
-        返回列表
+        返回
       </el-button>
 
       <div v-if="post" class="post-detail">
@@ -270,7 +387,10 @@ onMounted(() => {
           </div>
 
           <div class="post-meta">
-            <div class="author-info">
+            <div
+              class="author-info clickable"
+              @click="goToUserProfile(post.userId)"
+            >
               <img
                 :src="post.userAvatar || '/src/assets/user.jpg'"
                 class="avatar"
@@ -315,7 +435,7 @@ onMounted(() => {
         </div>
 
         <!-- 操作栏 -->
-        <div class="post-actions">
+        <div class="post-actions" style="display: flex; gap: 12px">
           <el-button
             :type="post.isLiked ? 'primary' : 'default'"
             class="action-btn"
@@ -329,6 +449,21 @@ onMounted(() => {
               "
             />
             {{ post.isLiked ? '已点赞' : '点赞' }} ({{ post.likeCount }})
+          </el-button>
+
+          <el-button
+            :type="post.isFavorited ? 'warning' : 'default'"
+            class="action-btn"
+            @click="handleFavorite"
+          >
+            <i
+              :class="
+                post.isFavorited ? 'i-carbon-star-filled' : 'i-carbon-star'
+              "
+            />
+            {{ post.isFavorited ? '已收藏' : '收藏' }} ({{
+              post.favoriteCount || 0
+            }})
           </el-button>
         </div>
 
@@ -376,6 +511,22 @@ onMounted(() => {
                 </div>
                 <div class="comment-text">{{ comment.content }}</div>
                 <div class="comment-footer">
+                  <el-button
+                    :type="comment.isLiked ? 'primary' : 'default'"
+                    text
+                    size="small"
+                    class="like-btn"
+                    @click="handleLikeComment(comment)"
+                  >
+                    <i
+                      :class="
+                        comment.isLiked
+                          ? 'i-carbon-thumbs-up-filled'
+                          : 'i-carbon-thumbs-up'
+                      "
+                    />
+                    {{ comment.likeCount || 0 }}
+                  </el-button>
                   <el-button text size="small" @click="handleReply(comment)">
                     回复
                   </el-button>
@@ -413,6 +564,22 @@ onMounted(() => {
                       </div>
                       <div class="reply-text">{{ reply.content }}</div>
                       <div class="reply-footer">
+                        <el-button
+                          :type="reply.isLiked ? 'primary' : 'default'"
+                          text
+                          size="small"
+                          class="like-btn"
+                          @click="handleLikeComment(reply)"
+                        >
+                          <i
+                            :class="
+                              reply.isLiked
+                                ? 'i-carbon-thumbs-up-filled'
+                                : 'i-carbon-thumbs-up'
+                            "
+                          />
+                          {{ reply.likeCount || 0 }}
+                        </el-button>
                         <el-button
                           text
                           size="small"
@@ -508,12 +675,33 @@ onMounted(() => {
         display: flex;
         align-items: center;
         gap: 12px;
+        padding: 8px 12px;
+        border-radius: 12px;
+        transition: all 0.3s ease;
+
+        &.clickable {
+          cursor: pointer;
+
+          &:hover {
+            background: var(--el-fill-color-light);
+            transform: translateX(4px);
+
+            .username {
+              color: #667eea;
+            }
+          }
+        }
 
         .avatar {
           width: 48px;
           height: 48px;
           border-radius: 50%;
           object-fit: cover;
+          transition: transform 0.3s ease;
+        }
+
+        &.clickable:hover .avatar {
+          transform: scale(1.1);
         }
 
         .author-details {
@@ -525,6 +713,7 @@ onMounted(() => {
             font-size: 16px;
             font-weight: 600;
             color: var(--el-text-color-primary);
+            transition: color 0.3s ease;
           }
 
           .time {
@@ -747,6 +936,66 @@ onMounted(() => {
           }
         }
       }
+    }
+  }
+}
+</style>
+
+.comment-footer, .reply-footer { .like-btn { transition: all 0.3s ease; &:hover
+{ transform: scale(1.1); } &.el-button--primary { color: #667eea; } i {
+font-size: 16px; margin-right: 4px; } } }
+
+<style scoped lang="scss">
+.comment-footer,
+.reply-footer {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-top: 8px;
+
+  :deep(.like-btn) {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    border-radius: 20px;
+    background: var(--el-fill-color-light);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--el-text-color-regular);
+    border: 1px solid transparent;
+
+    &:hover {
+      background: var(--el-fill-color);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+      border-color: var(--el-border-color);
+    }
+
+    &.el-button--primary {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+
+      &:hover {
+        background: linear-gradient(135deg, #5568d3 0%, #6a3f8f 100%);
+        box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
+        transform: translateY(-3px);
+      }
+    }
+
+    i {
+      font-size: 17px;
+      transition: transform 0.2s ease;
+    }
+
+    &:active i {
+      transform: scale(1.3);
+    }
+
+    span {
+      font-weight: 600;
     }
   }
 }

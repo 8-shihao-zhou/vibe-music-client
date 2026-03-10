@@ -73,6 +73,30 @@ const router = createRouter({
       meta: { title: '发布帖子' },
     },
     {
+      path: '/community/drafts',
+      name: 'CommunityDrafts',
+      component: () => import('@/pages/community/drafts.vue'),
+      meta: { title: '我的草稿' },
+    },
+    {
+      path: '/community/favorite',
+      name: 'CommunityFavorite',
+      component: () => import('@/pages/community/favorite/index.vue'),
+      meta: { title: '我的收藏' },
+    },
+    {
+      path: '/community/edit/:id',
+      name: 'CommunityEdit',
+      component: () => import('@/pages/community/create.vue'),
+      meta: { title: '编辑帖子' },
+    },
+    {
+      path: '/community/user/:id',
+      name: 'CommunityUserProfile',
+      component: () => import('@/pages/community/user/[id].vue'),
+      meta: { title: '用户主页' },
+    },
+    {
       path: '/community/:id',
       name: 'CommunityDetail',
       component: () => import('@/pages/community/[id].vue'),

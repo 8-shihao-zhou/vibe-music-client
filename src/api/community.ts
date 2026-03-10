@@ -93,3 +93,39 @@ export const commentPost = (
 export const deletePostComment = (commentId: number) => {
   return http<Result>('delete', `/community/post/comment/${commentId}`)
 }
+
+/** 点赞评论 */
+export const likeComment = (commentId: number) => {
+  return http<Result>('post', `/community/post/comment/like/${commentId}`)
+}
+
+/** 取消点赞评论 */
+export const unlikeComment = (commentId: number) => {
+  return http<Result>('delete', `/community/post/comment/like/${commentId}`)
+}
+
+/** 获取用户统计信息 */
+export const getUserStats = (userId: number) => {
+  return http<Result>('get', `/community/post/user/stats/${userId}`)
+}
+
+/** 收藏帖子 */
+export const favoritePost = (postId: number) => {
+  return http<Result>('post', `/community/post/favorite/${postId}`)
+}
+
+/** 取消收藏帖子 */
+export const unfavoritePost = (postId: number) => {
+  return http<Result>('delete', `/community/post/favorite/${postId}`)
+}
+
+/** 获取用户收藏列表 */
+export const getUserFavorites = (
+  pageNum: number = 1,
+  pageSize: number = 10
+) => {
+  return http<ResultTable>(
+    'get',
+    `/community/post/favorites?pageNum=${pageNum}&pageSize=${pageSize}`
+  )
+}

@@ -1,12 +1,17 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { createPost } from '@/api/community'
+import { createPost, updatePost, getPostDetail } from '@/api/community'
 import { UserStore } from '@/stores/modules/user'
 
 const router = useRouter()
+const route = useRoute()
 const userStore = UserStore()
+
+// 是否为编辑模式
+const isEditMode = ref(false)
+const postId = ref<number | null>(null)
 
 // 表单数据
 const formData = reactive({
@@ -27,11 +32,51 @@ const categories = [
 ]
 
 const submitting = ref(false)
+const loading = ref(false)
+
+// 加载帖子详情（编辑模式）
+const loadPostDetail = async (id: number) => {
+  loading.value = true
+  try {
+    const res = await getPostDetail(id)
+    if (res.code === 0 && res.data) {
+      const post = res.data
+      formData.title = post.title
+      formData.content = post.content
+      formData.category = post.category
+      formData.coverUrl = post.coverUrl || ''
+
+      // 解析标签
+      if (post.tags) {
+        try {
+          const tagsArray = JSON.parse(post.tags)
+          formData.tags = tagsArray.join(', ')
+        } catch (e) {
+          formData.tags = ''
+        }
+      }
+    } else {
+      ElMessage.error('加载帖子失败')
+      router.push('/community')
+    }
+  } catch (error) {
+    console.error('加载帖子失败:', error)
+    ElMessage.error('加载帖子失败')
+    router.push('/community')
+  } finally {
+    loading.value = false
+  }
+}
 
 // 发布帖子
 const handleSubmit = async (isDraft = false) => {
-  console.log('>>> [发布帖子] 开始，isDraft:', isDraft)
-  
+  console.log(
+    '>>> [发布帖子] 开始，isDraft:',
+    isDraft,
+    'isEditMode:',
+    isEditMode.value
+  )
+
   if (!formData.title.trim()) {
     ElMessage.warning('请输入标题')
     return
@@ -55,35 +100,59 @@ const handleSubmit = async (isDraft = false) => {
     }
 
     console.log('>>> [发布帖子] 调用 API，status:', isDraft ? 0 : 1)
-    const res = await createPost({
-      title: formData.title,
-      content: formData.content,
-      category: formData.category,
-      tags: tagsJson,
-      coverUrl: formData.coverUrl,
-      status: isDraft ? 0 : 1,
-    })
+
+    let res
+    if (isEditMode.value && postId.value) {
+      // 更新帖子
+      res = await updatePost({
+        id: postId.value,
+        title: formData.title,
+        content: formData.content,
+        category: formData.category,
+        tags: tagsJson,
+        coverUrl: formData.coverUrl,
+        status: isDraft ? 0 : 1,
+      })
+    } else {
+      // 创建新帖子
+      res = await createPost({
+        title: formData.title,
+        content: formData.content,
+        category: formData.category,
+        tags: tagsJson,
+        coverUrl: formData.coverUrl,
+        status: isDraft ? 0 : 1,
+      })
+    }
 
     console.log('>>> [发布帖子] API 响应:', res)
     console.log('>>> [发布帖子] 响应 code:', res.code)
 
     if (res.code === 0) {
-      ElMessage.success(isDraft ? '保存草稿成功' : '发布成功')
+      ElMessage.success(
+        isDraft ? '保存草稿成功' : isEditMode.value ? '更新成功' : '发布成功'
+      )
 
-      // 只有发布成功时才清空表单并返回列表
+      // 只有发布成功时才跳转
       if (!isDraft) {
-        console.log('>>> [发布帖子] 发布成功，清空表单并跳转')
-        formData.title = ''
-        formData.content = ''
-        formData.category = 'SHARE'
-        formData.tags = ''
-        formData.coverUrl = ''
+        console.log('>>> [发布帖子] 发布成功，跳转到社区列表')
         // 返回社区列表
         router.push('/community')
       } else {
-        console.log('>>> [发布帖子] 草稿保存成功，保留表单数据，不跳转')
+        console.log('>>> [发布帖子] 草稿保存成功')
+        // 草稿保存成功，不跳转，保留在当前页面
+        // 如果是新建草稿，需要切换到编辑模式
+        if (!isEditMode.value && res.data) {
+          // 假设后端返回了新创建的帖子ID
+          const newPostId = res.data.id || res.data
+          if (newPostId) {
+            isEditMode.value = true
+            postId.value = newPostId
+            // 更新浏览器URL，但不刷新页面
+            router.replace(`/community/edit/${newPostId}`)
+          }
+        }
       }
-      // 保存草稿成功后保留表单数据，不跳转页面
     } else {
       console.log('>>> [发布帖子] 失败，错误信息:', res.message)
       ElMessage.error(res.message || (isDraft ? '保存失败' : '发布失败'))
@@ -107,8 +176,17 @@ onMounted(() => {
   if (!userStore.userInfo?.userId) {
     ElMessage.warning('请先登录')
     router.push('/community')
+    return
+  }
+
+  // 检查是否为编辑模式
+  const id = route.params.id
+  if (id) {
+    isEditMode.value = true
+    postId.value = Number(id)
+    loadPostDetail(postId.value)
   } else {
-    // 清空表单数据（防止保留上次的草稿）
+    // 新建模式，清空表单数据
     formData.title = ''
     formData.content = ''
     formData.category = 'SHARE'
@@ -120,14 +198,14 @@ onMounted(() => {
 
 <template>
   <div class="create-post-container">
-    <div class="create-content">
+    <div v-loading="loading" class="create-content">
       <!-- 头部 -->
       <div class="create-header">
         <el-button class="back-btn" @click="goBack">
           <i class="i-carbon-arrow-left mr-1" />
           返回
         </el-button>
-        <h1 class="title">发布帖子</h1>
+        <h1 class="title">{{ isEditMode ? '编辑帖子' : '发布帖子' }}</h1>
       </div>
 
       <!-- 表单 -->
@@ -202,7 +280,7 @@ onMounted(() => {
               :loading="submitting"
               @click="handleSubmit(false)"
             >
-              发布
+              {{ isEditMode ? '更新' : '发布' }}
             </el-button>
           </div>
         </el-form-item>
