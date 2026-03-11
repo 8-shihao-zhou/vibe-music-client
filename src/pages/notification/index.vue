@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, computed, watch, onUnmounted } from 'vue'
+import { ref, onMounted, computed, watch, onActivated } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useRouter } from 'vue-router'
 import { http } from '@/utils/http'
@@ -16,7 +16,7 @@ const filterForm = ref({
   type: '',
   priority: '',
   isRead: null as number | null,
-  keyword: ''
+  keyword: '',
 })
 
 // 通知类型选项
@@ -24,7 +24,7 @@ const typeOptions = [
   { label: '全部类型', value: '' },
   { label: '系统通知', value: 'SYSTEM' },
   { label: '活动通知', value: 'ACTIVITY' },
-  { label: '个人消息', value: 'PERSONAL' }
+  { label: '个人消息', value: 'PERSONAL' },
 ]
 
 // 优先级选项
@@ -32,14 +32,14 @@ const priorityOptions = [
   { label: '全部优先级', value: '' },
   { label: '普通', value: 'NORMAL' },
   { label: '重要', value: 'IMPORTANT' },
-  { label: '紧急', value: 'URGENT' }
+  { label: '紧急', value: 'URGENT' },
 ]
 
 // 已读状态选项
 const readOptions = [
   { label: '全部状态', value: null },
   { label: '未读', value: 0 },
-  { label: '已读', value: 1 }
+  { label: '已读', value: 1 },
 ]
 
 // 加载通知列表
@@ -98,7 +98,7 @@ const resetFilter = () => {
     type: '',
     priority: '',
     isRead: null,
-    keyword: ''
+    keyword: '',
   }
   loadNotifications()
 }
@@ -153,7 +153,7 @@ const batchMarkAsRead = async () => {
 
   try {
     const response: any = await http('put', '/notification/user/batch-read', {
-      data: { ids: selectedIds.value }
+      data: { ids: selectedIds.value },
     })
     // 后端返回的code: 0表示成功，1表示失败
     if (response.code === 0) {
@@ -176,7 +176,7 @@ const markAllAsRead = async () => {
       confirmButtonText: '确定',
       cancelButtonText: '取消',
       type: 'warning',
-      customClass: 'notification-confirm-box'
+      customClass: 'notification-confirm-box',
     })
 
     const response: any = await http('put', '/notification/user/read-all')
@@ -210,13 +210,17 @@ const batchDelete = async () => {
         confirmButtonText: '确定',
         cancelButtonText: '取消',
         type: 'warning',
-        customClass: 'notification-confirm-box'
+        customClass: 'notification-confirm-box',
       }
     )
 
-    const response: any = await http('delete', '/notification/user/batch-delete', {
-      data: { ids: selectedIds.value }
-    })
+    const response: any = await http(
+      'delete',
+      '/notification/user/batch-delete',
+      {
+        data: { ids: selectedIds.value },
+      }
+    )
     // 后端返回的code: 0表示成功，1表示失败
     if (response.code === 0) {
       ElMessage.success('批量删除成功')
@@ -306,6 +310,12 @@ onMounted(() => {
   loadNotifications()
 })
 
+// 每次激活时重新加载
+onActivated(() => {
+  console.log('通知页面激活，重新加载通知')
+  loadNotifications()
+})
+
 // 监听用户变化，自动刷新通知列表
 watch(
   () => userStore.userInfo.userId,
@@ -318,7 +328,7 @@ watch(
         type: '',
         priority: '',
         isRead: null,
-        keyword: ''
+        keyword: '',
       }
       // 清空选择
       selectedIds.value = []
@@ -415,12 +425,10 @@ watch(
     <div class="batch-actions">
       <el-checkbox
         :indeterminate="
-          selectedIds.length > 0 &&
-          selectedIds.length < notifications.length
+          selectedIds.length > 0 && selectedIds.length < notifications.length
         "
         :model-value="
-          selectedIds.length > 0 &&
-          selectedIds.length === notifications.length
+          selectedIds.length > 0 && selectedIds.length === notifications.length
         "
         @change="toggleSelectAll"
       >
@@ -435,11 +443,7 @@ watch(
       >
         批量标记已读
       </el-button>
-      <el-button
-        type="success"
-        size="small"
-        @click="markAllAsRead"
-      >
+      <el-button type="success" size="small" @click="markAllAsRead">
         全部标记已读
       </el-button>
       <el-button
@@ -473,7 +477,10 @@ watch(
           />
         </div>
 
-        <div class="notification-content-wrapper" @click="goToDetail(notification.id)">
+        <div
+          class="notification-content-wrapper"
+          @click="goToDetail(notification.id)"
+        >
           <div class="notification-header">
             <div class="notification-title">
               <el-badge v-if="notification.isRead === 0" is-dot class="mr-2" />
@@ -700,3 +707,5 @@ watch(
   margin-left: 0 !important;
 }
 </style>
+
+/* eslint-disable */

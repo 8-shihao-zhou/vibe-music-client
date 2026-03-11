@@ -14,6 +14,7 @@ import {
   unlikeComment,
 } from '@/api/community'
 import { UserStore } from '@/stores/modules/user'
+import ReportDialog from '@/components/ReportDialog.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -27,6 +28,25 @@ const loading = ref(false)
 const post = ref<any>(null)
 const commentContent = ref('')
 const replyTo = ref<any>(null)
+
+// 举报相关
+const showReportDialog = ref(false)
+const reportTarget = ref<{ type: number; id: number }>({ type: 1, id: 0 })
+
+// 打开举报对话框
+const openReportDialog = (type: number, id: number) => {
+  if (!userStore.userInfo?.userId) {
+    ElMessage.warning('请先登录')
+    return
+  }
+  reportTarget.value = { type, id }
+  showReportDialog.value = true
+}
+
+// 举报成功回调
+const handleReportSuccess = () => {
+  ElMessage.success('举报已提交，感谢您的反馈')
+}
 
 // 监听路由变化，切换帖子时刷新
 watch(
@@ -401,22 +421,35 @@ watch(
               </div>
             </div>
 
-            <div class="post-stats">
-              <span class="stat-item">
-                <i class="i-carbon-view" />
-                <span class="stat-label">浏览</span>
-                {{ post.viewCount }}
-              </span>
-              <span class="stat-item">
-                <i class="i-carbon-thumbs-up" />
-                <span class="stat-label">点赞</span>
-                {{ post.likeCount }}
-              </span>
-              <span class="stat-item">
-                <i class="i-carbon-chat" />
-                <span class="stat-label">评论</span>
-                {{ post.commentCount }}
-              </span>
+            <div class="meta-right">
+              <div class="post-stats">
+                <span class="stat-item">
+                  <i class="i-carbon-view" />
+                  <span class="stat-label">浏览</span>
+                  {{ post.viewCount }}
+                </span>
+                <span class="stat-item">
+                  <i class="i-carbon-thumbs-up" />
+                  <span class="stat-label">点赞</span>
+                  {{ post.likeCount }}
+                </span>
+                <span class="stat-item">
+                  <i class="i-carbon-chat" />
+                  <span class="stat-label">评论</span>
+                  {{ post.commentCount }}
+                </span>
+              </div>
+
+              <!-- 举报按钮 -->
+              <el-button
+                v-if="post.userId !== userStore.userInfo?.userId"
+                text
+                class="report-btn"
+                @click="openReportDialog(1, post.id)"
+              >
+                <i class="i-carbon-flag" />
+                举报
+              </el-button>
             </div>
           </div>
         </div>
@@ -539,6 +572,15 @@ watch(
                   >
                     删除
                   </el-button>
+                  <el-button
+                    v-if="comment.userId !== userStore.userInfo?.userId"
+                    text
+                    size="small"
+                    @click="openReportDialog(2, comment.commentId)"
+                  >
+                    <i class="i-carbon-flag" />
+                    举报
+                  </el-button>
                 </div>
 
                 <!-- 回复列表 -->
@@ -596,6 +638,15 @@ watch(
                         >
                           删除
                         </el-button>
+                        <el-button
+                          v-if="reply.userId !== userStore.userInfo?.userId"
+                          text
+                          size="small"
+                          @click="openReportDialog(2, reply.commentId)"
+                        >
+                          <i class="i-carbon-flag" />
+                          举报
+                        </el-button>
                       </div>
                     </div>
                   </div>
@@ -611,6 +662,14 @@ watch(
         </div>
       </div>
     </div>
+
+    <!-- 举报对话框 -->
+    <ReportDialog
+      v-model:visible="showReportDialog"
+      :target-type="reportTarget.type"
+      :target-id="reportTarget.id"
+      @success="handleReportSuccess"
+    />
   </div>
 </template>
 
@@ -742,6 +801,25 @@ watch(
             font-size: 13px;
             color: var(--el-text-color-regular);
           }
+        }
+      }
+
+      .meta-right {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+      }
+
+      .report-btn {
+        color: #909399;
+        font-size: 14px;
+
+        &:hover {
+          color: #f56c6c;
+        }
+
+        i {
+          font-size: 16px;
         }
       }
     }

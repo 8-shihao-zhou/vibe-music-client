@@ -85,6 +85,12 @@ const router = createRouter({
       meta: { title: '我的收藏' },
     },
     {
+      path: '/community/tags',
+      name: 'CommunityTags',
+      component: () => import('@/pages/community/tags.vue'),
+      meta: { title: '标签广场' },
+    },
+    {
       path: '/community/edit/:id',
       name: 'CommunityEdit',
       component: () => import('@/pages/community/create.vue'),
@@ -95,6 +101,18 @@ const router = createRouter({
       name: 'CommunityUserProfile',
       component: () => import('@/pages/community/user/[id].vue'),
       meta: { title: '用户主页' },
+    },
+    {
+      path: '/community/user/:id/following',
+      name: 'CommunityUserFollowing',
+      component: () => import('@/pages/community/user/[id]/following.vue'),
+      meta: { title: '关注列表' },
+    },
+    {
+      path: '/community/user/:id/followers',
+      name: 'CommunityUserFollowers',
+      component: () => import('@/pages/community/user/[id]/followers.vue'),
+      meta: { title: '粉丝列表' },
     },
     {
       path: '/community/:id',

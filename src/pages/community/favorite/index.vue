@@ -21,11 +21,14 @@ const fetchFavorites = async () => {
     const res = await getUserFavorites(currentPage.value, pageSize.value)
     console.log('>>> [收藏列表] API响应:', res)
     if (res.code === 0 && res.data) {
-      favoriteList.value = res.data.records || []
+      // 后端使用MyBatis-Plus返回records，前端类型定义是items，这里兼容处理
+      favoriteList.value = (res.data as any).records || res.data.items || []
       total.value = res.data.total || 0
       console.log('>>> [收藏列表] 收藏数量:', favoriteList.value.length)
-    } else {
-      ElMessage.error(res.msg || '获取收藏列表失败')
+    } else if (res.code !== 0) {
+      // 只在后端返回错误码时显示错误
+      console.error('>>> [收藏列表] 获取收藏列表失败:', res.message)
+      ElMessage.error(res.message || '获取收藏列表失败')
     }
   } catch (error) {
     console.error('>>> [收藏列表] 获取收藏列表失败:', error)
@@ -136,7 +139,7 @@ onMounted(() => {
               <span v-if="post.isHot" class="tag-hot">热门</span>
               <h3 class="post-title">{{ post.title }}</h3>
             </div>
-            <p class="post-excerpt">{{ post.content.substring(0, 150) }}...</p>
+            <p class="post-excerpt">{{ (post.content || '').substring(0, 150) }}{{ (post.content || '').length > 150 ? '...' : '' }}</p>
           </div>
 
           <div class="post-footer">
@@ -210,6 +213,7 @@ onMounted(() => {
     font-weight: 700;
     margin: 0;
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background-clip: text;
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
   }

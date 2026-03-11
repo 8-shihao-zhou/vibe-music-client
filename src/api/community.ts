@@ -129,3 +129,84 @@ export const getUserFavorites = (
     `/community/post/favorites?pageNum=${pageNum}&pageSize=${pageSize}`
   )
 }
+
+/** ==================== 用户关注相关接口 ==================== */
+
+/** 关注用户 */
+export const followUser = (userId: number) => {
+  return http<Result>('post', `/user/follow/${userId}`)
+}
+
+/** 取消关注用户 */
+export const unfollowUser = (userId: number) => {
+  return http<Result>('delete', `/user/follow/${userId}`)
+}
+
+/** 获取关注列表 */
+export const getFollowingList = (
+  userId: number,
+  pageNum: number = 1,
+  pageSize: number = 10
+) => {
+  return http<ResultTable>(
+    'get',
+    `/user/follow/following/${userId}?pageNum=${pageNum}&pageSize=${pageSize}`
+  )
+}
+
+/** 获取粉丝列表 */
+export const getFollowerList = (
+  userId: number,
+  pageNum: number = 1,
+  pageSize: number = 10
+) => {
+  return http<ResultTable>(
+    'get',
+    `/user/follow/followers/${userId}?pageNum=${pageNum}&pageSize=${pageSize}`
+  )
+}
+
+/** 获取关注统计 */
+export const getFollowStats = (userId: number) => {
+  return http<Result>('get', `/user/follow/stats/${userId}`)
+}
+
+/** ==================== 标签相关接口 ==================== */
+
+/** 获取热门标签 */
+export const getHotTags = (limit: number = 20) => {
+  return http<Result>('get', `/tag/hot?limit=${limit}`)
+}
+
+/** 搜索标签 */
+export const searchTags = (
+  keyword?: string,
+  pageNum: number = 1,
+  pageSize: number = 20
+) => {
+  const params = new URLSearchParams()
+  if (keyword) params.append('keyword', keyword)
+  params.append('pageNum', pageNum.toString())
+  params.append('pageSize', pageSize.toString())
+  return http<ResultTable>('get', `/tag/search?${params.toString()}`)
+}
+
+/** ==================== 举报相关接口 ==================== */
+
+/** 提交举报 */
+export const submitReport = (data: {
+  targetType: number
+  targetId: number
+  reasonType: string
+  reasonDetail?: string
+}) => {
+  return http<Result>('post', '/report/submit', { data })
+}
+
+/** 检查是否已举报 */
+export const checkReported = (targetType: number, targetId: number) => {
+  return http<Result>(
+    'get',
+    `/report/check?targetType=${targetType}&targetId=${targetId}`
+  )
+}

@@ -2,12 +2,17 @@
 import { ref, watch, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { getPostList } from '@/api/community'
+import { getPostList, getHotTags } from '@/api/community'
+import { getBanner } from '@/api/system'
 import { UserStore } from '@/stores/modules/user'
 
 const userStore = UserStore()
 const route = useRoute()
 const router = useRouter()
+
+// 轮播图
+const banners = ref<any[]>([])
+const loadingBanners = ref(false)
 
 // 分类选项
 const categories = [
@@ -28,12 +33,49 @@ const sortOptions = [
 // 状态
 const loading = ref(false)
 const postList = ref<any[]>([])
+const hotPosts = ref<any[]>([])
 const currentCategory = ref('')
 const currentSort = ref('latest')
 const keyword = ref('')
+const selectedTag = ref('')
 const currentPage = ref(1)
 const pageSize = ref(10)
 const total = ref(0)
+const hotTags = ref<any[]>([])
+
+// 获取轮播图
+const fetchBanners = async () => {
+  loadingBanners.value = true
+  try {
+    const res = await getBanner()
+    console.log('>>> [轮播图] 获取轮播图响应:', res)
+    if (res.code === 0 && res.data) {
+      // 直接使用所有轮播图数据，不过滤status（因为后端返回的数据已经是启用的）
+      banners.value = res.data as any[]
+      console.log('>>> [轮播图] 轮播图数量:', banners.value.length)
+    }
+  } catch (error) {
+    console.error('获取轮播图失败:', error)
+  } finally {
+    loadingBanners.value = false
+  }
+}
+
+// 获取热门推荐帖子
+const fetchHotPosts = async () => {
+  try {
+    const res = await getPostList({
+      sortBy: 'hot',
+      pageNum: 1,
+      pageSize: 3,  // 只显示前3名
+    })
+    if (res.code === 0 && res.data) {
+      hotPosts.value = res.data.records || []
+    }
+  } catch (error) {
+    console.error('获取热门帖子失败:', error)
+  }
+}
 
 // 获取帖子列表
 const fetchPosts = async () => {
@@ -43,6 +85,7 @@ const fetchPosts = async () => {
     const res = await getPostList({
       category: currentCategory.value,
       keyword: keyword.value,
+      tag: selectedTag.value,
       sortBy: currentSort.value,
       pageNum: currentPage.value,
       pageSize: pageSize.value,
@@ -69,6 +112,18 @@ const fetchPosts = async () => {
   }
 }
 
+// 获取热门标签
+const fetchHotTags = async () => {
+  try {
+    const res = await getHotTags(10)
+    if (res.code === 0 && res.data) {
+      hotTags.value = res.data as any[]
+    }
+  } catch (error) {
+    console.error('获取热门标签失败:', error)
+  }
+}
+
 // 切换分类
 const handleCategoryChange = (category: string) => {
   currentCategory.value = category
@@ -81,6 +136,25 @@ const handleSortChange = (sort: string) => {
   currentSort.value = sort
   currentPage.value = 1
   fetchPosts()
+}
+
+// 选择标签
+const handleTagSelect = (tagName: string) => {
+  selectedTag.value = tagName
+  currentPage.value = 1
+  fetchPosts()
+}
+
+// 清除标签筛选
+const clearTagFilter = () => {
+  selectedTag.value = ''
+  currentPage.value = 1
+  fetchPosts()
+}
+
+// 跳转到标签广场
+const goToTagsPage = () => {
+  router.push('/community/tags')
 }
 
 // 搜索
@@ -175,7 +249,15 @@ watch(
 
 // 初始化
 onMounted(() => {
+  // 从URL参数获取标签筛选
+  const tagParam = route.query.tag as string
+  if (tagParam) {
+    selectedTag.value = tagParam
+  }
+  fetchBanners()
   fetchPosts()
+  fetchHotPosts()
+  fetchHotTags()
 })
 </script>
 
@@ -206,6 +288,54 @@ onMounted(() => {
       </div>
     </div>
 
+    <!-- 轮播图和热门推荐区域 -->
+    <div class="banner-hot-section">
+      <!-- 轮播图 -->
+      <div class="banner-container">
+        <el-carousel v-if="banners.length > 0" height="300px" :interval="5000">
+          <el-carousel-item v-for="banner in banners" :key="banner.bannerId">
+            <div class="banner-item" @click="banner.linkUrl && window.open(banner.linkUrl)">
+              <img :src="banner.bannerUrl" :alt="banner.title || '轮播图'" />
+              <div v-if="banner.title || banner.description" class="banner-overlay">
+                <h3 v-if="banner.title" class="banner-title">{{ banner.title }}</h3>
+                <p v-if="banner.description" class="banner-desc">{{ banner.description }}</p>
+              </div>
+            </div>
+          </el-carousel-item>
+        </el-carousel>
+        <div v-else class="banner-placeholder">
+          <i class="i-carbon-image" />
+          <p>暂无轮播图</p>
+        </div>
+      </div>
+
+      <!-- 热门推荐 -->
+      <div class="hot-recommend">
+        <div class="hot-header">
+          <i class="i-carbon-fire" />
+          <span>热门推荐</span>
+        </div>
+        <div v-if="hotPosts.length > 0" class="hot-list">
+          <div
+            v-for="(post, index) in hotPosts"
+            :key="post.id"
+            class="hot-item"
+            @click="goToDetail(post.id)"
+          >
+            <span class="hot-rank" :class="`rank-${index + 1}`">{{ index + 1 }}</span>
+            <div class="hot-content">
+              <h4 class="hot-title">{{ post.title }}</h4>
+              <div class="hot-stats">
+                <span><i class="i-carbon-view" /> 浏览 {{ post.viewCount }}</span>
+                <span><i class="i-carbon-thumbs-up" /> 点赞 {{ post.likeCount }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <el-empty v-else description="暂无热门帖子" :image-size="80" />
+      </div>
+    </div>
+
     <!-- 筛选栏 -->
     <div class="filter-bar">
       <!-- 分类 -->
@@ -218,6 +348,36 @@ onMounted(() => {
           @click="handleCategoryChange(cat.value)"
         >
           {{ cat.label }}
+        </div>
+      </div>
+
+      <!-- 热门标签 -->
+      <div v-if="hotTags.length > 0" class="hot-tags-section">
+        <div class="section-header">
+          <span class="section-title">
+            <i class="i-carbon-tag mr-1" />
+            热门标签
+          </span>
+          <el-button text size="small" @click="goToTagsPage">
+            查看更多
+            <i class="i-carbon-arrow-right ml-1" />
+          </el-button>
+        </div>
+        <div class="hot-tags">
+          <div
+            v-for="tag in hotTags"
+            :key="tag.tagName"
+            class="tag-item"
+            :class="{ active: selectedTag === tag.tagName }"
+            @click="handleTagSelect(tag.tagName)"
+          >
+            # {{ tag.tagName }}
+            <span class="tag-count">{{ tag.postCount }}</span>
+          </div>
+          <div v-if="selectedTag" class="tag-item clear-tag" @click="clearTagFilter">
+            <i class="i-carbon-close" />
+            清除筛选
+          </div>
         </div>
       </div>
 
@@ -272,7 +432,21 @@ onMounted(() => {
               <span v-if="post.isHot" class="tag-hot">热门</span>
               <h3 class="post-title">{{ post.title }}</h3>
             </div>
-            <p class="post-excerpt">{{ post.content.substring(0, 150) }}...</p>
+            <p class="post-excerpt">
+              {{ (post.content || '').substring(0, 150)
+              }}{{ (post.content || '').length > 150 ? '...' : '' }}
+            </p>
+            <!-- 帖子标签 -->
+            <div v-if="post.tags" class="post-tags">
+              <span
+                v-for="(tag, index) in JSON.parse(post.tags || '[]')"
+                :key="index"
+                class="post-tag"
+                @click.stop="handleTagSelect(tag)"
+              >
+                # {{ tag }}
+              </span>
+            </div>
           </div>
 
           <!-- 底部信息 -->
@@ -421,6 +595,79 @@ onMounted(() => {
       &.active {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         color: white;
+      }
+    }
+  }
+
+  .hot-tags-section {
+    margin-bottom: 16px;
+    padding: 16px;
+    background: rgba(102, 126, 234, 0.05);
+    border-radius: 12px;
+
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+
+      .section-title {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--el-text-color-primary);
+        display: flex;
+        align-items: center;
+
+        i {
+          color: #667eea;
+        }
+      }
+    }
+
+    .hot-tags {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+
+      .tag-item {
+        padding: 6px 14px;
+        border-radius: 16px;
+        font-size: 13px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        background: white;
+        color: var(--el-text-color-regular);
+        border: 1px solid var(--el-border-color);
+        display: flex;
+        align-items: center;
+        gap: 6px;
+
+        &:hover {
+          border-color: #667eea;
+          color: #667eea;
+          transform: translateY(-2px);
+        }
+
+        &.active {
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          color: white;
+          border-color: transparent;
+        }
+
+        &.clear-tag {
+          background: #f56c6c;
+          color: white;
+          border-color: transparent;
+
+          &:hover {
+            background: #f78989;
+          }
+        }
+
+        .tag-count {
+          font-size: 12px;
+          opacity: 0.8;
+        }
       }
     }
   }
@@ -582,5 +829,232 @@ onMounted(() => {
   display: flex;
   justify-content: center;
   margin-top: 32px;
+}
+
+.banner-hot-section {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 24px;
+  margin-bottom: 24px;
+
+  .banner-container {
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 8px 32px rgba(102, 126, 234, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
+
+    .banner-item {
+      position: relative;
+      width: 100%;
+      height: 300px;
+      cursor: pointer;
+      overflow: hidden;
+
+      img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transition: transform 0.5s ease;
+      }
+
+      &:hover img {
+        transform: scale(1.05);
+      }
+
+      .banner-overlay {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        padding: 24px;
+        background: linear-gradient(to top, rgba(0, 0, 0, 0.8), transparent);
+        color: white;
+
+        .banner-title {
+          font-size: 24px;
+          font-weight: 700;
+          margin: 0 0 8px 0;
+          text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .banner-desc {
+          font-size: 14px;
+          margin: 0;
+          opacity: 0.9;
+          text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+        }
+      }
+    }
+
+    .banner-placeholder {
+      height: 300px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: var(--el-fill-color-light);
+      border-radius: 16px;
+
+      i {
+        font-size: 64px;
+        color: var(--el-text-color-placeholder);
+        margin-bottom: 12px;
+      }
+
+      p {
+        color: var(--el-text-color-secondary);
+        margin: 0;
+      }
+    }
+  }
+
+  .hot-recommend {
+    background: var(--el-bg-color);
+    border-radius: 16px;
+    padding: 20px;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
+
+    .hot-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 16px;
+      color: var(--el-text-color-primary);
+
+      i {
+        font-size: 24px;
+        color: #ff6b6b;
+      }
+    }
+
+    .hot-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+
+      .hot-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+        padding: 12px;
+        border-radius: 12px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        background: var(--el-fill-color-light);
+
+        &:hover {
+          background: rgba(102, 126, 234, 0.1);
+          transform: translateX(4px);
+        }
+
+        .hot-rank {
+          flex-shrink: 0;
+          width: 24px;
+          height: 24px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border-radius: 6px;
+          font-size: 14px;
+          font-weight: 700;
+          background: var(--el-fill-color);
+          color: var(--el-text-color-secondary);
+
+          &.rank-1 {
+            background: linear-gradient(135deg, #ffd700, #ffed4e);
+            color: #fff;
+          }
+
+          &.rank-2 {
+            background: linear-gradient(135deg, #c0c0c0, #e8e8e8);
+            color: #fff;
+          }
+
+          &.rank-3 {
+            background: linear-gradient(135deg, #cd7f32, #e8a87c);
+            color: #fff;
+          }
+        }
+
+        .hot-content {
+          flex: 1;
+          min-width: 0;
+
+          .hot-title {
+            font-size: 14px;
+            font-weight: 600;
+            margin: 0 0 8px 0;
+            color: var(--el-text-color-primary);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+          }
+
+          .hot-stats {
+            display: flex;
+            gap: 12px;
+            font-size: 12px;
+            color: var(--el-text-color-secondary);
+
+            span {
+              display: flex;
+              align-items: center;
+              gap: 4px;
+
+              i {
+                font-size: 14px;
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+// 响应式设计
+@media (max-width: 1024px) {
+  .banner-hot-section {
+    grid-template-columns: 1fr;
+
+    .hot-recommend {
+      .hot-list {
+        flex-direction: row;
+        overflow-x: auto;
+
+        .hot-item {
+          min-width: 250px;
+        }
+      }
+    }
+  }
+}
+</style>
+
+
+<style scoped lang="scss">
+.post-tags {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+
+  .post-tag {
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 12px;
+    background: rgba(102, 126, 234, 0.1);
+    color: #667eea;
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    &:hover {
+      background: rgba(102, 126, 234, 0.2);
+      transform: translateY(-1px);
+    }
+  }
 }
 </style>
