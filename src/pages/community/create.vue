@@ -4,6 +4,8 @@ import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { createPost, updatePost, getPostDetail } from '@/api/community'
 import { UserStore } from '@/stores/modules/user'
+import ImageUploader from '@/components/ImageUploader.vue'
+import MvSelector from '@/components/MvSelector.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -20,6 +22,8 @@ const formData = reactive({
   category: 'SHARE',
   tags: '',
   coverUrl: '',
+  images: [] as string[],
+  mvId: null as number | null,
   status: 1, // 1-已发布, 0-草稿
 })
 
@@ -66,6 +70,19 @@ const loadPostDetail = async (id: number) => {
   } finally {
     loading.value = false
   }
+}
+
+// 清空表单
+const resetForm = () => {
+  formData.title = ''
+  formData.content = ''
+  formData.category = '闲聊'
+  formData.tags = ''
+  formData.coverUrl = ''
+  formData.images = []
+  formData.mvId = null
+  isEditMode.value = false
+  postId.value = null
 }
 
 // 发布帖子
@@ -121,6 +138,8 @@ const handleSubmit = async (isDraft = false) => {
         category: formData.category,
         tags: tagsJson,
         coverUrl: formData.coverUrl,
+        images: formData.images,
+        mvId: formData.mvId,
         status: isDraft ? 0 : 1,
       })
     }
@@ -133,9 +152,11 @@ const handleSubmit = async (isDraft = false) => {
         isDraft ? '保存草稿成功' : isEditMode.value ? '更新成功' : '发布成功'
       )
 
-      // 只有发布成功时才跳转
+      // 只有发布成功时才跳转并清空表单
       if (!isDraft) {
-        console.log('>>> [发布帖子] 发布成功，跳转到社区列表')
+        console.log('>>> [发布帖子] 发布成功，清空表单并跳转到社区列表')
+        // 清空表单
+        resetForm()
         // 返回社区列表
         router.push('/community')
       } else {
@@ -166,8 +187,10 @@ const handleSubmit = async (isDraft = false) => {
   }
 }
 
-// 返回
+// 返回（清空表单）
 const goBack = () => {
+  // 清空表单
+  resetForm()
   router.push('/community')
 }
 
@@ -266,6 +289,16 @@ onMounted(() => {
             maxlength="10000"
             show-word-limit
           />
+        </el-form-item>
+
+        <!-- 图片上传 -->
+        <el-form-item label="图片">
+          <ImageUploader v-model="formData.images" :max-count="9" />
+        </el-form-item>
+
+        <!-- MV选择 -->
+        <el-form-item label="MV作品">
+          <MvSelector v-model="formData.mvId" />
         </el-form-item>
 
         <!-- 操作按钮 -->

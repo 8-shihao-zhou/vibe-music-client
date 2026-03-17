@@ -1,11 +1,16 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { getUserStats, getPostList, getFollowStats } from '@/api/community'
+import { ElMessage } from 'element-plus'
+import { getUserStats, getPostList, getFollowStats, followUser, unfollowUser } from '@/api/community'
+import { UserStore } from '@/stores/modules/user'
 
 const route = useRoute()
 const router = useRouter()
+const userStore = UserStore()
 const userId = computed(() => Number(route.params.id) || 0)
+const currentUserId = computed(() => userStore.userInfo?.userId || 0)
+const isOwnProfile = computed(() => currentUserId.value === userId.value)
 const loading = ref(false)
 const userStats = ref<any>({})
 const followStats = ref<any>({})
@@ -13,6 +18,8 @@ const postList = ref<any[]>([])
 const currentPage = ref(1)
 const pageSize = ref(10)
 const total = ref(0)
+const isFollowing = ref(false)
+const followLoading = ref(false)
 
 const fetchData = async () => {
   if (!userId.value) return
@@ -27,7 +34,11 @@ const fetchData = async () => {
         pageSize: pageSize.value,
       }),
     ])
-    if (statsRes.code === 0) userStats.value = statsRes.data
+    if (statsRes.code === 0) {
+      userStats.value = statsRes.data
+      // 从后端返回的数据中获取关注状态
+      isFollowing.value = statsRes.data?.isFollowing || false
+    }
     if (followRes.code === 0) followStats.value = followRes.data
     if (postsRes.code === 0) {
       postList.value = (postsRes.data as any).records || []
@@ -37,6 +48,49 @@ const fetchData = async () => {
     console.error(error)
   } finally {
     loading.value = false
+  }
+}
+
+const handleFollow = async () => {
+  if (!currentUserId.value) {
+    ElMessage.warning('请先登录')
+    return
+  }
+  if (isOwnProfile.value) {
+    ElMessage.warning('不能关注自己')
+    return
+  }
+  
+  followLoading.value = true
+  try {
+    if (isFollowing.value) {
+      const res = await unfollowUser(userId.value)
+      if (res.code === 0) {
+        isFollowing.value = false
+        ElMessage.success('取消关注成功')
+        // 更新粉丝数
+        if (followStats.value.followerCount > 0) {
+          followStats.value.followerCount--
+        }
+      } else {
+        ElMessage.error(res.message || '取消关注失败')
+      }
+    } else {
+      const res = await followUser(userId.value)
+      if (res.code === 0) {
+        isFollowing.value = true
+        ElMessage.success('关注成功')
+        // 更新粉丝数
+        followStats.value.followerCount = (followStats.value.followerCount || 0) + 1
+      } else {
+        ElMessage.error(res.message || '关注失败')
+      }
+    }
+  } catch (error: any) {
+    console.error('关注操作失败:', error)
+    ElMessage.error(error.message || '操作失败')
+  } finally {
+    followLoading.value = false
   }
 }
 
@@ -91,6 +145,16 @@ onMounted(fetchData)
             <h1 class="username">{{ userStats.username }}</h1>
             <p class="user-id">ID: {{ userStats.userId }}</p>
           </div>
+          <el-button
+            v-if="!isOwnProfile && currentUserId"
+            :type="isFollowing ? 'default' : 'primary'"
+            :loading="followLoading"
+            class="follow-btn"
+            @click="handleFollow"
+          >
+            <i :class="isFollowing ? 'i-carbon-user-follow' : 'i-carbon-user-plus'" class="mr-1" />
+            {{ isFollowing ? '已关注' : '关注' }}
+          </el-button>
         </div>
 
         <div class="stats-grid">
@@ -241,6 +305,20 @@ onMounted(fetchData)
         font-size: 14px;
         color: rgba(255, 255, 255, 0.8);
         margin: 0;
+      }
+    }
+
+    .follow-btn {
+      margin-bottom: 8px;
+      border-radius: 20px;
+      padding: 12px 32px;
+      font-size: 16px;
+      font-weight: 600;
+      transition: all 0.3s ease;
+
+      &:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
       }
     }
   }

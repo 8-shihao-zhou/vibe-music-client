@@ -467,6 +467,37 @@ watch(
           ></div>
         </div>
 
+        <!-- 图片展示 -->
+        <div v-if="post.images && post.images.length > 0" class="post-images">
+          <div class="images-grid" :class="`grid-${post.images.length}`">
+            <el-image
+              v-for="(image, index) in post.images"
+              :key="index"
+              :src="image"
+              :preview-src-list="post.images"
+              :initial-index="index"
+              fit="cover"
+              class="image-item"
+            />
+          </div>
+        </div>
+
+        <!-- MV展示 -->
+        <div v-if="post.mv" class="post-mv">
+          <div class="mv-header">
+            <i class="i-carbon-video" />
+            <span class="mv-name">{{ post.mv.mvName }}</span>
+          </div>
+          <video
+            :src="post.mv.mvUrl"
+            controls
+            class="mv-player"
+            preload="metadata"
+          >
+            您的浏览器不支持视频播放
+          </video>
+        </div>
+
         <!-- 操作栏 -->
         <div class="post-actions" style="display: flex; gap: 12px">
           <el-button
@@ -848,6 +879,90 @@ watch(
       color: var(--el-text-color-primary);
       white-space: pre-wrap;
       word-wrap: break-word;
+    }
+  }
+
+  .post-images {
+    margin-bottom: 24px;
+
+    .images-grid {
+      display: grid;
+      gap: 8px;
+      border-radius: 12px;
+      overflow: hidden;
+
+      &.grid-1 {
+        grid-template-columns: 1fr;
+        max-width: 600px;
+      }
+
+      &.grid-2 {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      &.grid-3 {
+        grid-template-columns: repeat(3, 1fr);
+      }
+
+      &.grid-4 {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      &.grid-5,
+      &.grid-6 {
+        grid-template-columns: repeat(3, 1fr);
+      }
+
+      &.grid-7,
+      &.grid-8,
+      &.grid-9 {
+        grid-template-columns: repeat(3, 1fr);
+      }
+
+      .image-item {
+        width: 100%;
+        height: 200px;
+        cursor: pointer;
+        transition: transform 0.3s;
+
+        &:hover {
+          transform: scale(1.02);
+        }
+      }
+    }
+  }
+
+  .post-mv {
+    margin-bottom: 24px;
+    border-radius: 12px;
+    overflow: hidden;
+    background: var(--el-fill-color-light);
+
+    .mv-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 16px;
+      background: var(--el-fill-color);
+      border-bottom: 1px solid var(--el-border-color);
+
+      i {
+        font-size: 20px;
+        color: var(--el-color-primary);
+      }
+
+      .mv-name {
+        font-size: 14px;
+        font-weight: 500;
+        color: var(--el-text-color-primary);
+      }
+    }
+
+    .mv-player {
+      width: 100%;
+      max-height: 500px;
+      display: block;
+      background: #000;
     }
   }
 

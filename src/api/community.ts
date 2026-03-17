@@ -10,6 +10,8 @@ export const createPost = (data: {
   category: string
   tags?: string
   coverUrl?: string
+  images?: string[]
+  mvId?: number
   status: number
 }) => {
   return http<Result>('post', '/community/post/create', { data })
@@ -209,4 +211,40 @@ export const checkReported = (targetType: number, targetId: number) => {
     'get',
     `/report/check?targetType=${targetType}&targetId=${targetId}`
   )
+}
+
+/** ==================== 媒体上传相关接口 ==================== */
+
+/** 上传图片 */
+export const uploadImages = (files: File[]) => {
+  const formData = new FormData()
+  files.forEach((file) => {
+    formData.append('files', file)
+  })
+  return http<Result>('post', '/community/post/upload/images', {
+    data: formData,
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  })
+}
+
+/** 获取用户MV列表 */
+export const getUserMvList = (userId?: number, status: number = 1) => {
+  const params = new URLSearchParams()
+  if (userId) params.append('userId', userId.toString())
+  params.append('status', status.toString())
+  return http<Result>('get', `/community/post/user-mvs?${params.toString()}`)
+}
+
+/** 获取MV详情 */
+export const getMvDetail = (mvId: number) => {
+  return http<Result>('get', `/community/post/mv/${mvId}`)
+}
+
+/** 同步本地MV文件到数据库 */
+export const syncMvFiles = (userId?: number) => {
+  const params = new URLSearchParams()
+  if (userId) params.append('userId', userId.toString())
+  return http<Result>('post', `/community/post/sync-mvs?${params.toString()}`)
 }

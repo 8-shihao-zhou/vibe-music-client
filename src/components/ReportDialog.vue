@@ -192,4 +192,10 @@ const handleClose = () => {
     flex-shrink: 0;
   }
 }
+
+.dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
 </style>
