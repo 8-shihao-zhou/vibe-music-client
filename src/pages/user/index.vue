@@ -9,7 +9,7 @@ import 'vue-cropper/dist/index.css'
 import { VueCropper } from "vue-cropper";
 import { useRouter } from 'vue-router'
 import AuthTabs from '@/components/Auth/AuthTabs.vue'
-import { http } from '@/utils/http'
+import { getUserPoints } from '@/api/points'
 
 const router = useRouter()
 const userStore = UserStore()
@@ -20,6 +20,7 @@ const cropperImg = ref('')
 const cropper = ref<any>(null)
 const authVisible = ref(false)
 const unreadCount = ref(0)
+const userPoints = ref(0)
 
 const userForm = reactive({
   userId: userStore.userInfo.userId,
@@ -57,6 +58,7 @@ onMounted(() => {
     authVisible.value = true
   } else {
     loadUnreadCount()
+    loadUserPoints()
   }
 })
 
@@ -81,8 +83,10 @@ watch(
       console.log('用户切换，重新加载未读数量')
       if (newUserId) {
         loadUnreadCount()
+        loadUserPoints()
       } else {
         unreadCount.value = 0
+        userPoints.value = 0
       }
     }
   }
@@ -100,9 +104,36 @@ const loadUnreadCount = async () => {
   }
 }
 
+// 加载用户积分
+const loadUserPoints = async () => {
+  try {
+    const response = await getUserPoints()
+    if (response.code === 0) {
+      userPoints.value = response.data?.availablePoints || 0
+    }
+  } catch (error) {
+    console.error('加载用户积分失败:', error)
+  }
+}
+
 // 跳转到通知页面
 const goToNotifications = () => {
   router.push('/notification')
+}
+
+// 跳转到社区个人中心
+const goToCommunityProfile = () => {
+  const userId = userStore.userInfo?.userId
+  if (userId) {
+    router.push(`/community/user/${userId}`)
+  } else {
+    ElMessage.warning('请先登录')
+  }
+}
+
+// 跳转到积分中心
+const goToPoints = () => {
+  router.push('/points')
 }
 
 // 处理头像上传
@@ -257,6 +288,29 @@ const handleDelete = async () => {
       </div>
       <div class="notification-right">
         <el-badge v-if="unreadCount > 0" :value="unreadCount" :max="99" class="mr-4" />
+        <icon-ep:arrow-right class="arrow-icon" />
+      </div>
+    </div>
+
+    <!-- 社区个人中心入口 -->
+    <div class="notification-entry" @click="goToCommunityProfile">
+      <div class="notification-content">
+        <icon-ep:user class="notification-icon" />
+        <span class="notification-text">社区个人中心</span>
+      </div>
+      <div class="notification-right">
+        <icon-ep:arrow-right class="arrow-icon" />
+      </div>
+    </div>
+
+    <!-- 积分中心入口 -->
+    <div class="notification-entry" @click="goToPoints">
+      <div class="notification-content">
+        <icon-ep:trophy class="notification-icon" style="color: #f59e0b;" />
+        <span class="notification-text">积分中心</span>
+      </div>
+      <div class="notification-right">
+        <span v-if="userPoints > 0" class="points-badge">{{ userPoints }} 积分</span>
         <icon-ep:arrow-right class="arrow-icon" />
       </div>
     </div>
@@ -417,6 +471,17 @@ const handleDelete = async () => {
   display: flex;
   align-items: center;
   color: white;
+  gap: 8px;
+}
+
+.points-badge {
+  background: rgba(245, 158, 11, 0.2);
+  color: #f59e0b;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+  border: 1px solid rgba(245, 158, 11, 0.3);
 }
 
 .arrow-icon {

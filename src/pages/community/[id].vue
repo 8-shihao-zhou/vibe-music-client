@@ -10,6 +10,7 @@ import {
   unfavoritePost,
   commentPost,
   deletePostComment,
+  deletePost,
   likeComment,
   unlikeComment,
 } from '@/api/community'
@@ -367,6 +368,36 @@ const formatTime = (time: string) => {
   })
 }
 
+// 编辑帖子
+const handleEditPost = () => {
+  router.push(`/community/edit/${postId.value}`)
+}
+
+// 删除帖子
+const handleDeletePost = async () => {
+  try {
+    await ElMessageBox.confirm('确定要删除这篇帖子吗？删除后无法恢复。', '提示', {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning',
+    })
+
+    const res = await deletePost(postId.value)
+    if (res.code === 0) {
+      ElMessage.success('删除成功')
+      // 返回社区列表
+      router.push('/community')
+    } else {
+      ElMessage.error(res.message || '删除失败')
+    }
+  } catch (error: any) {
+    if (error !== 'cancel') {
+      console.error('删除帖子失败:', error)
+      ElMessage.error('删除失败')
+    }
+  }
+}
+
 // 初始化
 onMounted(() => {
   // 使用nextTick确保路由参数已经设置
@@ -438,6 +469,27 @@ watch(
                   <span class="stat-label">评论</span>
                   {{ post.commentCount }}
                 </span>
+              </div>
+
+              <!-- 作者操作按钮（编辑、删除） -->
+              <div v-if="post.userId === userStore.userInfo?.userId" class="author-actions">
+                <el-button
+                  text
+                  class="action-btn"
+                  @click="handleEditPost"
+                >
+                  <i class="i-carbon-edit" />
+                  编辑
+                </el-button>
+                <el-button
+                  text
+                  type="danger"
+                  class="action-btn"
+                  @click="handleDeletePost"
+                >
+                  <i class="i-carbon-trash-can" />
+                  删除
+                </el-button>
               </div>
 
               <!-- 举报按钮 -->
@@ -839,6 +891,29 @@ watch(
         display: flex;
         align-items: center;
         gap: 16px;
+      }
+
+      .author-actions {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+
+        .action-btn {
+          color: var(--el-text-color-regular);
+          font-size: 14px;
+
+          &:hover {
+            color: var(--el-color-primary);
+          }
+
+          &.el-button--danger:hover {
+            color: var(--el-color-danger);
+          }
+
+          i {
+            font-size: 16px;
+          }
+        }
       }
 
       .report-btn {

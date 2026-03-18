@@ -19,3 +19,11 @@ export const generateVideoApi = (params: FormData) => {
 export const getHistoryApi = () => {
   return http('get', '/api/ai/history')
 }
+
+// 重命名MV文件
+export const renameMvFileApi = (oldFileName: string, newFileName: string) => {
+  const params = new URLSearchParams()
+  params.append('oldFileName', oldFileName)
+  params.append('newFileName', newFileName)
+  return http('put', `/api/ai/rename?${params.toString()}`)
+}

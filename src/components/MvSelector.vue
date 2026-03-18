@@ -29,6 +29,16 @@ const fetchMvList = async () => {
     if (res.code === 0 && res.data) {
       mvList.value = res.data
       console.log('>>> [MvSelector] 设置mvList成功，数量:', mvList.value.length)
+      
+      // 如果有初始值，自动选中对应的MV
+      if (props.modelValue && mvList.value.length > 0) {
+        const mv = mvList.value.find((m: any) => m.id === props.modelValue)
+        if (mv) {
+          selectedMvId.value = mv.id
+          selectedMv.value = mv
+          console.log('>>> [MvSelector] 自动选中MV:', mv.mvName)
+        }
+      }
     } else {
       ElMessage.error(res.msg || '获取MV列表失败')
     }

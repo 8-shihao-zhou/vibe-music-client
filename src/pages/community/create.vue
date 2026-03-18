@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { createPost, updatePost, getPostDetail } from '@/api/community'
@@ -59,6 +59,23 @@ const loadPostDetail = async (id: number) => {
           formData.tags = ''
         }
       }
+
+      // 加载图片列表
+      if (post.images && Array.isArray(post.images)) {
+        formData.images = post.images
+      }
+
+      // 加载MV信息（编辑模式下不显示，仅保存ID）
+      if (post.mv && post.mv.mvId) {
+        formData.mvId = post.mv.mvId
+      }
+
+      console.log('>>> [编辑模式] 加载帖子数据成功:', {
+        title: formData.title,
+        images: formData.images.length,
+        mvId: formData.mvId,
+        mvInfo: post.mv,
+      })
     } else {
       ElMessage.error('加载帖子失败')
       router.push('/community')
@@ -205,18 +222,32 @@ onMounted(() => {
   // 检查是否为编辑模式
   const id = route.params.id
   if (id) {
+    console.log('>>> [onMounted] 编辑模式，postId:', id)
     isEditMode.value = true
     postId.value = Number(id)
     loadPostDetail(postId.value)
   } else {
-    // 新建模式，清空表单数据
-    formData.title = ''
-    formData.content = ''
-    formData.category = 'SHARE'
-    formData.tags = ''
-    formData.coverUrl = ''
+    console.log('>>> [onMounted] 新建模式')
+    // 新建模式，确保表单是空的
+    resetForm()
   }
 })
+
+// 监听路由变化（处理从详情页点击编辑的情况）
+watch(
+  () => route.params.id,
+  (newId) => {
+    if (newId) {
+      console.log('>>> [路由监听] 切换到编辑模式，postId:', newId)
+      isEditMode.value = true
+      postId.value = Number(newId)
+      loadPostDetail(postId.value)
+    } else {
+      console.log('>>> [路由监听] 切换到新建模式')
+      resetForm()
+    }
+  }
+)
 </script>
 
 <template>
@@ -291,13 +322,13 @@ onMounted(() => {
           />
         </el-form-item>
 
-        <!-- 图片上传 -->
-        <el-form-item label="图片">
+        <!-- 图片上传（仅新建模式显示） -->
+        <el-form-item v-if="!isEditMode" label="图片">
           <ImageUploader v-model="formData.images" :max-count="9" />
         </el-form-item>
 
-        <!-- MV选择 -->
-        <el-form-item label="MV作品">
+        <!-- MV选择（仅新建模式显示） -->
+        <el-form-item v-if="!isEditMode" label="MV作品">
           <MvSelector v-model="formData.mvId" />
         </el-form-item>
 

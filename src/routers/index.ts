@@ -134,6 +134,22 @@ const router = createRouter({
       component: () => import('@/pages/notification/[id].vue'),
       meta: { title: '通知详情' },
     },
+
+    // 积分中心路由
+    {
+      path: '/points',
+      name: 'Points',
+      component: () => import('@/pages/points/index.vue'),
+      meta: { title: '积分中心' },
+    },
+
+    // 积分商城路由
+    {
+      path: '/mall',
+      name: 'Mall',
+      component: () => import('@/pages/mall/index.vue'),
+      meta: { title: '积分商城' },
+    },
   ],
 })
 

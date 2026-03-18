@@ -106,11 +106,18 @@
                   {{ item.createTime }} · {{ item.size }}
                 </div>
               </div>
-              <div class="item-action">
+              <div class="item-actions">
+                <el-button
+                  circle
+                  :icon="Edit"
+                  @click.stop="openEditDialog(item)"
+                  title="编辑名称"
+                />
                 <el-button
                   circle
                   :icon="Download"
                   @click.stop="downloadVideo(item)"
+                  title="下载"
                 />
               </div>
             </div>
@@ -136,14 +143,44 @@
         style="border-radius: 8px; background: #000; max-height: 60vh"
       ></video>
     </el-dialog>
+
+    <!-- 编辑MV名称对话框 -->
+    <el-dialog
+      v-model="editDialogVisible"
+      title="编辑MV名称"
+      width="500px"
+      align-center
+    >
+      <el-form label-width="80px">
+        <el-form-item label="MV名称">
+          <el-input
+            v-model="newMvName"
+            placeholder="请输入MV名称（不含.mp4扩展名）"
+            maxlength="100"
+            show-word-limit
+            @keyup.enter="saveMvName"
+          />
+          <div style="font-size: 12px; color: #909399; margin-top: 8px;">
+            <i class="i-carbon-information" style="margin-right: 4px;" />
+            提示：只需输入名称，无需添加.mp4扩展名，文件将被重命名
+          </div>
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <div style="display: flex; justify-content: flex-end; gap: 12px;">
+          <el-button @click="editDialogVisible = false">取消</el-button>
+          <el-button type="primary" @click="saveMvName">保存</el-button>
+        </div>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, computed } from 'vue'
-import { Headset, VideoPlay, Download, Refresh } from '@element-plus/icons-vue'
+import { Headset, VideoPlay, Download, Refresh, Edit } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
-import { generateVideoApi, getHistoryApi } from '@/api/ai'
+import { generateVideoApi, getHistoryApi, renameMvFileApi } from '@/api/ai'
 import { UserStore } from '@/stores/modules/user'
 
 const route = useRoute()
@@ -156,6 +193,9 @@ const dialogVisible = ref(false)
 const currentVideoUrl = ref('')
 const selectedSongInfo = ref<string>('')
 const selectedAudioUrl = ref<string>('')
+const editDialogVisible = ref(false)
+const editingMv = ref<any>(null)
+const newMvName = ref('')
 let timer: any = null
 
 // 检查登录状态 - 使用 Pinia store
@@ -219,6 +259,7 @@ const fetchHistory = async () => {
   }
   
   try {
+    // 使用 getHistoryApi 直接读取文件系统
     const res = await getHistoryApi()
     console.log('📦 [fetchHistory] 收到响应:', res)
     
@@ -326,6 +367,42 @@ const downloadVideo = (item: any) => {
   document.body.appendChild(link)
   link.click()
   document.body.removeChild(link)
+}
+
+// 打开编辑MV名称对话框
+const openEditDialog = (item: any) => {
+  editingMv.value = item
+  // 移除 .mp4 扩展名
+  let name = item.fileName
+  if (name.toLowerCase().endsWith('.mp4')) {
+    name = name.substring(0, name.length - 4)
+  }
+  newMvName.value = name
+  editDialogVisible.value = true
+}
+
+// 保存MV名称（重命名文件）
+const saveMvName = async () => {
+  if (!newMvName.value.trim()) {
+    ElMessage.warning('MV名称不能为空')
+    return
+  }
+
+  try {
+    // 调用重命名API
+    const res = await renameMvFileApi(editingMv.value.fileName, newMvName.value.trim())
+    if (res.code === 0) {
+      ElMessage.success('重命名成功')
+      editDialogVisible.value = false
+      // 刷新列表
+      await fetchHistory()
+    } else {
+      ElMessage.error(res.message || '重命名失败')
+    }
+  } catch (error) {
+    console.error('重命名MV失败:', error)
+    ElMessage.error('重命名失败')
+  }
 }
 
 const startFakeProgress = () => {
@@ -854,14 +931,19 @@ html.dark .item-meta {
   margin: 0 8px;
 }
 
-.item-action :deep(.el-button) {
+.item-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.item-actions :deep(.el-button) {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   border: none;
   color: #fff;
   transition: all 0.3s ease;
 }
 
-.item-action :deep(.el-button:hover) {
+.item-actions :deep(.el-button:hover) {
   transform: scale(1.1);
   box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
 }

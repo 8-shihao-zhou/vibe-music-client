@@ -248,3 +248,16 @@ export const syncMvFiles = (userId?: number) => {
   if (userId) params.append('userId', userId.toString())
   return http<Result>('post', `/community/post/sync-mvs?${params.toString()}`)
 }
+
+/** 更新MV名称 */
+export const updateMvName = (mvId: number, mvName: string) => {
+  const params = new URLSearchParams()
+  params.append('mvName', mvName)
+  return http<Result>(
+    
+   
+  
+    'put',
+    `/community/post/mv/${mvId}/name?${params.toString()}`
+  )
+}

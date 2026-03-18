@@ -416,6 +416,7 @@ onMounted(() => {
         v-for="post in postList"
         :key="post.id"
         class="post-card"
+        :class="{ 'post-highlight': post.isHighlight }"
         @click="goToDetail(post.id)"
       >
         <!-- 封面图 -->
@@ -431,6 +432,10 @@ onMounted(() => {
               <span v-if="post.isTop" class="tag-top">置顶</span>
               <span v-if="post.isHot" class="tag-hot">热门</span>
               <h3 class="post-title">{{ post.title }}</h3>
+              <span v-if="post.isHighlight" class="tag-highlight">
+                <i class="i-carbon-star-filled" />
+                高亮
+              </span>
             </div>
             <p class="post-excerpt">
               {{ (post.content || '').substring(0, 150)
@@ -706,6 +711,15 @@ onMounted(() => {
       box-shadow: 0 8px 24px rgba(102, 126, 234, 0.15);
     }
 
+    &.post-highlight {
+      border: 2px solid #f6c90e;
+      box-shadow: 0 0 12px rgba(246, 201, 14, 0.4), 0 4px 20px rgba(246, 201, 14, 0.2);
+
+      &:hover {
+        box-shadow: 0 0 20px rgba(246, 201, 14, 0.6), 0 8px 32px rgba(246, 201, 14, 0.3);
+      }
+    }
+
     .post-cover {
       width: 200px;
       height: 150px;
@@ -735,6 +749,7 @@ onMounted(() => {
 
           .tag-top,
           .tag-hot {
+            flex-shrink: 0;
             padding: 2px 8px;
             border-radius: 4px;
             font-size: 12px;
@@ -752,10 +767,27 @@ onMounted(() => {
           }
 
           .post-title {
+            flex: 1;
             font-size: 18px;
             font-weight: 600;
             margin: 0;
             color: var(--el-text-color-primary);
+          }
+
+          .tag-highlight {
+            flex-shrink: 0;
+            margin-left: auto;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            background: linear-gradient(135deg, #f6c90e, #ff9a3c);
+            color: white;
+            box-shadow: 0 2px 8px rgba(246, 201, 14, 0.4);
+            letter-spacing: 0.5px;
           }
         }
 
