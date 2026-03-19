@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { ref, reactive } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import { UserStore } from '@/stores/modules/user'
 import AuthTabs from '@/components/Auth/AuthTabs.vue'
 import FeedbackDialog from '@/components/Common/FeedbackDialog.vue'
 import defaultAvatar from '@/assets/user.jpg'
 import { ElMessage } from 'element-plus'
-import { logout, submitSongRequest, uploadSongRequestFile } from '@/api/system'
+import { logout, submitSongRequest, uploadSongRequestFile, getStyleList } from '@/api/system'
 import { useRouter } from 'vue-router'
 
 const showLogin = ref(false)
@@ -40,6 +40,17 @@ const requestFormRef = ref()
 const coverUploading = ref(false)
 const audioUploading = ref(false)
 const audioError = ref('')
+const styleOptions = ref<{ styleId: number; name: string }[]>([])
+const selectedStyles = ref<string[]>([])
+
+// 加载曲风列表
+const loadStyles = async () => {
+  const res = await getStyleList()
+  if (res.code === 0 && res.data) {
+    styleOptions.value = (res.data as any[]) || []
+  }
+}
+onMounted(loadStyles)
 
 const requestForm = reactive({
   songName: '',
@@ -79,6 +90,7 @@ const resetForm = () => {
   requestForm.duration = ''
   requestForm.licenseDesc = ''
   requestForm.remark = ''
+  selectedStyles.value = []
   audioError.value = ''
   requestFormRef.value?.clearValidate()
 }
@@ -148,6 +160,8 @@ const handleSubmitRequest = async () => {
 
   submitting.value = true
   try {
+    // 把选中曲风合并到 style 字段
+    requestForm.style = selectedStyles.value.join(',')
     console.log('[收录申请] 提交数据:', { ...requestForm })
     const res = await submitSongRequest({ ...requestForm })
     console.log('[收录申请] 提交响应:', res)
@@ -231,7 +245,20 @@ const handleSubmitRequest = async () => {
         <el-input v-model="requestForm.album" placeholder="专辑名称（可选）" />
       </el-form-item>
       <el-form-item label="曲风">
-        <el-input v-model="requestForm.style" placeholder="如：流行,电子（逗号分隔）" />
+        <el-select
+          v-model="selectedStyles"
+          multiple
+          filterable
+          placeholder="请选择曲风（可多选）"
+          style="width: 100%"
+        >
+          <el-option
+            v-for="s in styleOptions"
+            :key="s.styleId"
+            :label="s.name"
+            :value="s.name"
+          />
+        </el-select>
       </el-form-item>
       <el-form-item label="发行日期">
         <el-date-picker

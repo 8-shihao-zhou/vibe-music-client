@@ -48,6 +48,10 @@ const router = createRouter({
       path: '/user',
       component: () => import('@/pages/user/index.vue'),
     },
+    {
+      path: '/favorite-playlists',
+      component: () => import('@/pages/favorite-playlists/index.vue'),
+    },
 
     //AI创作页面路由
     {
@@ -149,6 +153,28 @@ const router = createRouter({
       name: 'Mall',
       component: () => import('@/pages/mall/index.vue'),
       meta: { title: '积分商城' },
+    },
+
+    // 每日推荐路由
+    {
+      path: '/daily',
+      name: 'Daily',
+      component: () => import('@/pages/daily/index.vue'),
+      meta: { title: '每日推荐' },
+    },
+
+    // 曲风分类路由
+    {
+      path: '/genre',
+      name: 'Genre',
+      component: () => import('@/pages/genre/index.vue'),
+      meta: { title: '曲风分类' },
+    },
+    {
+      path: '/genre/:id',
+      name: 'GenreDetail',
+      component: () => import('@/pages/genre/[id].vue'),
+      meta: { title: '曲风歌曲' },
     },
   ],
 })

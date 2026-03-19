@@ -211,3 +211,13 @@ export const uploadSongRequestFile = (
   formData.append('type', type)
   return httpUpload<Result>('/song-request/upload', formData)
 }
+
+/** 获取所有风格列表（含歌曲数） */
+export const getStyleList = () => {
+  return http<Result>('get', '/style/list')
+}
+
+/** 按风格分页查询歌曲 */
+export const getSongsByStyle = (styleId: number, pageNum = 1, pageSize = 20) => {
+  return http<Result>('get', '/style/songs', { params: { styleId, pageNum, pageSize } })
+}

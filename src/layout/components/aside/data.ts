@@ -15,17 +15,16 @@ export const MenuData = [
   {
     title: '发现',
     children: [
-      // 👇 新增的社区入口
-      {
-        title: '社区',
-        icon: 'ri:discuss-line', // 讨论/社区图标
-        router: '/community', // 对应新做的社区页面
-      },
-
-      // 原有的其他菜单
       { title: '曲库', icon: 'ri:music-2-line', router: '/library' },
+      { title: '每日推荐', icon: 'ri:calendar-2-line', router: '/daily' },
+      { title: '曲风', icon: 'ri:price-tag-3-line', router: '/genre' },
       { title: '歌手', icon: 'ri:user-star-line', router: '/artist' },
       { title: '歌单', icon: 'ri:album-line', router: '/playlist' },
+      {
+        title: '社区',
+        icon: 'ri:discuss-line',
+        router: '/community',
+      },
     ],
   },
 
@@ -34,6 +33,7 @@ export const MenuData = [
     title: '我的',
     children: [
       { title: '喜欢', icon: 'ri:heart-line', router: '/like' },
+      { title: '收藏歌单', icon: 'ri:album-fill', router: '/favorite-playlists' },
       { title: '个人中心', icon: 'mi:user', router: '/user' },
     ],
   },
