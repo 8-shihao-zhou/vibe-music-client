@@ -50,21 +50,11 @@ const handleReportSuccess = () => {
 }
 
 // 监听路由变化，切换帖子时刷新
+// 监听整个路由对象，确保 name 和 params 同步更新，避免竞态问题
 watch(
-  () => route.params.id,
-  (newId, oldId) => {
-    // 只有当路由路径是帖子详情页（/community/:id）且ID发生变化时才刷新
-    // 避免跳转到其他页面（如 /community/user/:id、/community/favorite）时触发
-    if (
-      route.path.startsWith('/community/') &&
-      !route.path.includes('/user/') &&
-      !route.path.includes('/create') &&
-      !route.path.includes('/drafts') &&
-      !route.path.includes('/favorite') &&
-      newId &&
-      newId !== oldId
-    ) {
-      console.log('>>> [路由监听] 帖子ID变化:', oldId, '->', newId)
+  () => route.name,
+  (newName) => {
+    if (newName === 'CommunityDetail' && postId.value > 0) {
       commentContent.value = ''
       replyTo.value = null
       fetchPostDetail()

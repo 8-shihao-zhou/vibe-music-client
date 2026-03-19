@@ -1,12 +1,11 @@
 {
-  "name": "vibe-music-client",
+  "name": "ai-music-client",
   "private": true,
   "version": "1.0.0",
   "type": "module",
-  "description": "Vibe Music",
+  "description": "AI Music",
   "author": {
-    "name": "Alex LiSun",
-    "email": "vibe_music_service@163.com"
+    "name": ""
   },
   "scripts": {
     "dev": "vite",

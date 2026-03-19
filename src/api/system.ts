@@ -1,4 +1,4 @@
-import { http } from '@/utils/http'
+import { http, httpGet, httpUpload } from '@/utils/http'
 
 export type Result = {
   code: number
@@ -183,4 +183,31 @@ export const deleteComment = (commentId: number) => {
 /** 新增反馈 */
 export const addFeedback = (data: { content: string }) => {
   return http<Result>('post', '/feedback/addFeedback', { params: data })
+}
+
+/** 提交歌曲收录请求 */
+export const submitSongRequest = (data: object) => {
+  return http<Result>('post', '/song-request/submit', { data })
+}
+
+/** 查看我的收录请求列表 */
+export const getMySongRequests = (pageNum = 1, pageSize = 10) => {
+  return http<Result>(
+    
+   
+  
+    'get',
+    `/song-request/my?pageNum=${pageNum}&pageSize=${pageSize}`
+  )
+}
+
+/** 上传收录申请的封面或音频文件 */
+export const uploadSongRequestFile = (
+  file: File,
+  type: 'covers' | 'audios'
+) => {
+  const formData = new FormData()
+  formData.append('file', file)
+  formData.append('type', type)
+  return httpUpload<Result>('/song-request/upload', formData)
 }

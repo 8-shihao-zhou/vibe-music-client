@@ -26,6 +26,11 @@ instance.interceptors.request.use(
     // 开启进度条
     NProgress.start()
 
+    // 对于 FormData 请求，移除默认的 Content-Type 让浏览器自己设置 (带 boundary)
+    if (config.data instanceof FormData) {
+      delete config.headers['Content-Type']
+    }
+
     // 只有登录请求不需要添加token
     if (config.url?.includes('/user/login')) {
       return config
@@ -135,5 +140,7 @@ export const httpUpload = <T>(
       'Content-Type': 'multipart/form-data',
       ...header,
     },
+    // 添加转换请求，确保 axios 不会将 FormData 转为 json
+    transformRequest: [(data) => data],
   })
 }
