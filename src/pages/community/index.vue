@@ -67,7 +67,7 @@ const fetchHotPosts = async () => {
     const res = await getPostList({
       sortBy: 'hot',
       pageNum: 1,
-      pageSize: 3,  // 只显示前3名
+      pageSize: 3, // 只显示前3名
     })
     if (res.code === 0 && res.data) {
       hotPosts.value = res.data.records || []
@@ -294,11 +294,21 @@ onMounted(() => {
       <div class="banner-container">
         <el-carousel v-if="banners.length > 0" height="300px" :interval="5000">
           <el-carousel-item v-for="banner in banners" :key="banner.bannerId">
-            <div class="banner-item" @click="banner.linkUrl && window.open(banner.linkUrl)">
+            <div
+              class="banner-item"
+              @click="banner.linkUrl && window.open(banner.linkUrl)"
+            >
               <img :src="banner.bannerUrl" :alt="banner.title || '轮播图'" />
-              <div v-if="banner.title || banner.description" class="banner-overlay">
-                <h3 v-if="banner.title" class="banner-title">{{ banner.title }}</h3>
-                <p v-if="banner.description" class="banner-desc">{{ banner.description }}</p>
+              <div
+                v-if="banner.title || banner.description"
+                class="banner-overlay"
+              >
+                <h3 v-if="banner.title" class="banner-title">
+                  {{ banner.title }}
+                </h3>
+                <p v-if="banner.description" class="banner-desc">
+                  {{ banner.description }}
+                </p>
               </div>
             </div>
           </el-carousel-item>
@@ -322,12 +332,19 @@ onMounted(() => {
             class="hot-item"
             @click="goToDetail(post.id)"
           >
-            <span class="hot-rank" :class="`rank-${index + 1}`">{{ index + 1 }}</span>
+            <span class="hot-rank" :class="`rank-${index + 1}`">{{
+              index + 1
+            }}</span>
             <div class="hot-content">
               <h4 class="hot-title">{{ post.title }}</h4>
               <div class="hot-stats">
-                <span><i class="i-carbon-view" /> 浏览 {{ post.viewCount }}</span>
-                <span><i class="i-carbon-thumbs-up" /> 点赞 {{ post.likeCount }}</span>
+                <span
+                  ><i class="i-carbon-view" /> 浏览 {{ post.viewCount }}</span
+                >
+                <span
+                  ><i class="i-carbon-thumbs-up" /> 点赞
+                  {{ post.likeCount }}</span
+                >
               </div>
             </div>
           </div>
@@ -374,7 +391,11 @@ onMounted(() => {
             # {{ tag.tagName }}
             <span class="tag-count">{{ tag.postCount }}</span>
           </div>
-          <div v-if="selectedTag" class="tag-item clear-tag" @click="clearTagFilter">
+          <div
+            v-if="selectedTag"
+            class="tag-item clear-tag"
+            @click="clearTagFilter"
+          >
             <i class="i-carbon-close" />
             清除筛选
           </div>
@@ -429,13 +450,21 @@ onMounted(() => {
           <!-- 标题和标签 -->
           <div class="post-header">
             <div class="post-title-row">
-              <span v-if="post.isTop" class="tag-top">置顶</span>
               <span v-if="post.isHot" class="tag-hot">热门</span>
               <h3 class="post-title">{{ post.title }}</h3>
-              <span v-if="post.isHighlight" class="tag-highlight">
-                <i class="i-carbon-star-filled" />
-                高亮
-              </span>
+              <div
+                class="right-badges"
+                style="display: flex; gap: 8px; margin-left: auto"
+              >
+                <span v-if="post.isTop" class="tag-top-badge">
+                  <i class="i-carbon-up-to-top" />
+                  置顶
+                </span>
+                <span v-if="post.isHighlight" class="tag-highlight">
+                  <i class="i-carbon-star-filled" />
+                  高亮
+                </span>
+              </div>
             </div>
             <p class="post-excerpt">
               {{ (post.content || '').substring(0, 150)
@@ -713,10 +742,14 @@ onMounted(() => {
 
     &.post-highlight {
       border: 2px solid #f6c90e;
-      box-shadow: 0 0 12px rgba(246, 201, 14, 0.4), 0 4px 20px rgba(246, 201, 14, 0.2);
+      box-shadow:
+        0 0 12px rgba(246, 201, 14, 0.4),
+        0 4px 20px rgba(246, 201, 14, 0.2);
 
       &:hover {
-        box-shadow: 0 0 20px rgba(246, 201, 14, 0.6), 0 8px 32px rgba(246, 201, 14, 0.3);
+        box-shadow:
+          0 0 20px rgba(246, 201, 14, 0.6),
+          0 8px 32px rgba(246, 201, 14, 0.3);
       }
     }
 
@@ -747,18 +780,12 @@ onMounted(() => {
           gap: 8px;
           margin-bottom: 12px;
 
-          .tag-top,
           .tag-hot {
             flex-shrink: 0;
             padding: 2px 8px;
             border-radius: 4px;
             font-size: 12px;
             font-weight: 500;
-          }
-
-          .tag-top {
-            background: #f56c6c;
-            color: white;
           }
 
           .tag-hot {
@@ -774,9 +801,23 @@ onMounted(() => {
             color: var(--el-text-color-primary);
           }
 
+          .tag-top-badge {
+            flex-shrink: 0;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            background: linear-gradient(135deg, #ff758c, #ff7eb3);
+            color: white;
+            box-shadow: 0 2px 8px rgba(255, 117, 140, 0.4);
+            letter-spacing: 0.5px;
+          }
+
           .tag-highlight {
             flex-shrink: 0;
-            margin-left: auto;
             display: inline-flex;
             align-items: center;
             gap: 4px;
@@ -874,7 +915,11 @@ onMounted(() => {
     overflow: hidden;
     box-shadow: 0 8px 32px rgba(102, 126, 234, 0.15);
     border: 1px solid rgba(255, 255, 255, 0.3);
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
+    background: linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.1),
+      rgba(255, 255, 255, 0.05)
+    );
 
     .banner-item {
       position: relative;
@@ -1065,7 +1110,6 @@ onMounted(() => {
   }
 }
 </style>
-
 
 <style scoped lang="scss">
 .post-tags {
