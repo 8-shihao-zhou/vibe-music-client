@@ -4,12 +4,18 @@ import type { FormInstance, FormRules } from 'element-plus'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { UserStore } from '@/stores/modules/user'
 import defaultAvatar from '@/assets/user.jpg'
-import { updateUserInfo, updateUserAvatar, deleteUser, getUserInfo } from '@/api/system'
+import {
+  updateUserInfo,
+  updateUserAvatar,
+  deleteUser,
+  getUserInfo,
+} from '@/api/system'
 import 'vue-cropper/dist/index.css'
-import { VueCropper } from "vue-cropper";
+import { VueCropper } from 'vue-cropper'
 import { useRouter } from 'vue-router'
 import AuthTabs from '@/components/Auth/AuthTabs.vue'
 import { getUserPoints } from '@/api/points'
+import { getMallItems, togglePrivilege } from '@/api/mall'
 
 const router = useRouter()
 const userStore = UserStore()
@@ -22,12 +28,17 @@ const authVisible = ref(false)
 const unreadCount = ref(0)
 const userPoints = ref(0)
 
+const nicknameColors = ref<any[]>([])
+const avatarFrames = ref<any[]>([])
+const currentNicknameColor = ref('default')
+const currentAvatarFrame = ref('default')
+
 const userForm = reactive({
   userId: userStore.userInfo.userId,
   username: userStore.userInfo.username || '',
   phone: userStore.userInfo.phone || '',
   email: userStore.userInfo.email || '',
-  introduction: userStore.userInfo.introduction || ''
+  introduction: userStore.userInfo.introduction || '',
 })
 
 // 表单验证规则
@@ -41,7 +52,11 @@ const userRules = reactive<FormRules>({
     },
   ],
   phone: [
-    { pattern: /^1[3-9]\d{9}$/, message: '请输入正确的手机号码', trigger: 'blur' },
+    {
+      pattern: /^1[3-9]\d{9}$/,
+      message: '请输入正确的手机号码',
+      trigger: 'blur',
+    },
   ],
   email: [
     { required: true, message: '请输入邮箱', trigger: 'blur' },
@@ -59,8 +74,21 @@ onMounted(() => {
   } else {
     loadUnreadCount()
     loadUserPoints()
+    loadMallPrivileges()
   }
 })
+
+// 监听登录状态变化，登录后立即加载数据（解决刷新时 token 未就绪的竞态问题）
+watch(
+  () => userStore.isLoggedIn,
+  (loggedIn) => {
+    if (loggedIn) {
+      loadUnreadCount()
+      loadUserPoints()
+      loadMallPrivileges()
+    }
+  }
+)
 
 // 监听路由变化，当从通知页面返回时刷新未读数量
 watch(
@@ -113,6 +141,90 @@ const loadUserPoints = async () => {
     }
   } catch (error) {
     console.error('加载用户积分失败:', error)
+  }
+}
+
+// 加载商城特权装扮
+const loadMallPrivileges = async () => {
+  try {
+    const res = await getMallItems()
+    if (res.code === 0) {
+      const items = res.data || []
+      nicknameColors.value = items.filter(
+        (item: any) => item.itemType === 'NICKNAME_COLOR' && item.alreadyOwned
+      )
+      avatarFrames.value = items.filter(
+        (item: any) => item.itemType === 'AVATAR_FRAME' && item.alreadyOwned
+      )
+    }
+  } catch (error) {
+    console.error('加载装扮失败:', error)
+  }
+}
+
+// 切换昵称颜色
+const handleNicknameColorChange = async (colorCode: string) => {
+  try {
+    loading.value = true
+    const value =
+      colorCode === 'default' ? 'default' : getColorFromCode(colorCode)
+    const res = await togglePrivilege('NICKNAME_COLOR', value)
+    if (res.code === 0) {
+      ElMessage.success('昵称颜色切换成功')
+      currentNicknameColor.value = colorCode
+    } else {
+      ElMessage.error(res.message || '切换失败')
+    }
+  } catch (error: any) {
+    ElMessage.error(error.message || '切换失败')
+  } finally {
+    loading.value = false
+  }
+}
+
+// 切换头像框
+const handleAvatarFrameChange = async (frameCode: string) => {
+  try {
+    loading.value = true
+    const value =
+      frameCode === 'default' ? 'default' : getFrameStyleFromCode(frameCode)
+    const res = await togglePrivilege('AVATAR_FRAME', value)
+    if (res.code === 0) {
+      ElMessage.success('头像框切换成功')
+      currentAvatarFrame.value = frameCode
+    } else {
+      ElMessage.error(res.message || '切换失败')
+    }
+  } catch (error: any) {
+    ElMessage.error(error.message || '切换失败')
+  } finally {
+    loading.value = false
+  }
+}
+
+const getColorFromCode = (code: string) => {
+  switch (code) {
+    case 'NICKNAME_COLOR_RED':
+      return '#ff4757'
+    case 'NICKNAME_COLOR_BLUE':
+      return '#3742fa'
+    case 'NICKNAME_COLOR_PURPLE':
+      return '#8c7ae6'
+    case 'NICKNAME_COLOR_GRADIENT':
+      return 'linear-gradient(45deg, #ff6b6b, #4ecdc4)'
+    default:
+      return '#333333'
+  }
+}
+
+const getFrameStyleFromCode = (code: string) => {
+  switch (code) {
+    case 'AVATAR_FRAME_GOLD':
+      return 'gold'
+    case 'AVATAR_FRAME_RAINBOW':
+      return 'rainbow'
+    default:
+      return 'default'
   }
 }
 
@@ -287,7 +399,12 @@ const handleDelete = async () => {
         <span class="notification-text">我的通知</span>
       </div>
       <div class="notification-right">
-        <el-badge v-if="unreadCount > 0" :value="unreadCount" :max="99" class="mr-4" />
+        <el-badge
+          v-if="unreadCount > 0"
+          :value="unreadCount"
+          :max="99"
+          class="mr-4"
+        />
         <icon-ep:arrow-right class="arrow-icon" />
       </div>
     </div>
@@ -306,45 +423,106 @@ const handleDelete = async () => {
     <!-- 积分中心入口 -->
     <div class="notification-entry" @click="goToPoints">
       <div class="notification-content">
-        <icon-ep:trophy class="notification-icon" style="color: #f59e0b;" />
+        <icon-ep:trophy class="notification-icon" style="color: #f59e0b" />
         <span class="notification-text">积分中心</span>
       </div>
       <div class="notification-right">
-        <span v-if="userPoints > 0" class="points-badge">{{ userPoints }} 积分</span>
+        <span v-if="userPoints > 0" class="points-badge"
+          >{{ userPoints }} 积分</span
+        >
         <icon-ep:arrow-right class="arrow-icon" />
       </div>
     </div>
 
     <div class="section">
       <div class="section-title">头像</div>
-      <div class="user-header">
+      <div
+        class="user-header"
+        style="
+          display: flex;
+          align-items: flex-start;
+          justify-content: space-between;
+          gap: 40px;
+        "
+      >
         <div class="avatar-wrapper" @click="handleAvatarClick">
-          <el-avatar :src="userStore.userInfo.avatarUrl || defaultAvatar" :size="100" />
+          <el-avatar
+            :src="userStore.userInfo.avatarUrl || defaultAvatar"
+            :size="100"
+          />
           <div class="avatar-hover">
             <icon-ic:outline-photo-camera class="camera-icon" />
             <span>更新头像</span>
           </div>
         </div>
+
+        <!-- 头像框设置 -->
+        <div
+          v-if="avatarFrames.length > 0"
+          class="privilege-section"
+          style="width: 160px; align-self: center"
+        >
+          <el-select
+            v-model="currentAvatarFrame"
+            @change="handleAvatarFrameChange"
+            placeholder="头像框"
+            style="width: 100%"
+          >
+            <el-option label="默认头像框" value="default"></el-option>
+            <el-option
+              v-for="item in avatarFrames"
+              :key="item.itemCode"
+              :label="item.itemName"
+              :value="item.itemCode"
+            ></el-option>
+          </el-select>
+        </div>
       </div>
     </div>
 
     <!-- 头像裁剪弹窗 -->
-    <el-dialog v-model="cropperVisible" title="裁剪头像" width="600px" :close-on-click-modal="false"
-      :close-on-press-escape="false">
+    <el-dialog
+      v-model="cropperVisible"
+      title="裁剪头像"
+      width="600px"
+      :close-on-click-modal="false"
+      :close-on-press-escape="false"
+    >
       <div class="cropper-container">
-        <vue-cropper ref="cropper" :img="cropperImg" :info="true" :canScale="true" :autoCrop="true" :fixedBox="true"
-          :canMove="true" :canMoveBox="true" :centerBox="true" :infoTrue="true" :fixed="true" :fixedNumber="[1, 1]"
-          :high="true" mode="cover" :round="true" />
+        <vue-cropper
+          ref="cropper"
+          :img="cropperImg"
+          :info="true"
+          :canScale="true"
+          :autoCrop="true"
+          :fixedBox="true"
+          :canMove="true"
+          :canMoveBox="true"
+          :centerBox="true"
+          :infoTrue="true"
+          :fixed="true"
+          :fixedNumber="[1, 1]"
+          :high="true"
+          mode="cover"
+          :round="true"
+        />
       </div>
       <template #footer>
         <div class="dialog-footer">
           <div class="flex justify-between items-center w-full">
             <div class="flex">
-              <el-button size="mini" type="info" @click="reset" class="mr-1">重置</el-button>
+              <el-button size="mini" type="info" @click="reset" class="mr-1"
+                >重置</el-button
+              >
               <el-button size="mini" plain @click="changeScale(1)" class="mr-1">
                 <icon-ph:magnifying-glass-plus-light class="mr-0.5" />放大
               </el-button>
-              <el-button size="mini" plain @click="changeScale(-1)" class="mr-1">
+              <el-button
+                size="mini"
+                plain
+                @click="changeScale(-1)"
+                class="mr-1"
+              >
                 <icon-ph:magnifying-glass-minus-light class="mr-0.5" />缩小
               </el-button>
               <el-button size="mini" plain @click="rotateLeft" class="mr-1">
@@ -355,20 +533,67 @@ const handleDelete = async () => {
               </el-button>
             </div>
             <div class="flex">
-              <el-button size="mini" type="warning" plain @click="cropperVisible = false" class="mr-3">取消</el-button>
-              <el-button size="mini" type="primary" @click="handleCropConfirm">确认</el-button>
+              <el-button
+                size="mini"
+                type="warning"
+                plain
+                @click="cropperVisible = false"
+                class="mr-3"
+                >取消</el-button
+              >
+              <el-button size="mini" type="primary" @click="handleCropConfirm"
+                >确认</el-button
+              >
             </div>
           </div>
         </div>
       </template>
     </el-dialog>
 
-    <el-form ref="userFormRef" :model="userForm" :rules="userRules" label-width="0" size="large" class="user-form">
+    <el-form
+      ref="userFormRef"
+      :model="userForm"
+      :rules="userRules"
+      label-width="0"
+      size="large"
+      class="user-form"
+    >
       <div class="section">
         <div class="section-title">用户名</div>
-        <el-form-item prop="username">
-          <el-input v-model="userForm.username" placeholder="用户名" />
-        </el-form-item>
+        <div
+          style="
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 40px;
+          "
+        >
+          <el-form-item prop="username" style="flex: 1; margin-bottom: 0">
+            <el-input v-model="userForm.username" placeholder="用户名" />
+          </el-form-item>
+
+          <!-- 昵称颜色设置 -->
+          <div
+            v-if="nicknameColors.length > 0"
+            class="privilege-section"
+            style="width: 160px; flex-shrink: 0"
+          >
+            <el-select
+              v-model="currentNicknameColor"
+              @change="handleNicknameColorChange"
+              placeholder="昵称颜色"
+              style="width: 100%"
+            >
+              <el-option label="默认颜色" value="default"></el-option>
+              <el-option
+                v-for="item in nicknameColors"
+                :key="item.itemCode"
+                :label="item.itemName"
+                :value="item.itemCode"
+              ></el-option>
+            </el-select>
+          </div>
+        </div>
       </div>
 
       <div class="section">
@@ -388,17 +613,33 @@ const handleDelete = async () => {
       <div class="section">
         <div class="section-title">简介</div>
         <el-form-item prop="introduction">
-          <el-input v-model="userForm.introduction" type="textarea" :rows="4" placeholder="编辑个人简介" maxlength="100"
-            show-word-limit />
+          <el-input
+            v-model="userForm.introduction"
+            type="textarea"
+            :rows="4"
+            placeholder="编辑个人简介"
+            maxlength="100"
+            show-word-limit
+          />
         </el-form-item>
       </div>
 
       <el-form-item class="button-group">
         <div class="flex justify-between w-full">
-          <el-button type="primary" :loading="loading" @click="handleSubmit" class="submit-btn">
+          <el-button
+            type="primary"
+            :loading="loading"
+            @click="handleSubmit"
+            class="submit-btn"
+          >
             更新信息
           </el-button>
-          <el-button type="danger" :loading="loading" @click="handleDelete" class="submit-btn">
+          <el-button
+            type="danger"
+            :loading="loading"
+            @click="handleDelete"
+            class="submit-btn"
+          >
             注销账号
           </el-button>
         </div>

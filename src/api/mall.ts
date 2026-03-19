@@ -21,3 +21,8 @@ export const checkPrivilege = (privilegeType: string, targetId?: number) => {
     params: { privilegeType, targetId },
   })
 }
+
+// 切换装扮
+export const togglePrivilege = (type: string, value: string) => {
+  return http('post', '/api/mall/privilege/toggle', { params: { type, value } })
+}

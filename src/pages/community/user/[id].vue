@@ -240,7 +240,7 @@ onMounted(fetchData)
 <style scoped lang="scss">
 .user-profile-page {
   min-height: 100vh;
-  background: linear-gradient(to bottom, #f5f7fa 0%, #ffffff 100%);
+  background: var(--el-bg-color-page, var(--el-fill-color-light));
   padding: 24px;
 }
 
@@ -331,7 +331,7 @@ onMounted(fetchData)
     border-top: 1px solid rgba(255, 255, 255, 0.2);
 
     .stat-card {
-      background: white;
+      background: var(--el-bg-color);
       padding: 24px;
       text-align: center;
       transition: all 0.3s ease;
@@ -340,7 +340,7 @@ onMounted(fetchData)
         cursor: pointer;
 
         &:hover {
-          background: #f8f9fa;
+          background: var(--el-fill-color-light);
           transform: translateY(-2px);
 
           .stat-value {
@@ -352,14 +352,14 @@ onMounted(fetchData)
       .stat-value {
         font-size: 28px;
         font-weight: 700;
-        color: #2c3e50;
+        color: var(--el-text-color-primary);
         margin-bottom: 8px;
         transition: color 0.3s ease;
       }
 
       .stat-label {
         font-size: 14px;
-        color: #7f8c8d;
+        color: var(--el-text-color-secondary);
       }
     }
   }
@@ -369,7 +369,7 @@ onMounted(fetchData)
   .section-title {
     font-size: 24px;
     font-weight: 700;
-    color: #2c3e50;
+    color: var(--el-text-color-primary);
     margin: 0 0 20px 0;
     display: flex;
     align-items: center;
@@ -383,7 +383,7 @@ onMounted(fetchData)
     min-height: 400px;
 
     .post-item {
-      background: white;
+      background: var(--el-bg-color);
       border-radius: 16px;
       padding: 24px;
       margin-bottom: 16px;
@@ -445,14 +445,14 @@ onMounted(fetchData)
           .post-title {
             font-size: 20px;
             font-weight: 600;
-            color: #2c3e50;
+            color: var(--el-text-color-primary);
             margin: 0 0 12px 0;
             line-height: 1.4;
           }
 
           .post-excerpt {
             font-size: 14px;
-            color: #7f8c8d;
+            color: var(--el-text-color-secondary);
             line-height: 1.6;
             margin: 0;
           }
@@ -464,11 +464,11 @@ onMounted(fetchData)
           align-items: center;
           margin-top: 16px;
           padding-top: 16px;
-          border-top: 1px solid #ecf0f1;
+          border-top: 1px solid var(--el-border-color-lighter);
 
           .post-time {
             font-size: 13px;
-            color: #95a5a6;
+            color: var(--el-text-color-placeholder);
           }
 
           .post-stats {
@@ -480,7 +480,7 @@ onMounted(fetchData)
               align-items: center;
               gap: 6px;
               font-size: 14px;
-              color: #7f8c8d;
+              color: var(--el-text-color-secondary);
 
               i {
                 font-size: 16px;

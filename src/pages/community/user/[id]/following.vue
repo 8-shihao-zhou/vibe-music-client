@@ -131,7 +131,7 @@ onMounted(fetchFollowingList)
 <style scoped lang="scss">
 .following-page {
   min-height: 100vh;
-  background: linear-gradient(to bottom, #f5f7fa 0%, #ffffff 100%);
+  background: var(--el-bg-color-page, var(--el-fill-color-light));
   padding: 24px;
 }
 
@@ -151,7 +151,7 @@ onMounted(fetchFollowingList)
   .page-title {
     font-size: 32px;
     font-weight: 700;
-    color: #2c3e50;
+    color: var(--el-text-color-primary);
     margin: 0 0 8px 0;
     display: flex;
     align-items: center;
@@ -163,7 +163,7 @@ onMounted(fetchFollowingList)
 
   .page-subtitle {
     font-size: 14px;
-    color: #95a5a6;
+    color: var(--el-text-color-placeholder);
     margin: 0;
   }
 }
@@ -175,7 +175,7 @@ onMounted(fetchFollowingList)
   min-height: 400px;
 
   .user-card {
-    background: white;
+    background: var(--el-bg-color);
     border-radius: 16px;
     padding: 24px;
     display: flex;
@@ -201,14 +201,14 @@ onMounted(fetchFollowingList)
         height: 64px;
         border-radius: 50%;
         object-fit: cover;
-        border: 3px solid #ecf0f1;
+        border: 3px solid var(--el-border-color-lighter);
       }
 
       .user-details {
         .username {
           font-size: 18px;
           font-weight: 600;
-          color: #2c3e50;
+          color: var(--el-text-color-primary);
           margin: 0 0 8px 0;
         }
 
@@ -218,7 +218,7 @@ onMounted(fetchFollowingList)
 
           .stat {
             font-size: 13px;
-            color: #7f8c8d;
+            color: var(--el-text-color-secondary);
           }
         }
       }

@@ -454,8 +454,20 @@ onMounted(() => {
               <h3 class="post-title">{{ post.title }}</h3>
               <div
                 class="right-badges"
-                style="display: flex; gap: 8px; margin-left: auto"
+                style="
+                  display: flex;
+                  gap: 8px;
+                  margin-left: auto;
+                  align-items: center;
+                "
               >
+                <!-- 等级标签 -->
+                <span
+                  v-if="post.levelName"
+                  :class="['level-tag-badge', 'level-' + (post.level || 1)]"
+                >
+                  Lv.{{ post.level || 1 }} {{ post.levelName }}
+                </span>
                 <span v-if="post.isTop" class="tag-top-badge">
                   <i class="i-carbon-up-to-top" />
                   置顶
@@ -486,11 +498,38 @@ onMounted(() => {
           <!-- 底部信息 -->
           <div class="post-footer">
             <div class="author-info">
-              <img
-                :src="post.userAvatar || '/src/assets/user.jpg'"
-                class="avatar"
-              />
-              <span class="username">{{ post.username }}</span>
+              <div
+                :class="[
+                  'avatar-container',
+                  post.avatarFrame ? `frame-${post.avatarFrame}` : '',
+                ]"
+              >
+                <img
+                  :src="post.userAvatar || '/src/assets/user.jpg'"
+                  class="avatar"
+                />
+              </div>
+              <span
+                class="username"
+                :style="
+                  post.nicknameColor && post.nicknameColor !== 'default'
+                    ? {
+                        background: post.nicknameColor.startsWith('linear')
+                          ? post.nicknameColor
+                          : 'none',
+                        color: post.nicknameColor.startsWith('linear')
+                          ? 'transparent'
+                          : post.nicknameColor,
+                        WebkitBackgroundClip: post.nicknameColor.startsWith(
+                          'linear'
+                        )
+                          ? 'text'
+                          : 'border-box',
+                      }
+                    : {}
+                "
+                >{{ post.username }}</span
+              >
               <span class="time">{{ formatTime(post.createTime) }}</span>
             </div>
 
@@ -816,6 +855,45 @@ onMounted(() => {
             letter-spacing: 0.5px;
           }
 
+          .level-tag-badge {
+            flex-shrink: 0;
+            display: inline-flex;
+            align-items: center;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+            font-style: italic;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+
+            &.level-1 {
+              background: #f4f4f5;
+              color: #909399;
+              border: 1px solid #e9e9eb;
+            }
+            &.level-2 {
+              background: #e1f3d8;
+              color: #67c23a;
+              border: 1px solid #e1f3d8;
+            }
+            &.level-3 {
+              background: #d9ecff;
+              color: #409eff;
+              border: 1px solid #d9ecff;
+            }
+            &.level-4 {
+              background: #faecd8;
+              color: #e6a23c;
+              border: 1px solid #faecd8;
+            }
+            &.level-5 {
+              background: linear-gradient(45deg, #f56c6c, #e6a23c);
+              color: white;
+              border: none;
+              box-shadow: 0 2px 8px rgba(245, 108, 108, 0.4);
+            }
+          }
+
           .tag-highlight {
             flex-shrink: 0;
             display: inline-flex;
@@ -853,11 +931,73 @@ onMounted(() => {
           padding: 4px 8px;
           border-radius: 8px;
 
+          .avatar-container {
+            position: relative;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            &.frame-gold {
+              &::after {
+                content: '';
+                position: absolute;
+                top: -4px;
+                left: -4px;
+                right: -4px;
+                bottom: -4px;
+                border: 2px solid #ffd700;
+                border-radius: 50%;
+                box-shadow: 0 0 8px rgba(255, 215, 0, 0.6);
+              }
+            }
+
+            &.frame-rainbow {
+              &::after {
+                content: '';
+                position: absolute;
+                top: -4px;
+                left: -4px;
+                right: -4px;
+                bottom: -4px;
+                border-radius: 50%;
+                background: linear-gradient(
+                  45deg,
+                  #ff0000,
+                  #ff7f00,
+                  #ffff00,
+                  #00ff00,
+                  #0000ff,
+                  #4b0082,
+                  #8b00ff
+                );
+                -webkit-mask:
+                  linear-gradient(#fff 0 0) content-box,
+                  linear-gradient(#fff 0 0);
+                -webkit-mask-composite: xor;
+                mask-composite: exclude;
+                padding: 2px;
+                animation: rotate 4s linear infinite;
+              }
+            }
+          }
+
+          @keyframes rotate {
+            from {
+              transform: rotate(0deg);
+            }
+            to {
+              transform: rotate(360deg);
+            }
+          }
+
           .avatar {
             width: 32px;
             height: 32px;
             border-radius: 50%;
             object-fit: cover;
+            z-index: 1;
           }
 
           .username {

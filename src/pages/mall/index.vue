@@ -12,20 +12,17 @@
         </div>
         <div class="points-display">
           <div class="points-card">
-            <div class="points-icon">
-              <el-icon><Coin /></el-icon>
-            </div>
+            <div class="points-coin">🪙</div>
             <div class="points-info">
-              <div class="points-label">我的积分</div>
+              <div class="points-label">可用积分</div>
               <div class="points-value">{{ userPoints }}</div>
             </div>
             <el-button
-              type="primary"
-              plain
+              class="points-btn"
               @click="$router.push('/points')"
               size="small"
             >
-              积分中心
+              积分中心 →
             </el-button>
           </div>
         </div>
@@ -73,7 +70,7 @@
           v-for="item in items"
           :key="item.id"
           class="product-card"
-          :class="{ disabled: !item.canPurchase, owned: item.alreadyOwned }"
+          :class="{ disabled: !item.canPurchase && !item.alreadyOwned, owned: item.alreadyOwned }"
         >
           <div class="product-header">
             <div class="product-icon">
@@ -290,7 +287,7 @@ const loadUserPoints = async () => {
   try {
     const response = await getUserPoints()
     if (response.code === 0) {
-      userPoints.value = response.data.totalPoints
+      userPoints.value = response.data.availablePoints
     }
   } catch (error) {
     console.error('获取用户积分失败:', error)
@@ -412,18 +409,33 @@ const getTypeTagType = (type) => {
 
 // 页面加载时获取数据
 onMounted(() => {
-  loadItems()
-  loadUserPoints()
-  loadPurchases()
+  // 如果已登录直接加载，否则等待登录状态就绪
+  if (userStore.userInfo?.userId) {
+    loadItems()
+    loadUserPoints()
+    loadPurchases()
+  }
 })
+
+// 监听登录状态，解决刷新时 token 未就绪导致 alreadyOwned/canPurchase 错误的问题
+watch(
+  () => userStore.userInfo?.userId,
+  (userId) => {
+    if (userId) {
+      loadItems()
+      loadUserPoints()
+      loadPurchases()
+    }
+  },
+  { immediate: true }
+)
 
 // 监听分类变化
 watch(
   activeCategory,
   () => {
     loadItems()
-  },
-  { immediate: true }
+  }
 )
 </script>
 
@@ -436,7 +448,7 @@ watch(
 
 /* 头部区域 */
 .mall-header {
-  background: rgba(255, 255, 255, 0.95);
+  background: var(--el-bg-color);
   backdrop-filter: blur(10px);
   border-radius: 20px;
   padding: 30px;
@@ -462,7 +474,7 @@ watch(
   gap: 12px;
   font-size: 32px;
   font-weight: 700;
-  color: #2c3e50;
+  color: var(--el-text-color-primary);
   margin: 0 0 8px 0;
 }
 
@@ -473,7 +485,7 @@ watch(
 
 .page-subtitle {
   font-size: 16px;
-  color: #7f8c8d;
+  color: var(--el-text-color-secondary);
   margin: 0;
 }
 
@@ -484,38 +496,60 @@ watch(
 .points-card {
   display: flex;
   align-items: center;
-  gap: 15px;
+  gap: 16px;
   background: linear-gradient(135deg, #667eea, #764ba2);
   color: white;
-  padding: 20px 25px;
-  border-radius: 15px;
-  box-shadow: 0 4px 20px rgba(102, 126, 234, 0.3);
+  padding: 16px 24px;
+  border-radius: 16px;
+  box-shadow: 0 4px 24px rgba(102, 126, 234, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.15);
 }
 
-.points-icon {
-  font-size: 24px;
+.points-coin {
+  font-size: 36px;
+  line-height: 1;
+  filter: drop-shadow(0 2px 6px rgba(246, 201, 14, 0.5));
 }
 
 .points-info {
-  text-align: center;
+  text-align: left;
 }
 
 .points-label {
   display: block;
-  font-size: 12px;
-  opacity: 0.8;
-  margin-bottom: 4px;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.7);
+  letter-spacing: 0.5px;
+  margin-bottom: 2px;
 }
 
 .points-value {
   display: block;
-  font-size: 24px;
-  font-weight: 700;
+  font-size: 32px;
+  font-weight: 800;
+  color: #fff;
+  line-height: 1;
+  letter-spacing: -1px;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.points-btn {
+  margin-left: 8px;
+  background: rgba(255, 255, 255, 0.15) !important;
+  border: 1px solid rgba(255, 255, 255, 0.3) !important;
+  color: white !important;
+  border-radius: 8px !important;
+  font-size: 12px !important;
+  white-space: nowrap;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.25) !important;
+  }
 }
 
 /* 分类导航 */
 .category-section {
-  background: rgba(255, 255, 255, 0.95);
+  background: var(--el-bg-color);
   backdrop-filter: blur(10px);
   border-radius: 15px;
   padding: 20px;
@@ -562,7 +596,7 @@ watch(
 }
 
 .product-card {
-  background: rgba(255, 255, 255, 0.95);
+  background: var(--el-bg-color);
   backdrop-filter: blur(10px);
   border-radius: 20px;
   padding: 25px;
@@ -618,13 +652,13 @@ watch(
 .product-name {
   font-size: 18px;
   font-weight: 600;
-  color: #2c3e50;
+  color: var(--el-text-color-primary);
   margin: 0 0 8px 0;
 }
 
 .product-description {
   font-size: 14px;
-  color: #7f8c8d;
+  color: var(--el-text-color-secondary);
   margin: 0 0 15px 0;
   line-height: 1.5;
 }
@@ -649,7 +683,7 @@ watch(
   justify-content: space-between;
   align-items: center;
   padding-top: 20px;
-  border-top: 1px solid #ecf0f1;
+  border-top: 1px solid var(--el-border-color-lighter);
 }
 
 .price-section {
@@ -659,7 +693,7 @@ watch(
 .price-label {
   display: block;
   font-size: 12px;
-  color: #95a5a6;
+  color: var(--el-text-color-placeholder);
   margin-bottom: 4px;
 }
 
@@ -723,7 +757,7 @@ watch(
 .empty-state {
   text-align: center;
   padding: 60px 20px;
-  background: rgba(255, 255, 255, 0.95);
+  background: var(--el-bg-color);
   border-radius: 20px;
   backdrop-filter: blur(10px);
 }
@@ -743,7 +777,7 @@ watch(
   gap: 20px;
   align-items: center;
   padding: 20px;
-  background: #f8f9fa;
+  background: var(--el-fill-color-light);
   border-radius: 15px;
   margin-bottom: 20px;
 }
@@ -762,12 +796,12 @@ watch(
 
 .purchase-item .item-info h4 {
   margin: 0 0 8px 0;
-  color: #2c3e50;
+  color: var(--el-text-color-primary);
 }
 
 .purchase-item .item-info p {
   margin: 0 0 10px 0;
-  color: #7f8c8d;
+  color: var(--el-text-color-secondary);
   font-size: 14px;
 }
 
@@ -785,7 +819,7 @@ watch(
 
 .target-selection h5 {
   margin: 0 0 15px 0;
-  color: #2c3e50;
+  color: var(--el-text-color-primary);
 }
 
 /* 响应式设计 */

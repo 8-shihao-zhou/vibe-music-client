@@ -1,8 +1,10 @@
-<template>
+﻿<template>
   <div class="points-center">
     <!-- 头部 -->
     <div class="points-header">
-      <h1 class="page-title"><el-icon class="title-icon"><Coin /></el-icon>积分中心</h1>
+      <h1 class="page-title">
+        <el-icon class="title-icon"><Coin /></el-icon>积分中心
+      </h1>
       <p class="page-subtitle">管理你的积分，提升等级，解锁更多特权</p>
     </div>
 
@@ -13,9 +15,13 @@
         <!-- 顶部：积分 + 三项统计 横排 -->
         <div class="points-main">
           <div class="points-display">
-            <div class="points-icon"><el-icon><Coin /></el-icon></div>
+            <div class="points-icon">
+              <el-icon><Coin /></el-icon>
+            </div>
             <div class="points-info">
-              <div class="points-value">{{ userPoints.availablePoints || 0 }}</div>
+              <div class="points-value">
+                {{ userPoints.availablePoints || 0 }}
+              </div>
               <div class="points-label">可用积分</div>
             </div>
           </div>
@@ -24,14 +30,29 @@
               <div class="stat-value">{{ userPoints.totalPoints || 0 }}</div>
               <div class="stat-label">总积分</div>
             </div>
-            <div class="stat-item">
+            <div
+              class="stat-item"
+              @click="showLevelsDialog = true"
+              style="cursor: pointer; transition: transform 0.2s"
+              onmouseover="this.style.transform='scale(1.05)'"
+              onmouseout="this.style.transform='scale(1)'"
+            >
               <div class="stat-value">
-                <span class="level-badge">{{ userPoints.levelName || '新手' }}</span>
+                <span class="level-badge">{{
+                  userPoints.levelName || '新手'
+                }}</span>
               </div>
-              <div class="stat-label">当前等级</div>
+              <div class="stat-label">
+                当前等级
+                <el-icon style="font-size: 12px; margin-left: 2px"
+                  ><InfoFilled
+                /></el-icon>
+              </div>
             </div>
             <div class="stat-item">
-              <div class="stat-value ranking-val">第 {{ userPoints.ranking || '-' }} 名</div>
+              <div class="stat-value ranking-val">
+                第 {{ userPoints.ranking || '-' }} 名
+              </div>
               <div class="stat-label">积分排名</div>
             </div>
           </div>
@@ -40,14 +61,21 @@
         <!-- 等级进度 -->
         <div class="level-progress">
           <div class="progress-header">
-            <span class="current-level">{{ userPoints.levelName || '新手' }}</span>
+            <span class="current-level">{{
+              userPoints.levelName || '新手'
+            }}</span>
             <span class="progress-text" v-if="userPoints.nextLevelPoints > 0">
-              距下一级还需 <em>{{ userPoints.nextLevelPoints - userPoints.totalPoints }}</em> 积分
+              距下一级还需
+              <em>{{ userPoints.nextLevelPoints - userPoints.totalPoints }}</em>
+              积分
             </span>
             <span class="progress-text" v-else>已满级 🎉</span>
           </div>
           <div class="progress-bar">
-            <div class="progress-fill" :style="{ width: getProgressPercentage() + '%' }"></div>
+            <div
+              class="progress-fill"
+              :style="{ width: getProgressPercentage() + '%' }"
+            ></div>
           </div>
         </div>
       </div>
@@ -56,7 +84,9 @@
       <div class="quick-actions">
         <!-- 积分商城 -->
         <div class="action-card mall-entry" @click="goToMall">
-          <div class="action-icon mall"><el-icon><Shop /></el-icon></div>
+          <div class="action-icon mall">
+            <el-icon><Shop /></el-icon>
+          </div>
           <div class="action-content">
             <div class="action-title">积分商城</div>
             <div class="action-subtitle">兑换特权和装扮</div>
@@ -66,7 +96,9 @@
 
         <!-- 每日任务 -->
         <div class="action-card" @click="openTasks">
-          <div class="action-icon tasks"><el-icon><Trophy /></el-icon></div>
+          <div class="action-icon tasks">
+            <el-icon><Trophy /></el-icon>
+          </div>
           <div class="action-content">
             <div class="action-title">每日任务</div>
             <div class="action-subtitle">完成任务获得积分</div>
@@ -76,7 +108,9 @@
 
         <!-- 排行榜入口 -->
         <div class="action-card" @click="openRanking">
-          <div class="action-icon ranking"><el-icon><Medal /></el-icon></div>
+          <div class="action-icon ranking">
+            <el-icon><Medal /></el-icon>
+          </div>
           <div class="action-content">
             <div class="action-title">积分排行榜</div>
             <div class="action-subtitle">查看用户积分排名</div>
@@ -89,7 +123,9 @@
     <!-- 积分记录 -->
     <div class="records-section">
       <div class="section-header">
-        <h2 class="section-title"><el-icon><List /></el-icon>积分记录</h2>
+        <h2 class="section-title">
+          <el-icon><List /></el-icon>积分记录
+        </h2>
         <div class="filter-tabs">
           <el-tabs v-model="activeTab" @tab-change="handleTabChange">
             <el-tab-pane label="全部" name="all"></el-tab-pane>
@@ -104,7 +140,10 @@
           v-for="record in filteredRecords"
           :key="record.id"
           class="record-item"
-          :class="{ earn: record.changeType === 'EARN', spend: record.changeType === 'SPEND' }"
+          :class="{
+            earn: record.changeType === 'EARN',
+            spend: record.changeType === 'SPEND',
+          }"
         >
           <div class="record-icon">
             <el-icon v-if="record.changeType === 'EARN'"><Plus /></el-icon>
@@ -114,11 +153,18 @@
             <div class="record-title">{{ record.description }}</div>
             <div class="record-time">{{ formatTime(record.createTime) }}</div>
           </div>
-          <div class="record-points" :class="(record.changeType || 'earn').toLowerCase()">
-            {{ record.changeType === 'EARN' ? '+' : '-' }}{{ Math.abs(record.points) }}
+          <div
+            class="record-points"
+            :class="(record.changeType || 'earn').toLowerCase()"
+          >
+            {{ record.changeType === 'EARN' ? '+' : '-'
+            }}{{ Math.abs(record.points) }}
           </div>
         </div>
-        <div v-if="!recordsLoading && filteredRecords.length === 0" class="empty-state">
+        <div
+          v-if="!recordsLoading && filteredRecords.length === 0"
+          class="empty-state"
+        >
           <el-empty description="暂无积分记录" />
         </div>
       </div>
@@ -137,7 +183,12 @@
     </div>
 
     <!-- 每日任务对话框 -->
-    <el-dialog v-model="showTasksDialog" title="每日任务" width="560px" class="tasks-dialog">
+    <el-dialog
+      v-model="showTasksDialog"
+      title="每日任务"
+      width="560px"
+      class="tasks-dialog"
+    >
       <div class="tasks-content">
         <div class="task-item" v-for="task in dailyTasks" :key="task.id">
           <div class="task-icon" :class="{ done: task.completed }">
@@ -155,20 +206,35 @@
             <div class="task-progress-bar" v-if="task.target > 1">
               <div
                 class="task-progress-fill"
-                :style="{ width: Math.min(100, (task.count / task.target) * 100) + '%' }"
+                :style="{
+                  width: Math.min(100, (task.count / task.target) * 100) + '%',
+                }"
               ></div>
             </div>
           </div>
           <div class="task-status">
             <el-tag v-if="task.completed" type="success">已完成</el-tag>
-            <el-tag v-else-if="task.action === 'auto'" type="info">自动完成</el-tag>
-            <el-button v-else type="primary" size="small" @click="completeTask(task)">去完成</el-button>
+            <el-tag v-else-if="task.action === 'auto'" type="info"
+              >自动完成</el-tag
+            >
+            <el-button
+              v-else
+              type="primary"
+              size="small"
+              @click="completeTask(task)"
+              >去完成</el-button
+            >
           </div>
         </div>
       </div>
     </el-dialog>
     <!-- 排行榜对话框 -->
-    <el-dialog v-model="showRankingDialog" title="积分排行榜" width="500px" class="tasks-dialog">
+    <el-dialog
+      v-model="showRankingDialog"
+      title="积分排行榜"
+      width="500px"
+      class="tasks-dialog"
+    >
       <div class="ranking-dialog-content" v-loading="rankingLoading">
         <div
           v-for="(item, index) in rankingList"
@@ -180,11 +246,58 @@
             <el-icon v-if="index < 3"><Medal /></el-icon>
             <span v-else>{{ index + 1 }}</span>
           </div>
-          <div class="rank-name">{{ item.username || ('用户' + item.userId) }}</div>
+          <div class="rank-name">
+            {{ item.username || '用户' + item.userId }}
+          </div>
           <span class="level-tag">{{ item.levelName }}</span>
-          <div class="rank-points">{{ item.totalPoints }} <small>分</small></div>
+          <div class="rank-points">
+            {{ item.totalPoints }} <small>分</small>
+          </div>
         </div>
-        <div v-if="!rankingLoading && rankingList.length === 0" class="ranking-empty">暂无数据</div>
+        <div
+          v-if="!rankingLoading && rankingList.length === 0"
+          class="ranking-empty"
+        >
+          暂无数据
+        </div>
+      </div>
+    </el-dialog>
+
+    <!-- 等级规则对话框 -->
+    <el-dialog
+      v-model="showLevelsDialog"
+      title="等级与特权"
+      width="560px"
+      class="tasks-dialog levels-dialog"
+    >
+      <div class="levels-content">
+        <div class="level-intro">
+          <p>
+            积分等级由您的<strong>总积分</strong>决定，提升等级可以解锁更炫酷的身份标识！
+          </p>
+        </div>
+        <div class="level-list">
+          <div class="level-item" v-for="lvl in allLevels" :key="lvl.level">
+            <div class="level-icon-wrap" :class="'level-' + lvl.level">
+              <span class="level-badge">{{ lvl.name }}</span>
+            </div>
+            <div class="level-info">
+              <div class="level-req">
+                所需总积分：<strong>{{ lvl.requiredPoints }}</strong>
+              </div>
+              <div class="level-desc">{{ lvl.description }}</div>
+            </div>
+            <div
+              class="level-status"
+              v-if="userPoints.totalPoints >= lvl.requiredPoints"
+            >
+              <el-icon class="check-icon"><CircleCheckFilled /></el-icon> 已解锁
+            </div>
+            <div class="level-status locked" v-else>
+              <el-icon><Lock /></el-icon> 未解锁
+            </div>
+          </div>
+        </div>
       </div>
     </el-dialog>
   </div>
@@ -193,8 +306,26 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { Coin, Shop, Trophy, List, ArrowRight, Plus, Minus, Star, Medal } from '@element-plus/icons-vue'
-import { getUserPoints, getPointsLog, getPointsRanking, getDailyTaskStatus } from '@/api/points'
+import {
+  Coin,
+  Shop,
+  Trophy,
+  List,
+  ArrowRight,
+  Plus,
+  Minus,
+  Star,
+  Medal,
+  InfoFilled,
+  CircleCheckFilled,
+  Lock,
+} from '@element-plus/icons-vue'
+import {
+  getUserPoints,
+  getPointsLog,
+  getPointsRanking,
+  getDailyTaskStatus,
+} from '@/api/points'
 import { UserStore } from '@/stores/modules/user'
 
 const userStore = UserStore()
@@ -203,8 +334,12 @@ const router = useRouter()
 const currentUserId = computed(() => userStore.userInfo?.userId)
 
 const userPoints = ref<any>({
-  totalPoints: 0, availablePoints: 0, level: 1,
-  levelName: '新手', nextLevelPoints: 100, ranking: 0,
+  totalPoints: 0,
+  availablePoints: 0,
+  level: 1,
+  levelName: '新手',
+  nextLevelPoints: 100,
+  ranking: 0,
 })
 const pointsRecords = ref<any[]>([])
 const recordsLoading = ref(false)
@@ -214,10 +349,45 @@ const pageSize = ref(20)
 const total = ref(0)
 const showTasksDialog = ref(false)
 const showRankingDialog = ref(false)
+const showLevelsDialog = ref(false)
 
 // 排行榜
 const rankingList = ref<any[]>([])
 const rankingLoading = ref(false)
+
+// 等级规则数据 (前端写死展示用)
+const allLevels = ref([
+  {
+    level: 1,
+    name: '新手',
+    requiredPoints: 0,
+    description: '社区初来乍到，开启音乐之旅',
+  },
+  {
+    level: 2,
+    name: '活跃用户',
+    requiredPoints: 100,
+    description: '参与互动，逐渐融入社区',
+  },
+  {
+    level: 3,
+    name: '音乐达人',
+    requiredPoints: 500,
+    description: '经常分享，品味获得认可',
+  },
+  {
+    level: 4,
+    name: '社区大V',
+    requiredPoints: 1000,
+    description: '社区中坚力量，一呼百应',
+  },
+  {
+    level: 5,
+    name: '殿堂级',
+    requiredPoints: 5000,
+    description: '音乐界泰斗，社区传说级人物',
+  },
+])
 
 const dailyTasks = ref([
   {
@@ -255,13 +425,19 @@ const dailyTasks = ref([
 ])
 
 const filteredRecords = computed(() => {
-  if (activeTab.value === 'earn') return pointsRecords.value.filter(r => r.changeType === 'EARN')
-  if (activeTab.value === 'spend') return pointsRecords.value.filter(r => r.changeType === 'SPEND')
+  if (activeTab.value === 'earn')
+    return pointsRecords.value.filter((r) => r.changeType === 'EARN')
+  if (activeTab.value === 'spend')
+    return pointsRecords.value.filter((r) => r.changeType === 'SPEND')
   return pointsRecords.value
 })
 
 const getProgressPercentage = () => {
-  if (!userPoints.value.nextLevelPoints || userPoints.value.nextLevelPoints <= 0) return 100
+  if (
+    !userPoints.value.nextLevelPoints ||
+    userPoints.value.nextLevelPoints <= 0
+  )
+    return 100
   const current = userPoints.value.totalPoints || 0
   const next = userPoints.value.nextLevelPoints
   const prev = [0, 0, 100, 300, 600, 1000][userPoints.value.level] || 0
@@ -283,19 +459,27 @@ const loadUserPoints = async () => {
   try {
     const res: any = await getUserPoints()
     if (res.code === 0) userPoints.value = res.data
-  } catch (e) { console.error(e) }
+  } catch (e) {
+    console.error(e)
+  }
 }
 
 const loadPointsRecords = async () => {
   try {
     recordsLoading.value = true
-    const res: any = await getPointsLog({ pageNum: currentPage.value, pageSize: pageSize.value })
+    const res: any = await getPointsLog({
+      pageNum: currentPage.value,
+      pageSize: pageSize.value,
+    })
     if (res.code === 0) {
       pointsRecords.value = res.data.records || []
       total.value = res.data.total || 0
     }
-  } catch (e) { console.error(e) }
-  finally { recordsLoading.value = false }
+  } catch (e) {
+    console.error(e)
+  } finally {
+    recordsLoading.value = false
+  }
 }
 
 const loadRanking = async () => {
@@ -303,12 +487,18 @@ const loadRanking = async () => {
     rankingLoading.value = true
     const res: any = await getPointsRanking({ pageNum: 1, pageSize: 5 })
     if (res.code === 0) rankingList.value = res.data.records || []
-  } catch (e) { console.error(e) }
-  finally { rankingLoading.value = false }
+  } catch (e) {
+    console.error(e)
+  } finally {
+    rankingLoading.value = false
+  }
 }
 
 const goToMall = () => router.push('/mall')
-const openRanking = () => { showRankingDialog.value = true; loadRanking() }
+const openRanking = () => {
+  showRankingDialog.value = true
+  loadRanking()
+}
 
 const openTasks = async () => {
   showTasksDialog.value = true
@@ -320,7 +510,7 @@ const loadDailyTaskStatus = async () => {
     const res: any = await getDailyTaskStatus()
     if (res.code === 0 && Array.isArray(res.data)) {
       res.data.forEach((item: any) => {
-        const task = dailyTasks.value.find(t => t.id === item.actionType)
+        const task = dailyTasks.value.find((t) => t.id === item.actionType)
         if (task) {
           task.count = item.count
           task.target = item.target
@@ -329,7 +519,9 @@ const loadDailyTaskStatus = async () => {
         }
       })
     }
-  } catch (e) { console.error(e) }
+  } catch (e) {
+    console.error(e)
+  }
 }
 
 const completeTask = (task: any) => {
@@ -338,21 +530,47 @@ const completeTask = (task: any) => {
     router.push(task.route)
   }
 }
-const handleTabChange = () => { currentPage.value = 1; loadPointsRecords() }
-const handleSizeChange = (size: number) => { pageSize.value = size; currentPage.value = 1; loadPointsRecords() }
-const handleCurrentChange = (page: number) => { currentPage.value = page; loadPointsRecords() }
+const handleTabChange = () => {
+  currentPage.value = 1
+  loadPointsRecords()
+}
+const handleSizeChange = (size: number) => {
+  pageSize.value = size
+  currentPage.value = 1
+  loadPointsRecords()
+}
+const handleCurrentChange = (page: number) => {
+  currentPage.value = page
+  loadPointsRecords()
+}
 
-onMounted(() => { loadUserPoints(); loadPointsRecords() })
-
-watch(() => userStore.userInfo.userId, (newId, oldId) => {
-  if (newId !== oldId) {
-    const reset = { totalPoints: 0, availablePoints: 0, level: 1, levelName: '新手', nextLevelPoints: 100, ranking: 0 }
-    userPoints.value = reset
-    pointsRecords.value = []
-    rankingList.value = []
-    if (newId) { loadUserPoints(); loadPointsRecords() }
-  }
+onMounted(() => {
+  loadUserPoints()
+  loadPointsRecords()
 })
+
+watch(
+  () => userStore.userInfo.userId,
+  (newId, oldId) => {
+    if (newId !== oldId) {
+      const reset = {
+        totalPoints: 0,
+        availablePoints: 0,
+        level: 1,
+        levelName: '新手',
+        nextLevelPoints: 100,
+        ranking: 0,
+      }
+      userPoints.value = reset
+      pointsRecords.value = []
+      rankingList.value = []
+      if (newId) {
+        loadUserPoints()
+        loadPointsRecords()
+      }
+    }
+  }
+)
 </script>
 
 <style scoped>
@@ -363,13 +581,28 @@ watch(() => userStore.userInfo.userId, (newId, oldId) => {
 }
 
 /* 头部 */
-.points-header { text-align: center; margin-bottom: 24px; }
-.page-title {
-  display: inline-flex; align-items: center; gap: 10px;
-  font-size: 26px; font-weight: 700; color: #fff; margin: 0 0 6px;
+.points-header {
+  text-align: center;
+  margin-bottom: 24px;
 }
-.title-icon { font-size: 28px; color: #ffd700; }
-.page-subtitle { font-size: 13px; color: rgba(255,255,255,0.75); margin: 0; }
+.page-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 26px;
+  font-weight: 700;
+  color: #fff;
+  margin: 0 0 6px;
+}
+.title-icon {
+  font-size: 28px;
+  color: #ffd700;
+}
+.page-subtitle {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.75);
+  margin: 0;
+}
 
 /* 布局 */
 .overview-section {
@@ -382,10 +615,10 @@ watch(() => userStore.userInfo.userId, (newId, oldId) => {
 
 /* 概览卡片 */
 .points-overview-card {
-  background: rgba(255,255,255,0.96);
+  background: var(--el-bg-color);
   border-radius: 18px;
   padding: 24px;
-  box-shadow: 0 6px 24px rgba(0,0,0,0.1);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.1);
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -406,16 +639,29 @@ watch(() => userStore.userInfo.userId, (newId, oldId) => {
 }
 
 .points-icon {
-  width: 60px; height: 60px;
+  width: 60px;
+  height: 60px;
   border-radius: 16px;
   background: linear-gradient(135deg, #ffd700, #ffed4e);
-  display: flex; align-items: center; justify-content: center;
-  font-size: 30px; color: white;
-  box-shadow: 0 4px 14px rgba(255,215,0,0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 30px;
+  color: white;
+  box-shadow: 0 4px 14px rgba(255, 215, 0, 0.35);
 }
 
-.points-value { font-size: 40px; font-weight: 700; color: #1a1a2e; line-height: 1; }
-.points-label { font-size: 13px; color: #8e9aaf; margin-top: 4px; }
+.points-value {
+  font-size: 40px;
+  font-weight: 700;
+  color: var(--el-text-color-primary);
+  line-height: 1;
+}
+.points-label {
+  font-size: 13px;
+  color: var(--el-text-color-secondary);
+  margin-top: 4px;
+}
 
 .stats-grid {
   display: grid;
@@ -427,12 +673,21 @@ watch(() => userStore.userInfo.userId, (newId, oldId) => {
 .stat-item {
   text-align: center;
   padding: 14px 10px;
-  background: #f4f6fb;
+  background: var(--el-fill-color-light);
   border-radius: 12px;
 }
 
-.stat-value { font-size: 20px; font-weight: 600; color: #2c3e50; margin-bottom: 5px; }
-.stat-label { font-size: 11px; color: #a0aab8; letter-spacing: 0.5px; }
+.stat-value {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--el-text-color-primary);
+  margin-bottom: 5px;
+}
+.stat-label {
+  font-size: 11px;
+  color: var(--el-text-color-secondary);
+  letter-spacing: 0.5px;
+}
 
 .level-badge {
   display: inline-block;
@@ -444,18 +699,42 @@ watch(() => userStore.userInfo.userId, (newId, oldId) => {
   font-weight: 600;
 }
 
-.ranking-val { color: #e67e22; font-size: 18px; }
+.ranking-val {
+  color: #e67e22;
+  font-size: 18px;
+}
 
 /* 进度条 */
-.level-progress { border-top: 1px solid #eef0f5; padding-top: 16px; }
+.level-progress {
+  border-top: 1px solid var(--el-border-color-lighter);
+  padding-top: 16px;
+}
 .progress-header {
-  display: flex; justify-content: space-between; align-items: center;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   margin-bottom: 10px;
 }
-.current-level { font-size: 13px; font-weight: 600; color: #2c3e50; }
-.progress-text { font-size: 12px; color: #a0aab8; }
-.progress-text em { font-style: normal; color: #667eea; font-weight: 600; }
-.progress-bar { height: 7px; background: #eef0f5; border-radius: 4px; overflow: hidden; }
+.current-level {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--el-text-color-primary);
+}
+.progress-text {
+  font-size: 12px;
+  color: var(--el-text-color-secondary);
+}
+.progress-text em {
+  font-style: normal;
+  color: #667eea;
+  font-weight: 600;
+}
+.progress-bar {
+  height: 7px;
+  background: var(--el-fill-color);
+  border-radius: 4px;
+  overflow: hidden;
+}
 .progress-fill {
   height: 100%;
   background: linear-gradient(90deg, #667eea, #764ba2);
@@ -471,146 +750,330 @@ watch(() => userStore.userInfo.userId, (newId, oldId) => {
 }
 
 .action-card {
-  background: rgba(255,255,255,0.96);
+  background: var(--el-bg-color);
   border-radius: 14px;
   padding: 16px;
-  display: flex; align-items: center; gap: 12px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
   cursor: pointer;
   transition: all 0.25s ease;
-  box-shadow: 0 3px 12px rgba(0,0,0,0.07);
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.07);
   flex: 1;
 }
-.action-card:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.12); }
+.action-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+}
 
 .action-icon {
-  width: 42px; height: 42px; border-radius: 11px;
+  width: 42px;
+  height: 42px;
+  border-radius: 11px;
   background: linear-gradient(135deg, #667eea, #764ba2);
-  display: flex; align-items: center; justify-content: center;
-  font-size: 20px; color: white; flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  color: white;
+  flex-shrink: 0;
 }
-.action-icon.mall { background: linear-gradient(135deg, #f093fb, #f5576c); }
-.action-icon.tasks { background: linear-gradient(135deg, #ffd700, #ff9500); }
-.action-icon.ranking { background: linear-gradient(135deg, #43e97b, #38f9d7); }
+.action-icon.mall {
+  background: linear-gradient(135deg, #f093fb, #f5576c);
+}
+.action-icon.tasks {
+  background: linear-gradient(135deg, #ffd700, #ff9500);
+}
+.action-icon.ranking {
+  background: linear-gradient(135deg, #43e97b, #38f9d7);
+}
 
-.action-title { font-size: 14px; font-weight: 600; color: #2c3e50; }
-.action-subtitle { font-size: 11px; color: #a0aab8; margin-top: 2px; }
-.action-content { flex: 1; }
-.action-arrow { color: #c8cdd8; font-size: 16px; }
+.action-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--el-text-color-primary);
+}
+.action-subtitle {
+  font-size: 11px;
+  color: var(--el-text-color-secondary);
+  margin-top: 2px;
+}
+.action-content {
+  flex: 1;
+}
+.action-arrow {
+  color: var(--el-text-color-placeholder);
+  font-size: 16px;
+}
 
 /* 排行榜 dialog */
-.ranking-dialog-content { padding: 4px 0; min-height: 100px; }
+.ranking-dialog-content {
+  padding: 4px 0;
+  min-height: 100px;
+}
 
 .ranking-item {
-  display: flex; align-items: center; gap: 12px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
   padding: 12px 14px;
   border-radius: 10px;
   margin-bottom: 8px;
-  background: #f8f9fc;
+  background: var(--el-fill-color-light);
   transition: background 0.2s;
 }
 .ranking-item.is-me {
-  background: linear-gradient(135deg, rgba(102,126,234,0.12), rgba(118,75,162,0.08));
-  border: 1px solid rgba(102,126,234,0.2);
+  background: linear-gradient(
+    135deg,
+    rgba(102, 126, 234, 0.12),
+    rgba(118, 75, 162, 0.08)
+  );
+  border: 1px solid rgba(102, 126, 234, 0.2);
 }
 
 .rank-no {
-  width: 30px; height: 30px;
+  width: 30px;
+  height: 30px;
   border-radius: 8px;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 13px; font-weight: 700; flex-shrink: 0;
-  background: #e8eaf0; color: #8e9aaf;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 700;
+  flex-shrink: 0;
+  background: var(--el-fill-color);
+  color: var(--el-text-color-secondary);
 }
-.rank-1 { background: linear-gradient(135deg, #ffd700, #ffb300); color: white; font-size: 16px; }
-.rank-2 { background: linear-gradient(135deg, #b0bec5, #90a4ae); color: white; font-size: 16px; }
-.rank-3 { background: linear-gradient(135deg, #ff8a65, #ff7043); color: white; font-size: 16px; }
+.rank-1 {
+  background: linear-gradient(135deg, #ffd700, #ffb300);
+  color: white;
+  font-size: 16px;
+}
+.rank-2 {
+  background: linear-gradient(135deg, #b0bec5, #90a4ae);
+  color: white;
+  font-size: 16px;
+}
+.rank-3 {
+  background: linear-gradient(135deg, #ff8a65, #ff7043);
+  color: white;
+  font-size: 16px;
+}
 
-.rank-name { flex: 1; font-size: 13px; font-weight: 500; color: #2c3e50; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.level-tag {
-  font-size: 11px; color: #667eea;
-  background: rgba(102,126,234,0.1);
-  padding: 2px 8px; border-radius: 6px; flex-shrink: 0;
+.rank-name {
+  flex: 1;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--el-text-color-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
-.rank-points { font-size: 14px; font-weight: 700; color: #667eea; flex-shrink: 0; }
-.rank-points small { font-size: 11px; font-weight: 400; color: #a0aab8; }
-.ranking-empty { text-align: center; font-size: 13px; color: #a0aab8; padding: 20px 0; }
+.level-tag {
+  font-size: 11px;
+  color: #667eea;
+  background: rgba(102, 126, 234, 0.1);
+  padding: 2px 8px;
+  border-radius: 6px;
+  flex-shrink: 0;
+}
+.rank-points {
+  font-size: 14px;
+  font-weight: 700;
+  color: #667eea;
+  flex-shrink: 0;
+}
+.rank-points small {
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--el-text-color-secondary);
+}
+.ranking-empty {
+  text-align: center;
+  font-size: 13px;
+  color: var(--el-text-color-secondary);
+  padding: 20px 0;
+}
 
 /* 积分记录 */
 .records-section {
-  background: rgba(255,255,255,0.96);
+  background: var(--el-bg-color);
   border-radius: 18px;
   padding: 24px;
-  box-shadow: 0 6px 24px rgba(0,0,0,0.1);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.1);
 }
 
 .section-header {
-  display: flex; justify-content: space-between; align-items: center;
-  margin-bottom: 20px; flex-wrap: wrap; gap: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  gap: 12px;
 }
 .section-title {
-  display: flex; align-items: center; gap: 8px;
-  font-size: 16px; font-weight: 600; color: #2c3e50; margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--el-text-color-primary);
+  margin: 0;
 }
 
-.filter-tabs :deep(.el-tabs__header) { margin: 0; }
-.filter-tabs :deep(.el-tabs__nav-wrap::after) { display: none; }
-.filter-tabs :deep(.el-tabs__item) { padding: 8px 16px; font-size: 13px; }
+.filter-tabs :deep(.el-tabs__header) {
+  margin: 0;
+}
+.filter-tabs :deep(.el-tabs__nav-wrap::after) {
+  display: none;
+}
+.filter-tabs :deep(.el-tabs__item) {
+  padding: 8px 16px;
+  font-size: 13px;
+}
 
-.records-list { min-height: 200px; }
+.records-list {
+  min-height: 200px;
+}
 
 .record-item {
-  display: flex; align-items: center; gap: 12px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
   padding: 14px 16px;
   border-radius: 10px;
   margin-bottom: 10px;
-  background: #f8f9fc;
+  background: var(--el-fill-color-light);
   transition: all 0.2s;
 }
-.record-item:hover { background: #eef0f8; transform: translateX(4px); }
-.record-item.earn { border-left: 3px solid #27ae60; }
-.record-item.spend { border-left: 3px solid #e74c3c; }
+.record-item:hover {
+  background: var(--el-fill-color);
+  transform: translateX(4px);
+}
+.record-item.earn {
+  border-left: 3px solid #27ae60;
+}
+.record-item.spend {
+  border-left: 3px solid #e74c3c;
+}
 
 .record-icon {
-  width: 34px; height: 34px; border-radius: 9px;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 15px; color: white; flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  color: white;
+  flex-shrink: 0;
 }
-.record-item.earn .record-icon { background: #27ae60; }
-.record-item.spend .record-icon { background: #e74c3c; }
+.record-item.earn .record-icon {
+  background: #27ae60;
+}
+.record-item.spend .record-icon {
+  background: #e74c3c;
+}
 
-.record-title { font-size: 13px; font-weight: 500; color: #2c3e50; }
-.record-time { font-size: 11px; color: #a0aab8; margin-top: 2px; }
-.record-content { flex: 1; }
+.record-title {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--el-text-color-primary);
+}
+.record-time {
+  font-size: 11px;
+  color: var(--el-text-color-secondary);
+  margin-top: 2px;
+}
+.record-content {
+  flex: 1;
+}
 
-.record-points { font-size: 15px; font-weight: 700; }
-.record-points.earn { color: #27ae60; }
-.record-points.spend { color: #e74c3c; }
+.record-points {
+  font-size: 15px;
+  font-weight: 700;
+}
+.record-points.earn {
+  color: #27ae60;
+}
+.record-points.spend {
+  color: #e74c3c;
+}
 
-.empty-state { text-align: center; padding: 40px 20px; }
-.pagination-wrapper { margin-top: 20px; text-align: center; }
+.empty-state {
+  text-align: center;
+  padding: 40px 20px;
+}
+.pagination-wrapper {
+  margin-top: 20px;
+  text-align: center;
+}
 
 /* 任务弹窗 */
-.tasks-dialog :deep(.el-dialog) { border-radius: 18px; }
-.tasks-content { padding: 10px 0; }
+.tasks-dialog :deep(.el-dialog) {
+  border-radius: 18px;
+}
+.tasks-content {
+  padding: 10px 0;
+}
 .task-item {
-  display: flex; align-items: center; gap: 12px;
-  padding: 14px; border-radius: 10px; margin-bottom: 10px; background: #f8f9fc;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  border-radius: 10px;
+  margin-bottom: 10px;
+  background: var(--el-fill-color-light);
 }
 .task-icon {
-  width: 36px; height: 36px; border-radius: 9px;
+  width: 36px;
+  height: 36px;
+  border-radius: 9px;
   background: linear-gradient(135deg, #ffd700, #ff9500);
-  display: flex; align-items: center; justify-content: center;
-  font-size: 16px; color: white; flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  color: white;
+  flex-shrink: 0;
 }
-.task-icon.done { background: linear-gradient(135deg, #27ae60, #2ecc71); }
-.task-title { font-size: 13px; font-weight: 600; color: #2c3e50; }
-.task-description { font-size: 11px; color: #a0aab8; margin: 2px 0 4px; }
-.task-progress-row { display: flex; align-items: center; justify-content: space-between; }
-.task-reward { font-size: 11px; color: #e67e22; font-weight: 500; }
-.task-count { font-size: 11px; color: #a0aab8; font-weight: 600; }
-.task-count.completed { color: #27ae60; }
+.task-icon.done {
+  background: linear-gradient(135deg, #27ae60, #2ecc71);
+}
+.task-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--el-text-color-primary);
+}
+.task-description {
+  font-size: 11px;
+  color: var(--el-text-color-secondary);
+  margin: 2px 0 4px;
+}
+.task-progress-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.task-reward {
+  font-size: 11px;
+  color: #e67e22;
+  font-weight: 500;
+}
+.task-count {
+  font-size: 11px;
+  color: var(--el-text-color-secondary);
+  font-weight: 600;
+}
+.task-count.completed {
+  color: #27ae60;
+}
 .task-progress-bar {
-  height: 4px; background: #eef0f5; border-radius: 2px;
-  overflow: hidden; margin-top: 5px;
+  height: 4px;
+  background: var(--el-fill-color);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-top: 5px;
 }
 .task-progress-fill {
   height: 100%;
@@ -618,16 +1081,118 @@ watch(() => userStore.userInfo.userId, (newId, oldId) => {
   border-radius: 2px;
   transition: width 0.3s ease;
 }
-.task-info { flex: 1; }
+.task-info {
+  flex: 1;
+}
 
 /* 响应式 */
 @media (max-width: 900px) {
-  .overview-section { grid-template-columns: 1fr; }
-  .points-main { flex-direction: column; align-items: flex-start; }
-  .stats-grid { width: 100%; }
+  .overview-section {
+    grid-template-columns: 1fr;
+  }
+  .points-main {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .stats-grid {
+    width: 100%;
+  }
 }
 @media (max-width: 600px) {
-  .points-center { padding: 14px; }
-  .stats-grid { grid-template-columns: 1fr; }
+  .points-center {
+    padding: 14px;
+  }
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* 等级对话框样式 */
+.levels-dialog {
+  .levels-content {
+    padding: 0 10px;
+  }
+
+  .level-intro {
+    background: var(--el-fill-color-light);
+    padding: 12px 16px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    color: var(--el-text-color-regular);
+    font-size: 14px;
+    border-left: 4px solid #667eea;
+
+    p {
+      margin: 0;
+    }
+    strong {
+      color: #667eea;
+    }
+  }
+
+  .level-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .level-item {
+    display: flex;
+    align-items: center;
+    padding: 16px;
+    background: var(--el-bg-color);
+    border: 1px solid var(--el-border-color-lighter);
+    border-radius: 12px;
+    transition: all 0.3s ease;
+
+    &:hover {
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+      transform: translateY(-2px);
+    }
+
+    .level-icon-wrap {
+      width: 80px;
+      display: flex;
+      justify-content: center;
+    }
+
+    .level-info {
+      flex: 1;
+      padding: 0 16px;
+
+      .level-req {
+        font-size: 14px;
+        color: var(--el-text-color-primary);
+        margin-bottom: 4px;
+
+        strong {
+          color: #f59e0b;
+          font-size: 16px;
+        }
+      }
+
+      .level-desc {
+        font-size: 13px;
+        color: var(--el-text-color-secondary);
+      }
+    }
+
+    .level-status {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 14px;
+      font-weight: 500;
+      color: #67c23a;
+
+      .check-icon {
+        font-size: 16px;
+      }
+
+      &.locked {
+        color: var(--el-text-color-placeholder);
+      }
+    }
+  }
 }
 </style>
