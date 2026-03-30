@@ -437,9 +437,30 @@ onMounted(() => {
         v-for="post in postList"
         :key="post.id"
         class="post-card"
-        :class="{ 'post-highlight': post.isHighlight }"
+        :class="[
+          post.isHighlight ? 'post-highlight' : '',
+          post.postTheme ? `post-theme-${post.postTheme}` : '',
+        ]"
         @click="goToDetail(post.id)"
       >
+        <!-- 帖子装扮动态背景 -->
+        <div v-if="post.postTheme" class="post-theme-deco" :class="`deco-${post.postTheme}`">
+          <template v-if="post.postTheme === 'starry'">
+            <div class="pt-star" v-for="i in 16" :key="i" :class="`pts${i}`"></div>
+            <div class="pt-meteor" v-for="i in 3" :key="i" :class="`ptm${i}`"></div>
+          </template>
+          <template v-else-if="post.postTheme === 'sakura'">
+            <div class="pt-petal" v-for="i in 10" :key="i" :class="`ptp${i}`"></div>
+          </template>
+          <template v-else-if="post.postTheme === 'neon'">
+            <div class="pt-neon-line" v-for="i in 5" :key="i" :class="`ptn${i}`"></div>
+            <div class="pt-neon-glow"></div>
+          </template>
+          <template v-else-if="post.postTheme === 'lava'">
+            <div class="pt-spark" v-for="i in 8" :key="i" :class="`ptl${i}`"></div>
+            <div class="pt-lava-glow"></div>
+          </template>
+        </div>
         <!-- 封面图 -->
         <div v-if="post.coverUrl" class="post-cover">
           <img :src="post.coverUrl" alt="封面" />
@@ -1272,5 +1293,170 @@ onMounted(() => {
       transform: translateY(-1px);
     }
   }
+}
+
+/* ===== 帖子装扮 ===== */
+.post-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.post-theme-deco {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+/* 确保内容在装饰层上方 */
+.post-card .post-cover,
+.post-card .post-content {
+  position: relative;
+  z-index: 1;
+}
+
+/* 星空主题 */
+.post-theme-starry {
+  background: linear-gradient(135deg, #0d0d2b 0%, #1a1a4e 50%, #0d1b3e 100%) !important;
+  border: 1px solid rgba(100, 149, 237, 0.3) !important;
+  .post-title { color: #e8f4ff !important; }
+  .post-excerpt { color: rgba(200, 220, 255, 0.75) !important; }
+  .username { color: #a8d8ff !important; }
+  .time { color: rgba(168, 216, 255, 0.6) !important; }
+  .stat-item { color: rgba(168, 216, 255, 0.7) !important; }
+}
+.deco-starry .pt-star {
+  position: absolute; border-radius: 50%; background: white;
+  animation: ptStarTwinkle ease-in-out infinite;
+}
+.deco-starry .pts1  { width:2px;height:2px; top:8%;  left:5%;  animation-duration:2s;   animation-delay:0s; }
+.deco-starry .pts2  { width:3px;height:3px; top:15%; left:15%; animation-duration:3s;   animation-delay:0.4s; }
+.deco-starry .pts3  { width:2px;height:2px; top:5%;  left:28%; animation-duration:2.5s; animation-delay:0.8s; }
+.deco-starry .pts4  { width:4px;height:4px; top:20%; left:40%; animation-duration:4s;   animation-delay:0.2s; }
+.deco-starry .pts5  { width:2px;height:2px; top:10%; left:55%; animation-duration:2s;   animation-delay:1.2s; }
+.deco-starry .pts6  { width:3px;height:3px; top:25%; left:65%; animation-duration:3.5s; animation-delay:0.6s; }
+.deco-starry .pts7  { width:2px;height:2px; top:7%;  left:75%; animation-duration:2.5s; animation-delay:1.5s; }
+.deco-starry .pts8  { width:3px;height:3px; top:18%; left:85%; animation-duration:3s;   animation-delay:0.3s; }
+.deco-starry .pts9  { width:2px;height:2px; top:30%; left:92%; animation-duration:2s;   animation-delay:1.8s; }
+.deco-starry .pts10 { width:4px;height:4px; top:40%; left:8%;  animation-duration:4s;   animation-delay:0.9s; }
+.deco-starry .pts11 { width:2px;height:2px; top:50%; left:22%; animation-duration:2.5s; animation-delay:2.1s; }
+.deco-starry .pts12 { width:3px;height:3px; top:60%; left:35%; animation-duration:3s;   animation-delay:0.5s; }
+.deco-starry .pts13 { width:2px;height:2px; top:70%; left:50%; animation-duration:2s;   animation-delay:1.4s; }
+.deco-starry .pts14 { width:3px;height:3px; top:55%; left:70%; animation-duration:3.5s; animation-delay:0.7s; }
+.deco-starry .pts15 { width:2px;height:2px; top:75%; left:82%; animation-duration:2.5s; animation-delay:2.3s; }
+.deco-starry .pts16 { width:4px;height:4px; top:45%; left:95%; animation-duration:4s;   animation-delay:1.1s; }
+.deco-starry .pt-meteor {
+  position: absolute; width: 1px; height: 60px;
+  background: linear-gradient(to bottom, rgba(255,255,255,0.9), transparent);
+  animation: ptMeteor linear infinite; opacity: 0;
+}
+.deco-starry .ptm1 { top: -70px; left: 20%; animation-duration: 4s;   animation-delay: 0s; }
+.deco-starry .ptm2 { top: -70px; left: 55%; animation-duration: 5.5s; animation-delay: -2s; }
+.deco-starry .ptm3 { top: -70px; left: 80%; animation-duration: 3.5s; animation-delay: -1s; }
+@keyframes ptStarTwinkle { 0%,100%{opacity:0.2;transform:scale(1);} 50%{opacity:1;transform:scale(1.5);} }
+@keyframes ptMeteor {
+  0%  { transform:translateY(0) translateX(0) rotate(25deg); opacity:0; }
+  5%  { opacity:1; }
+  70% { opacity:0.7; }
+  100%{ transform:translateY(200px) translateX(80px) rotate(25deg); opacity:0; }
+}
+
+/* 樱花主题 */
+.post-theme-sakura {
+  background: linear-gradient(135deg, #fff0f5 0%, #ffe4ef 50%, #fff5f8 100%) !important;
+  border: 1px solid rgba(255, 150, 180, 0.35) !important;
+  .post-title { color: #c2185b !important; }
+  .username { color: #e91e8c !important; }
+}
+.deco-sakura .pt-petal {
+  position: absolute;
+  width: 10px; height: 10px;
+  background: radial-gradient(circle at 30% 30%, #ffb7d5, #ff80ab);
+  border-radius: 50% 0 50% 0;
+  animation: ptPetalFall linear infinite; opacity: 0.8;
+}
+.deco-sakura .ptp1  { left:5%;  top:-15px; animation-duration:5s;  animation-delay:0s;    width:8px;  height:8px; }
+.deco-sakura .ptp2  { left:15%; top:-15px; animation-duration:7s;  animation-delay:-1s;   width:12px; height:12px; }
+.deco-sakura .ptp3  { left:25%; top:-15px; animation-duration:6s;  animation-delay:-2s;   width:9px;  height:9px; }
+.deco-sakura .ptp4  { left:38%; top:-15px; animation-duration:8s;  animation-delay:-0.5s; width:11px; height:11px; }
+.deco-sakura .ptp5  { left:50%; top:-15px; animation-duration:5.5s;animation-delay:-3s;   width:8px;  height:8px; }
+.deco-sakura .ptp6  { left:62%; top:-15px; animation-duration:7.5s;animation-delay:-1.5s; width:13px; height:13px; }
+.deco-sakura .ptp7  { left:72%; top:-15px; animation-duration:6.5s;animation-delay:-4s;   width:9px;  height:9px; }
+.deco-sakura .ptp8  { left:82%; top:-15px; animation-duration:5s;  animation-delay:-2.5s; width:10px; height:10px; }
+.deco-sakura .ptp9  { left:90%; top:-15px; animation-duration:8s;  animation-delay:-0.8s; width:12px; height:12px; }
+.deco-sakura .ptp10 { left:45%; top:-15px; animation-duration:6s;  animation-delay:-3.5s; width:8px;  height:8px; }
+@keyframes ptPetalFall {
+  0%  { transform:translateY(0) rotate(0deg) translateX(0); opacity:0.8; }
+  100%{ transform:translateY(120px) rotate(540deg) translateX(40px); opacity:0; }
+}
+
+/* 霓虹主题 */
+.post-theme-neon {
+  background: linear-gradient(135deg, #0a0a1a 0%, #12001f 50%, #001a12 100%) !important;
+  border: 1px solid rgba(0, 255, 200, 0.3) !important;
+  box-shadow: 0 0 20px rgba(0, 255, 200, 0.1), 0 0 40px rgba(180, 0, 255, 0.08) !important;
+  .post-title { color: #00ffe0 !important; text-shadow: 0 0 8px rgba(0,255,224,0.5); }
+  .post-excerpt { color: rgba(180, 255, 240, 0.7) !important; }
+  .username { color: #bf00ff !important; text-shadow: 0 0 6px rgba(191,0,255,0.5); }
+  .time { color: rgba(180, 255, 240, 0.5) !important; }
+  .stat-item { color: rgba(0, 255, 200, 0.6) !important; }
+}
+.deco-neon .pt-neon-glow {
+  position: absolute; inset: 0;
+  background: radial-gradient(ellipse at 80% 50%, rgba(0,255,200,0.06) 0%, transparent 60%),
+              radial-gradient(ellipse at 20% 50%, rgba(180,0,255,0.06) 0%, transparent 60%);
+}
+.deco-neon .pt-neon-line {
+  position: absolute; height: 1px; left: 0; right: 0;
+  animation: ptNeonScan linear infinite;
+}
+.deco-neon .ptn1 { top:15%; background:linear-gradient(90deg,transparent,rgba(0,255,200,0.6),transparent); animation-duration:3s;  animation-delay:0s; }
+.deco-neon .ptn2 { top:35%; background:linear-gradient(90deg,transparent,rgba(180,0,255,0.5),transparent); animation-duration:4s;  animation-delay:-1s; }
+.deco-neon .ptn3 { top:55%; background:linear-gradient(90deg,transparent,rgba(0,255,200,0.4),transparent); animation-duration:5s;  animation-delay:-2s; }
+.deco-neon .ptn4 { top:70%; background:linear-gradient(90deg,transparent,rgba(255,0,180,0.4),transparent); animation-duration:3.5s;animation-delay:-0.5s; }
+.deco-neon .ptn5 { top:85%; background:linear-gradient(90deg,transparent,rgba(0,200,255,0.5),transparent); animation-duration:4.5s;animation-delay:-1.5s; }
+@keyframes ptNeonScan {
+  0%  { transform:translateX(-100%) scaleX(0.5); opacity:0; }
+  20% { opacity:1; }
+  80% { opacity:0.8; }
+  100%{ transform:translateX(100%) scaleX(1.5); opacity:0; }
+}
+
+/* 熔岩主题 */
+.post-theme-lava {
+  background: linear-gradient(135deg, #1a0500 0%, #2d0a00 40%, #1a0800 100%) !important;
+  border: 1px solid rgba(255, 80, 0, 0.35) !important;
+  box-shadow: 0 0 20px rgba(255, 80, 0, 0.12) !important;
+  .post-title { color: #ff8c42 !important; text-shadow: 0 0 8px rgba(255,100,0,0.4); }
+  .post-excerpt { color: rgba(255, 200, 150, 0.75) !important; }
+  .username { color: #ff6b35 !important; }
+  .time { color: rgba(255, 180, 100, 0.6) !important; }
+  .stat-item { color: rgba(255, 160, 80, 0.7) !important; }
+}
+.deco-lava .pt-lava-glow {
+  position: absolute; inset: 0;
+  background: radial-gradient(ellipse at 50% 100%, rgba(255,80,0,0.15) 0%, transparent 60%);
+}
+.deco-lava .pt-spark {
+  position: absolute; width: 3px; height: 3px;
+  border-radius: 50%; background: #ff6b00;
+  box-shadow: 0 0 4px rgba(255,107,0,0.8);
+  animation: ptSparkRise ease-out infinite; opacity: 0;
+}
+.deco-lava .ptl1 { left:10%; bottom:0; animation-duration:2s;   animation-delay:0s;    background:#ff4500; }
+.deco-lava .ptl2 { left:22%; bottom:0; animation-duration:2.5s; animation-delay:0.4s;  background:#ff6b00; width:4px;height:4px; }
+.deco-lava .ptl3 { left:35%; bottom:0; animation-duration:1.8s; animation-delay:0.8s;  background:#ff8c00; }
+.deco-lava .ptl4 { left:48%; bottom:0; animation-duration:3s;   animation-delay:0.2s;  background:#ff4500; width:5px;height:5px; }
+.deco-lava .ptl5 { left:60%; bottom:0; animation-duration:2.2s; animation-delay:1.2s;  background:#ff6b00; }
+.deco-lava .ptl6 { left:72%; bottom:0; animation-duration:2.8s; animation-delay:0.6s;  background:#ff8c00; width:4px;height:4px; }
+.deco-lava .ptl7 { left:83%; bottom:0; animation-duration:2s;   animation-delay:1.5s;  background:#ff4500; }
+.deco-lava .ptl8 { left:93%; bottom:0; animation-duration:2.5s; animation-delay:0.9s;  background:#ff6b00; width:5px;height:5px; }
+@keyframes ptSparkRise {
+  0%  { transform:translateY(0) translateX(0) scale(1); opacity:0; }
+  10% { opacity:1; }
+  80% { opacity:0.6; }
+  100%{ transform:translateY(-80px) translateX(15px) scale(0.3); opacity:0; }
 }
 </style>

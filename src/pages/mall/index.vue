@@ -60,6 +60,22 @@
             </span>
           </template>
         </el-tab-pane>
+        <el-tab-pane label="主页装扮" name="profile">
+          <template #label>
+            <span class="tab-label">
+              <el-icon><PictureFilled /></el-icon>
+              主页装扮
+            </span>
+          </template>
+        </el-tab-pane>
+        <el-tab-pane label="帖子装扮" name="post-theme">
+          <template #label>
+            <span class="tab-label">
+              <el-icon><MagicStick /></el-icon>
+              帖子装扮
+            </span>
+          </template>
+        </el-tab-pane>
       </el-tabs>
     </div>
 
@@ -114,25 +130,60 @@
               </div>
             </div>
 
-            <el-button
-              type="primary"
-              :disabled="!item.canPurchase || item.alreadyOwned"
-              @click="handlePurchase(item)"
-              class="purchase-btn"
-            >
-              <template v-if="item.alreadyOwned">
-                <el-icon><Check /></el-icon>
-                已拥有
-              </template>
-              <template v-else-if="!item.canPurchase">
-                <el-icon><Lock /></el-icon>
-                积分不足
-              </template>
-              <template v-else>
-                <el-icon><ShoppingCart /></el-icon>
-                立即兑换
-              </template>
-            </el-button>
+            <div class="btn-group">
+              <!-- 已拥有的主页装扮：显示使用/取消按钮 -->
+              <el-button
+                v-if="item.alreadyOwned && item.itemType === 'PROFILE_THEME'"
+                :type="item.isActive ? 'warning' : 'success'"
+                @click="handleToggleTheme(item)"
+                class="purchase-btn"
+              >
+                <template v-if="item.isActive">
+                  <el-icon><Check /></el-icon>
+                  使用中
+                </template>
+                <template v-else>
+                  <el-icon><PictureFilled /></el-icon>
+                  立即使用
+                </template>
+              </el-button>
+              <!-- 已拥有的帖子装扮：显示使用/取消按钮 -->
+              <el-button
+                v-else-if="item.alreadyOwned && item.itemType === 'POST_THEME'"
+                :type="item.isActive ? 'warning' : 'success'"
+                @click="handleTogglePostTheme(item)"
+                class="purchase-btn"
+              >
+                <template v-if="item.isActive">
+                  <el-icon><Check /></el-icon>
+                  使用中
+                </template>
+                <template v-else>
+                  <el-icon><MagicStick /></el-icon>
+                  立即使用
+                </template>
+              </el-button>
+              <el-button
+                v-else
+                type="primary"
+                :disabled="!item.canPurchase || item.alreadyOwned"
+                @click="handlePurchase(item)"
+                class="purchase-btn"
+              >
+                <template v-if="item.alreadyOwned">
+                  <el-icon><Check /></el-icon>
+                  已拥有
+                </template>
+                <template v-else-if="!item.canPurchase">
+                  <el-icon><Lock /></el-icon>
+                  积分不足
+                </template>
+                <template v-else>
+                  <el-icon><ShoppingCart /></el-icon>
+                  立即兑换
+                </template>
+              </el-button>
+            </div>
           </div>
         </div>
       </div>
@@ -232,8 +283,10 @@ import {
   StarFilled,
   Medal,
   MagicStick,
+  PictureFilled,
 } from '@element-plus/icons-vue'
 import { getMallItems, purchaseItem, getUserPurchases } from '@/api/mall'
+import { togglePrivilege } from '@/api/mall'
 import { getUserPoints } from '@/api/points'
 import { getPostList } from '@/api/community'
 import { UserStore } from '@/stores/modules/user'
@@ -271,6 +324,14 @@ const loadItems = async () => {
           (item) =>
             item.itemType === 'AVATAR_FRAME' ||
             item.itemType === 'NICKNAME_COLOR'
+        )
+      } else if (activeCategory.value === 'profile') {
+        filteredItems = response.data.filter(
+          (item) => item.itemType === 'PROFILE_THEME'
+        )
+      } else if (activeCategory.value === 'post-theme') {
+        filteredItems = response.data.filter(
+          (item) => item.itemType === 'POST_THEME'
         )
       }
       items.value = filteredItems
@@ -340,6 +401,50 @@ const handlePurchase = (item) => {
   purchaseDialogVisible.value = true
 }
 
+// 切换帖子装扮
+const handleTogglePostTheme = async (item) => {
+  try {
+    const postThemeMap = {
+      POST_THEME_STARRY: 'starry',
+      POST_THEME_SAKURA: 'sakura',
+      POST_THEME_NEON: 'neon',
+      POST_THEME_LAVA: 'lava',
+    }
+    const value = item.isActive ? 'default' : (postThemeMap[item.itemCode] || '')
+    const res = await togglePrivilege('POST_THEME', value)
+    if (res.code === 0) {
+      ElMessage.success(item.isActive ? '已取消帖子装扮' : '帖子装扮已应用')
+      loadItems()
+    } else {
+      ElMessage.error(res.message || '操作失败')
+    }
+  } catch (e) {
+    ElMessage.error('操作失败')
+  }
+}
+
+// 切换主页装扮
+const handleToggleTheme = async (item) => {
+  try {
+    const themeMap = {
+      PROFILE_THEME_OCEAN: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)',
+      PROFILE_THEME_SUNSET: 'linear-gradient(135deg, #f093fb 0%, #f5576c 50%, #fda085 100%)',
+      PROFILE_THEME_FOREST: 'linear-gradient(135deg, #134e5e 0%, #71b280 100%)',
+      PROFILE_THEME_AURORA: 'linear-gradient(135deg, #00c3ff 0%, #ffff1c 50%, #ff00c8 100%)',
+    }
+    const value = item.isActive ? 'default' : (themeMap[item.itemCode] || '')
+    const res = await togglePrivilege('PROFILE_THEME', value)
+    if (res.code === 0) {
+      ElMessage.success(item.isActive ? '已取消装扮' : '装扮已应用')
+      loadItems()
+    } else {
+      ElMessage.error(res.message || '操作失败')
+    }
+  } catch (e) {
+    ElMessage.error('操作失败')
+  }
+}
+
 // 确认购买
 const confirmPurchase = async () => {
   try {
@@ -377,6 +482,8 @@ const getItemIcon = (type) => {
     POST_HIGHLIGHT: StarFilled,
     AVATAR_FRAME: Medal,
     NICKNAME_COLOR: MagicStick,
+    PROFILE_THEME: PictureFilled,
+    POST_THEME: MagicStick,
   }
   return iconMap[type] || Shop
 }
@@ -403,6 +510,8 @@ const getTypeTagType = (type) => {
     POST_HIGHLIGHT: 'warning',
     AVATAR_FRAME: 'success',
     NICKNAME_COLOR: 'info',
+    PROFILE_THEME: 'primary',
+    POST_THEME: 'success',
   }
   return typeMap[type] || 'primary'
 }
