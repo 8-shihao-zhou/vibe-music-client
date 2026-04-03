@@ -156,6 +156,14 @@ const loadMallPrivileges = async () => {
       avatarFrames.value = items.filter(
         (item: any) => item.itemType === 'AVATAR_FRAME' && item.alreadyOwned
       )
+      const isActive = (item: any) =>
+        item?.isActive === true || item?.isActive === 1 || item?.isActive === '1'
+      const activeNickname = nicknameColors.value.find((item: any) =>
+        isActive(item)
+      )
+      const activeFrame = avatarFrames.value.find((item: any) => isActive(item))
+      currentNicknameColor.value = activeNickname?.itemCode || 'default'
+      currentAvatarFrame.value = activeFrame?.itemCode || 'default'
     }
   } catch (error) {
     console.error('加载装扮失败:', error)

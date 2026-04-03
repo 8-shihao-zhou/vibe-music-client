@@ -44,7 +44,7 @@ export default [
       ],
       // 'vue/no-unused-vars': 'error',
       'prettier/prettier': [
-        'error',
+        'warn',
         {
           // endOfLine: "auto"
         },

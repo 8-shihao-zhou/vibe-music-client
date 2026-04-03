@@ -312,14 +312,20 @@ const handleSubmitRequest = async () => {
 
 <style scoped>
 .request-song-btn {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  border: none;
-  color: white;
-  border-radius: 8px;
-  font-size: 12px;
-  height: 30px;
+  height: 36px;
+  padding: 0 16px;
+  border: 1px solid rgba(121, 139, 255, 0.16);
+  border-radius: 14px;
+  background: linear-gradient(135deg, #5c70f2 0%, #8a63f8 100%);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  box-shadow: 0 12px 24px rgba(98, 116, 224, 0.22);
+  transition: all 0.28s ease;
 }
+
 .request-song-btn:hover {
-  opacity: 0.9;
+  transform: translateY(-1px);
+  box-shadow: 0 16px 30px rgba(98, 116, 224, 0.28);
 }
 </style>

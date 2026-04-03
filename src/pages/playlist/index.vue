@@ -1,8 +1,5 @@
 <script setup lang="ts">
-import {
-  getAllPlaylists,
-  getFavoritePlaylists,
-} from '@/api/system'
+import { getAllPlaylists, getFavoritePlaylists } from '@/api/system'
 import coverImg from '@/assets/cover.png'
 import { ElNotification } from 'element-plus'
 
@@ -15,10 +12,12 @@ const selected = ref('all')
 // 搜索关键词
 const searchKeyword = ref('')
 
+const route = useRoute()
+
 // 歌单类型列表
 const playlistsList = [
   { name: '精选歌单', value: 'all' },
-  { name: '我的收藏', value: 'favorite' }
+  { name: '我的收藏', value: 'favorite' },
 ]
 // 歌单tag
 const playTags = ref<{ name: string }[]>([])
@@ -52,7 +51,7 @@ const getPlaylists = async () => {
       pageNum: currentPage.value,
       pageSize: pageSize.value,
       title: searchKeyword.value || null,
-      style: selectedTag.value === '全部' ? null : selectedTag.value
+      style: selectedTag.value === '全部' ? null : selectedTag.value,
     }
 
     let res
@@ -63,16 +62,16 @@ const getPlaylists = async () => {
     }
 
     if (res.code === 0) {
-      playlists.value = res.data.items.map(item => ({
+      playlists.value = res.data.items.map((item) => ({
         id: item.playlistId,
         name: item.title,
         coverImgUrl: item.coverUrl ?? coverImg,
         creator: {
           nickname: selected.value === 'favorite' ? 'AI Music' : 'AI Music',
-          avatarUrl: coverImg
+          avatarUrl: coverImg,
         },
         playCount: 0,
-        subscribedCount: 0
+        subscribedCount: 0,
       }))
       state.total = res.data.total
     } else {
@@ -99,9 +98,22 @@ const selectPlaylist = (playlist: string) => {
 
 // 处理搜索
 const handleSearch = () => {
-  currentPage.value = 1 // 重置页码
-  getPlaylists()
+  currentPage.value = 1
+  router.push({
+    path: '/playlist',
+    query: searchKeyword.value ? { query: searchKeyword.value } : {},
+  })
 }
+
+watch(
+  () => route.query.query,
+  (newQuery) => {
+    searchKeyword.value = typeof newQuery === 'string' ? newQuery : ''
+    currentPage.value = 1
+    getPlaylists()
+  },
+  { immediate: true }
+)
 
 // 处理搜索框按下回车
 const handleKeyPress = (e: KeyboardEvent) => {
@@ -132,67 +144,114 @@ onMounted(() => {
     { name: '乡村' },
     { name: '古典' },
   ]
-  getPlaylists()
 })
 </script>
 <template>
-  <div class="flex flex-col h-full flex-1 overflow-hidden bg-background px-4 py-2 playlist-container">
+  <div
+    class="flex flex-col h-full flex-1 overflow-hidden bg-background px-4 py-2 playlist-container"
+  >
     <div class="py-4">
       <div class="flex flex-col sm:flex-row gap-4">
         <div class="relative flex-grow">
           <icon-mdi:magnify
-            class="lucide lucide-search absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground search-icon" />
-          <input v-model="searchKeyword" @keydown="handleKeyPress"
+            class="lucide lucide-search absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground search-icon"
+          />
+          <input
+            v-model="searchKeyword"
+            @keydown="handleKeyPress"
             class="search-input flex h-10 rounded-xl border border-input transform duration-300 bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-0 pl-10 w-72"
-            placeholder="搜索歌单..." type="search" />
+            placeholder="搜索歌单..."
+            type="search"
+          />
         </div>
-        <el-select class="w-48 custom-select" v-model="selectedTag" @change="getPlaylists">
-          <el-option v-for="item in playTags" :key="item.name" :label="item.name" :value="item.name" />
+        <el-select
+          class="w-48 custom-select"
+          v-model="selectedTag"
+          @change="getPlaylists"
+        >
+          <el-option
+            v-for="item in playTags"
+            :key="item.name"
+            :label="item.name"
+            :value="item.name"
+          />
         </el-select>
       </div>
     </div>
     <div class="flex-grow flex flex-col overflow-x-hidden cursor-pointer">
       <div class="border-b pb-1">
         <div
-          class="inline-flex h-10 items-center rounded-xl bg-muted/70 p-1 text-muted-foreground w-full justify-start mb-2 overflow-x-auto tab-container">
-          <button v-for="playlist in playlistsList" :key="playlist.value" @click="selectPlaylist(playlist.value)"
+          class="inline-flex h-10 items-center rounded-xl bg-muted/70 p-1 text-muted-foreground w-full justify-start mb-2 overflow-x-auto tab-container"
+        >
+          <button
+            v-for="playlist in playlistsList"
+            :key="playlist.value"
+            @click="selectPlaylist(playlist.value)"
             :class="{
               'bg-activeMenuBg text-foreground shadow-sm tab-active':
                 selected === playlist.value,
             }"
-            class="tab-button inline-flex items-center justify-center whitespace-nowrap rounded-lg px-4 py-2 text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50">
+            class="tab-button inline-flex items-center justify-center whitespace-nowrap rounded-lg px-4 py-2 text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
+          >
             {{ playlist.name }}
           </button>
         </div>
       </div>
       <div class="flex-1 overflow-x-hidden my-2">
         <div class="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-6">
-          <div v-for="playlist in playlists" :key="playlist.id" @click="router.push('/playlist/' + playlist.id)"
-            class="playlist-card rounded-xl hover:bg-background transition duration-300 border bg-card text-card-foreground shadow-sm overflow-hidden">
+          <div
+            v-for="playlist in playlists"
+            :key="playlist.id"
+            @click="router.push('/playlist/' + playlist.id)"
+            class="playlist-card rounded-xl hover:bg-background transition duration-300 border bg-card text-card-foreground shadow-sm overflow-hidden"
+          >
             <div class="flex flex-col space-y-1.5 p-0">
               <div class="relative playlist-cover-wrapper">
-                <el-image lazy :alt="playlist.name" class="w-full aspect-square object-cover playlist-cover"
-                  :src="playlist.coverImgUrl + '?param=330y330'" />
+                <el-image
+                  lazy
+                  :alt="playlist.name"
+                  class="w-full aspect-square object-cover playlist-cover"
+                  :src="playlist.coverImgUrl + '?param=330y330'"
+                />
                 <button
-                  class="play-button inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 bg-secondary text-secondary-foreground hover:bg-secondary/80 h-12 w-12 absolute bottom-3 right-3 rounded-full">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
-                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                    class="lucide lucide-play h-5 w-5">
+                  class="play-button inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 bg-secondary text-secondary-foreground hover:bg-secondary/80 h-12 w-12 absolute bottom-3 right-3 rounded-full"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    class="lucide lucide-play h-5 w-5"
+                  >
                     <polygon points="6 3 20 12 6 21 6 3"></polygon>
                   </svg>
                 </button>
               </div>
             </div>
             <div class="px-4 pb-3 pt-2">
-              <h3 class="font-semibold tracking-tight text-base mb-2 line-clamp-1 playlist-title">
+              <h3
+                class="font-semibold tracking-tight text-base mb-2 line-clamp-1 playlist-title"
+              >
                 {{ playlist.name }}
               </h3>
               <div class="flex items-center text-sm text-muted-foreground">
-                <span class="relative flex shrink-0 overflow-hidden rounded-full w-6 h-6 mr-2">
-                  <el-avatar class="aspect-square h-full w-full" :alt="playlist.creator.nickname"
-                    :src="playlist.creator.avatarUrl" />
+                <span
+                  class="relative flex shrink-0 overflow-hidden rounded-full w-6 h-6 mr-2"
+                >
+                  <el-avatar
+                    class="aspect-square h-full w-full"
+                    :alt="playlist.creator.nickname"
+                    :src="playlist.creator.avatarUrl"
+                  />
                 </span>
-                <span class="creator-name">{{ playlist.creator.nickname }}</span>
+                <span class="creator-name">{{
+                  playlist.creator.nickname
+                }}</span>
               </div>
             </div>
           </div>
@@ -200,8 +259,14 @@ onMounted(() => {
       </div>
     </div>
     <nav class="mx-auto flex w-full justify-center mt-3">
-      <el-pagination v-model:page-size="pageSize" v-model:currentPage="currentPage" v-bind="state"
-        @size-change="handleSizeChange" @current-change="handleCurrentChange" class="mb-3 custom-pagination" />
+      <el-pagination
+        v-model:page-size="pageSize"
+        v-model:currentPage="currentPage"
+        v-bind="state"
+        @size-change="handleSizeChange"
+        @current-change="handleCurrentChange"
+        class="mb-3 custom-pagination"
+      />
     </nav>
   </div>
 </template>
@@ -212,11 +277,19 @@ onMounted(() => {
 }
 
 html.light .playlist-container {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(248, 249, 255, 0.9) 100%);
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.9) 0%,
+    rgba(248, 249, 255, 0.9) 100%
+  );
 }
 
 html.dark .playlist-container {
-  background: linear-gradient(135deg, rgba(30, 30, 46, 0.6) 0%, rgba(26, 26, 46, 0.6) 100%);
+  background: linear-gradient(
+    135deg,
+    rgba(30, 30, 46, 0.6) 0%,
+    rgba(26, 26, 46, 0.6) 100%
+  );
 }
 
 .search-input {
@@ -278,7 +351,11 @@ html.dark .tab-container {
 }
 
 .tab-active {
-  background: linear-gradient(135deg, rgba(102, 126, 234, 0.2) 0%, rgba(118, 75, 162, 0.2) 100%) !important;
+  background: linear-gradient(
+    135deg,
+    rgba(102, 126, 234, 0.2) 0%,
+    rgba(118, 75, 162, 0.2) 100%
+  ) !important;
   box-shadow: 0 2px 8px rgba(102, 126, 234, 0.2);
 }
 

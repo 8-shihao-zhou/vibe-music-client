@@ -56,10 +56,18 @@ watch(() => currentTrack.value.id, async (newId) => {
 provide('songDetail', songDetail)
 </script>
 <template>
-  <el-drawer :style="{
-    '--track-cover-url': `url(${currentTrack.cover})`,
-  }" v-model="showDrawer" direction="btt" size="100%" :modal="false" :showClose="false"
-    class="drawer-bg backdrop-filter backdrop-blur-md">
+  <el-drawer
+    :style="{
+      '--track-cover-url': `url(${currentTrack.cover})`,
+    }"
+    v-model="showDrawer"
+    direction="btt"
+    size="100%"
+    :modal="false"
+    :show-close="false"
+    append-to-body
+    class="drawer-bg backdrop-filter backdrop-blur-md"
+  >
     <template #header>
       <div class="flex items-center justify-between">
         <div class="flex items-center justify-center gap-2 text-primary-foreground">

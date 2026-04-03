@@ -3,6 +3,7 @@ import Header from './components/header/index.vue'
 import Aside from './components/aside/index.vue'
 import Main from './components/main/index.vue'
 import Footer from './components/footer/index.vue'
+import AgentChatWidget from '@/components/AgentChatWidget.vue'
 // import BG from './components/bg/index.vue'
 import { AudioPlayer } from '@/hooks/useAudioPlayer'
 
@@ -19,6 +20,7 @@ provide('audioPlayer', AudioPlayer())
         <Aside />
         <Main />
       </div>
+      <AgentChatWidget />
       <Footer />
     </div>
   </div>

@@ -1,17 +1,43 @@
 /* eslint-disable */
 <template>
   <div class="ai-page-container">
-    <div class="page-header">
-      <h2>✨ AI 音乐视频创作</h2>
-      <p class="subtitle">
-        上传您喜欢的音乐，AI 将为您生成专属 MV，您的所有创作都在右侧列表
-      </p>
-    </div>
+    <section class="ai-hero">
+      <div class="ai-hero-copy">
+        <p class="ai-hero-kicker">AI Music Video Studio</p>
+        <h2>AI 音乐视频创作</h2>
+        <p class="subtitle">
+          上传音频或从曲库带入歌曲，快速生成专属 MV。创作区与作品库分栏展示，操作路径更清晰。
+        </p>
+      </div>
+
+      <div class="ai-hero-stats">
+        <div class="hero-stat-card">
+          <span class="hero-stat-label">当前作品</span>
+          <strong>{{ historyList.length }}</strong>
+        </div>
+        <div class="hero-stat-card">
+          <span class="hero-stat-label">创作状态</span>
+          <strong>{{ loading ? '生成中' : '可开始' }}</strong>
+        </div>
+      </div>
+
+      <div class="ai-hero-glow ai-hero-glow-a" />
+      <div class="ai-hero-glow ai-hero-glow-b" />
+    </section>
 
     <div class="content-wrapper">
-      <!-- 左侧：上传区 -->
       <div class="left-panel">
         <el-card class="vibe-card upload-card" shadow="hover">
+          <template #header>
+            <div class="card-header card-header-rich">
+              <div>
+                <p class="card-kicker">Create</p>
+                <span class="card-title">开始新的 MV 创作</span>
+              </div>
+              <span class="card-tip">支持 MP3 音频上传</span>
+            </div>
+          </template>
+
           <div class="upload-container">
             <el-upload
               class="upload-area"
@@ -24,16 +50,17 @@
             >
               <div v-if="!loading && !selectedSongInfo" class="upload-placeholder">
                 <el-icon class="upload-icon"><Headset /></el-icon>
-                <div class="text">点击或拖拽 MP3 到此处</div>
-                <div class="sub-text">支持 15-60秒 音频</div>
+                <div class="text">点击或拖拽 MP3 到这里</div>
+                <div class="sub-text">支持 15-60 秒音频，上传后可直接开始生成</div>
               </div>
+
               <div v-else-if="!loading && selectedSongInfo" class="selected-song-info">
                 <el-icon class="selected-icon"><Headset /></el-icon>
                 <div class="selected-text">已选择歌曲</div>
                 <div class="selected-name">{{ selectedSongInfo }}</div>
                 <div class="selected-actions">
-                  <el-button 
-                    type="primary" 
+                  <el-button
+                    type="primary"
                     size="large"
                     @click.stop="handleGenerateFromUrl"
                     class="generate-btn"
@@ -41,7 +68,7 @@
                     <icon-ri:magic-line class="mr-2" />
                     开始生成 MV
                   </el-button>
-                  <el-button 
+                  <el-button
                     size="large"
                     @click.stop="selectedSongInfo = ''; selectedAudioUrl = ''"
                     class="cancel-btn"
@@ -50,6 +77,7 @@
                   </el-button>
                 </div>
               </div>
+
               <div v-else class="loading-placeholder">
                 <el-progress type="dashboard" :percentage="progress" />
                 <p class="loading-tips">AI 正在渲染中，请稍候...</p>
@@ -59,37 +87,39 @@
         </el-card>
       </div>
 
-      <!-- 右侧：MV 历史列表 -->
       <div class="right-panel">
         <el-card class="vibe-card history-card" shadow="hover">
           <template #header>
-            <div class="card-header">
-              <span>💿 我的作品库</span>
+            <div class="card-header card-header-rich">
+              <div>
+                <p class="card-kicker">Library</p>
+                <span class="card-title">我的作品库</span>
+              </div>
               <el-button
                 v-if="isLoggedIn"
                 link
                 type="primary"
                 :icon="Refresh"
                 @click="fetchHistory"
-                >刷新</el-button
               >
+                刷新
+              </el-button>
             </div>
           </template>
 
           <div class="history-list">
-            <!-- 未登录提示 -->
-            <el-empty 
-              v-if="!isLoggedIn" 
-              description="请先登录查看您的作品"
+            <el-empty
+              v-if="!isLoggedIn"
+              description="请先登录后查看你的作品"
             >
               <el-button type="primary" @click="handleLogin">立即登录</el-button>
             </el-empty>
-            <!-- 已登录但无作品 -->
-            <el-empty 
-              v-else-if="historyList.length === 0" 
-              description="暂无作品" 
+
+            <el-empty
+              v-else-if="historyList.length === 0"
+              description="暂时还没有作品"
             />
-            <!-- 作品列表 -->
+
             <div
               v-else
               v-for="(item, index) in historyList"
@@ -102,9 +132,7 @@
               </div>
               <div class="item-info">
                 <div class="item-name">{{ item.fileName }}</div>
-                <div class="item-meta">
-                  {{ item.createTime }} · {{ item.size }}
-                </div>
+                <div class="item-meta">{{ item.createTime }} · {{ item.size }}</div>
               </div>
               <div class="item-actions">
                 <el-button
@@ -126,7 +154,6 @@
       </div>
     </div>
 
-    <!-- 弹窗播放 -->
     <el-dialog
       v-model="dialogVisible"
       title="作品预览"
@@ -141,13 +168,12 @@
         autoplay
         width="100%"
         style="border-radius: 8px; background: #000; max-height: 60vh"
-      ></video>
+      />
     </el-dialog>
 
-    <!-- 编辑MV名称对话框 -->
     <el-dialog
       v-model="editDialogVisible"
-      title="编辑MV名称"
+      title="编辑 MV 名称"
       width="500px"
       align-center
     >
@@ -155,19 +181,18 @@
         <el-form-item label="MV名称">
           <el-input
             v-model="newMvName"
-            placeholder="请输入MV名称（不含.mp4扩展名）"
+            placeholder="请输入 MV 名称，不需要手动添加 .mp4"
             maxlength="100"
             show-word-limit
             @keyup.enter="saveMvName"
           />
-          <div style="font-size: 12px; color: #909399; margin-top: 8px;">
-            <i class="i-carbon-information" style="margin-right: 4px;" />
-            提示：只需输入名称，无需添加.mp4扩展名，文件将被重命名
+          <div class="rename-tip">
+            提示：只需要输入名称本体，系统会自动保留视频文件扩展名。
           </div>
         </el-form-item>
       </el-form>
       <template #footer>
-        <div style="display: flex; justify-content: flex-end; gap: 12px;">
+        <div class="dialog-footer">
           <el-button @click="editDialogVisible = false">取消</el-button>
           <el-button type="primary" @click="saveMvName">保存</el-button>
         </div>
@@ -177,7 +202,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, computed } from 'vue'
+import { ref, onMounted, onUnmounted, computed, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { Headset, VideoPlay, Download, Refresh, Edit } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { generateVideoApi, getHistoryApi, renameMvFileApi } from '@/api/ai'
@@ -198,15 +224,13 @@ const editingMv = ref<any>(null)
 const newMvName = ref('')
 let timer: any = null
 
-// 检查登录状态 - 使用 Pinia store
+// 检查登录状态，使用 Pinia store
 const isLoggedIn = computed(() => {
   return userStore.isLoggedIn && !!userStore.userInfo?.token
 })
 
 // 处理登录按钮点击
 const handleLogin = () => {
-  // 触发登录对话框（通过事件总线或其他方式）
-  // 这里假设你有一个全局的登录对话框
   ElMessage.info('请点击右上角登录按钮进行登录')
 }
 
@@ -214,64 +238,55 @@ const handleLogin = () => {
 const handleSongSelection = () => {
   if (route.query.audioUrl) {
     const audioUrl = route.query.audioUrl as string
-    const songName = route.query.songName as string || '未知歌曲'
-    const artistName = route.query.artistName as string || '未知歌手'
-    
+    const songName = (route.query.songName as string) || '未知歌曲'
+    const artistName = (route.query.artistName as string) || '未知歌手'
+
     selectedSongInfo.value = `${songName} - ${artistName}`
     selectedAudioUrl.value = audioUrl
-    
+
     ElMessage.success(`已选择：${selectedSongInfo.value}`)
   }
 }
 
-// 监听路由变化
-watch(() => route.query, () => {
-  handleSongSelection()
-}, { immediate: true })
+watch(
+  () => route.query,
+  () => {
+    handleSongSelection()
+  },
+  { immediate: true },
+)
 
-// 监听用户信息变化（切换账号时刷新作品库）
 watch(
   () => userStore.userInfo?.userId,
   (newUserId, oldUserId) => {
     if (newUserId !== oldUserId) {
-      // 清空当前列表
       historyList.value = []
-      // 如果新用户已登录，重新获取作品历史
       if (isLoggedIn.value) {
         fetchHistory()
       }
     }
-  }
+  },
 )
 
 onMounted(() => {
-  // 只有登录用户才获取作品历史
   if (isLoggedIn.value) {
     fetchHistory()
   }
 })
 
 const fetchHistory = async () => {
-  // 检查是否登录
   if (!isLoggedIn.value) {
     historyList.value = []
     return
   }
-  
+
   try {
-    // 使用 getHistoryApi 直接读取文件系统
     const res = await getHistoryApi()
-    console.log('📦 [fetchHistory] 收到响应:', res)
-    
-    // res 已经是完整的响应对象 {code, message, data}
     if (res.code === 0 || res.code === 200) {
-      console.log('📦 [fetchHistory] 设置 historyList，数量:', res.data.length)
       historyList.value = res.data
-    } else {
-      console.warn('📦 [fetchHistory] 响应码不正确:', res.code, res.message)
     }
   } catch (error) {
-    console.error('❌ [fetchHistory] 错误:', error)
+    console.error('获取历史失败', error)
   }
 }
 
@@ -280,20 +295,18 @@ const handleUpload = async (options: any) => {
   startFakeProgress()
   const formData = new FormData()
   formData.append('file', options.file)
-  
-  // 如果有选中的歌曲信息，也传递给后端
+
   if (selectedSongInfo.value) {
     formData.append('songName', selectedSongInfo.value)
   }
 
   try {
     const res = await generateVideoApi(formData)
-    // res 已经是完整的响应对象 {code, message, data}
     if (res.code === 0 || res.code === 200) {
       progress.value = 100
-      ElMessage.success('生成成功！')
-      await fetchHistory() // 刷新列表
-      selectedSongInfo.value = '' // 清空选中的歌曲信息
+      ElMessage.success('生成成功')
+      await fetchHistory()
+      selectedSongInfo.value = ''
       selectedAudioUrl.value = ''
     } else {
       ElMessage.error(res.message || '失败')
@@ -318,7 +331,6 @@ const handleGenerateFromUrl = async () => {
     loading.value = true
     startFakeProgress()
 
-    // 使用 fetch 下载音频文件
     const response = await fetch(selectedAudioUrl.value)
     if (!response.ok) {
       throw new Error('下载音频文件失败')
@@ -328,19 +340,16 @@ const handleGenerateFromUrl = async () => {
     const fileName = selectedSongInfo.value ? `${selectedSongInfo.value}.mp3` : 'audio.mp3'
     const file = new File([blob], fileName, { type: 'audio/mpeg' })
 
-    // 创建 FormData 并上传
     const formData = new FormData()
     formData.append('file', file)
-    // 传递歌曲名给后端
     if (selectedSongInfo.value) {
       formData.append('songName', selectedSongInfo.value)
     }
 
     const res = await generateVideoApi(formData)
-    // res 已经是完整的响应对象 {code, message, data}
     if (res.code === 0 || res.code === 200) {
       progress.value = 100
-      ElMessage.success('AI 正在为您生成 MV！')
+      ElMessage.success('AI 正在为您生成 MV')
       await fetchHistory()
       selectedSongInfo.value = ''
       selectedAudioUrl.value = ''
@@ -369,10 +378,8 @@ const downloadVideo = (item: any) => {
   document.body.removeChild(link)
 }
 
-// 打开编辑MV名称对话框
 const openEditDialog = (item: any) => {
   editingMv.value = item
-  // 移除 .mp4 扩展名
   let name = item.fileName
   if (name.toLowerCase().endsWith('.mp4')) {
     name = name.substring(0, name.length - 4)
@@ -381,26 +388,23 @@ const openEditDialog = (item: any) => {
   editDialogVisible.value = true
 }
 
-// 保存MV名称（重命名文件）
 const saveMvName = async () => {
   if (!newMvName.value.trim()) {
-    ElMessage.warning('MV名称不能为空')
+    ElMessage.warning('MV 名称不能为空')
     return
   }
 
   try {
-    // 调用重命名API
     const res = await renameMvFileApi(editingMv.value.fileName, newMvName.value.trim())
     if (res.code === 0) {
       ElMessage.success('重命名成功')
       editDialogVisible.value = false
-      // 刷新列表
       await fetchHistory()
     } else {
       ElMessage.error(res.message || '重命名失败')
     }
   } catch (error) {
-    console.error('重命名MV失败:', error)
+    console.error('重命名 MV 失败:', error)
     ElMessage.error('重命名失败')
   }
 }
@@ -411,168 +415,243 @@ const startFakeProgress = () => {
     if (progress.value < 95) progress.value += 1
   }, 1000)
 }
+
 const stopFakeProgress = () => {
   if (timer) clearInterval(timer)
 }
+
 onUnmounted(() => stopFakeProgress())
 </script>
 
 <style scoped>
 .ai-page-container {
-  padding: 32px;
-  height: 100%;
+  min-height: 100%;
+  padding: 20px;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
+  gap: 20px;
+  position: relative;
+  overflow-y: auto;
+}
+
+html.light .ai-page-container {
+  background:
+    radial-gradient(circle at top left, rgba(99, 120, 255, 0.12) 0%, transparent 34%),
+    linear-gradient(180deg, rgba(245, 247, 255, 0.96) 0%, rgba(250, 251, 255, 0.94) 100%);
+}
+
+html.dark .ai-page-container {
+  background:
+    radial-gradient(circle at top left, rgba(99, 120, 255, 0.14) 0%, transparent 34%),
+    linear-gradient(180deg, rgba(20, 24, 38, 0.96) 0%, rgba(24, 30, 48, 0.94) 100%);
+}
+
+.ai-hero {
   position: relative;
   overflow: hidden;
+  border-radius: 28px;
+  padding: 28px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 20px;
+  min-height: 220px;
 }
 
-/* 浅色模式 */
-html.light .ai-page-container {
-  background: linear-gradient(
-    135deg,
-    rgba(102, 126, 234, 0.1) 0%,
-    rgba(118, 75, 162, 0.1) 100%
-  );
+html.light .ai-hero {
+  background:
+    radial-gradient(circle at top left, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0) 36%),
+    linear-gradient(135deg, rgba(73, 95, 244, 0.96) 0%, rgba(118, 75, 162, 0.92) 54%, rgba(10, 157, 140, 0.88) 100%);
+  box-shadow: 0 24px 60px rgba(80, 89, 160, 0.16);
 }
 
-/* 暗色模式 */
-html.dark .ai-page-container {
-  background: linear-gradient(
-    135deg,
-    rgba(26, 26, 46, 0.5) 0%,
-    rgba(15, 52, 96, 0.5) 100%
-  );
+html.dark .ai-hero {
+  background:
+    radial-gradient(circle at top left, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0) 36%),
+    linear-gradient(135deg, rgba(53, 72, 184, 0.96) 0%, rgba(87, 60, 146, 0.94) 54%, rgba(9, 98, 109, 0.9) 100%);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.28);
 }
 
-.ai-page-container::before {
-  content: '';
-  position: absolute;
-  top: -50%;
-  right: -50%;
-  width: 100%;
-  height: 100%;
-  background: radial-gradient(
-    circle,
-    rgba(102, 126, 234, 0.1) 0%,
-    transparent 70%
-  );
-  animation: float 20s ease-in-out infinite;
-}
-
-@keyframes float {
-  0%,
-  100% {
-    transform: translate(0, 0) rotate(0deg);
-  }
-  50% {
-    transform: translate(-20px, 20px) rotate(180deg);
-  }
-}
-
-.page-header {
-  margin-bottom: 32px;
-  text-align: center;
+.ai-hero-copy,
+.ai-hero-stats {
   position: relative;
   z-index: 1;
 }
 
-.page-header h2 {
-  font-size: 42px;
+.ai-hero-copy {
+  max-width: 620px;
+}
+
+.ai-hero-kicker {
+  margin: 0 0 10px;
+  font-size: 12px;
   font-weight: 700;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  margin-bottom: 12px;
-  filter: drop-shadow(0 2px 8px rgba(102, 126, 234, 0.3));
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.78);
+}
+
+.ai-hero h2 {
+  margin: 0 0 12px;
+  font-size: clamp(30px, 4vw, 42px);
+  font-weight: 700;
+  color: #fff;
 }
 
 .subtitle {
+  margin: 0;
   font-size: 16px;
-  font-weight: 300;
-  letter-spacing: 0.5px;
+  line-height: 1.8;
+  color: rgba(255, 255, 255, 0.82);
 }
 
-html.light .subtitle {
-  color: rgba(0, 0, 0, 0.65);
+.ai-hero-stats {
+  display: flex;
+  gap: 12px;
 }
 
-html.dark .subtitle {
-  color: rgba(255, 255, 255, 0.75);
+.hero-stat-card {
+  min-width: 128px;
+  padding: 16px 18px;
+  border-radius: 20px;
+  backdrop-filter: blur(18px);
+}
+
+html.light .hero-stat-card {
+  background: rgba(255, 255, 255, 0.16);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+html.dark .hero-stat-card {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.hero-stat-label {
+  display: block;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.74);
+}
+
+.hero-stat-card strong {
+  display: block;
+  margin-top: 8px;
+  font-size: 24px;
+  line-height: 1.1;
+  color: #fff;
+}
+
+.ai-hero-glow {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(8px);
+}
+
+.ai-hero-glow-a {
+  right: 72px;
+  top: -28px;
+  width: 180px;
+  height: 180px;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.ai-hero-glow-b {
+  right: -16px;
+  bottom: -28px;
+  width: 220px;
+  height: 220px;
+  background: rgba(255, 255, 255, 0.08);
 }
 
 .content-wrapper {
   display: flex;
-  gap: 28px;
+  gap: 24px;
   flex: 1;
-  min-height: 0;
-  position: relative;
-  z-index: 1;
+  min-height: 560px;
+  align-items: stretch;
 }
 
 .left-panel,
 .right-panel {
   flex: 1;
-  height: 100%;
+  flex-basis: 0;
   min-width: 0;
+  display: flex;
 }
 
 .vibe-card {
+  width: 100%;
   height: 100%;
   border-radius: 24px;
   display: flex;
   flex-direction: column;
   backdrop-filter: blur(20px);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-  transition: all 0.3s ease;
+  box-shadow: 0 12px 34px rgba(0, 0, 0, 0.08);
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
 }
 
-html.light .vibe-card {
-  background: rgba(255, 255, 255, 0.95);
-  border: 1px solid rgba(102, 126, 234, 0.2);
-}
-
-html.dark .vibe-card {
-  background: rgba(30, 30, 46, 0.95);
-  border: 1px solid rgba(102, 126, 234, 0.3);
+.upload-card,
+.history-card {
+  height: clamp(560px, calc(100vh - 240px), 760px);
 }
 
 .vibe-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 12px 48px rgba(102, 126, 234, 0.2);
+  transform: translateY(-3px);
+}
+
+html.light .vibe-card {
+  background: rgba(255, 255, 255, 0.86);
+  border: 1px solid rgba(118, 134, 220, 0.14);
+}
+
+html.dark .vibe-card {
+  background: rgba(28, 34, 54, 0.88);
+  border: 1px solid rgba(118, 134, 220, 0.16);
 }
 
 :deep(.el-card__header) {
-  border-bottom: 1px solid rgba(102, 126, 234, 0.1);
+  border-bottom: 1px solid rgba(102, 126, 234, 0.08);
   padding: 20px 24px;
-}
-
-html.light :deep(.el-card__header) {
-  background: linear-gradient(135deg, #f8f9ff 0%, #fff 100%);
-}
-
-html.dark :deep(.el-card__header) {
-  background: linear-gradient(
-    135deg,
-    rgba(40, 40, 60, 0.8) 0%,
-    rgba(30, 30, 46, 0.8) 100%
-  );
 }
 
 :deep(.el-card__body) {
   flex: 1;
   padding: 0;
   overflow: hidden;
-  position: relative;
   display: flex;
   flex-direction: column;
 }
 
+.card-header-rich {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.card-kicker {
+  margin: 0 0 6px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #6d7bd8;
+}
+
+.card-title {
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.card-tip {
+  font-size: 12px;
+  color: #8b97b7;
+}
+
 .upload-container {
   flex: 1;
-  padding: 32px;
+  padding: 28px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -584,144 +663,63 @@ html.dark :deep(.el-card__header) {
 
 .upload-area :deep(.el-upload-dragger) {
   height: 360px;
+  border-radius: 22px;
+  border: 2px dashed rgba(102, 126, 234, 0.26);
   display: flex;
-  flex-direction: column;
-  justify-content: center;
   align-items: center;
-  border-radius: 20px;
-  border: 2px dashed rgba(102, 126, 234, 0.3);
-  transition: all 0.3s ease;
+  justify-content: center;
+  transition: all 0.28s ease;
 }
 
 html.light .upload-area :deep(.el-upload-dragger) {
-  background: linear-gradient(135deg, #f5f7ff 0%, #fef5ff 100%);
+  background: linear-gradient(135deg, rgba(242, 245, 255, 0.96) 0%, rgba(252, 245, 255, 0.92) 100%);
 }
 
 html.dark .upload-area :deep(.el-upload-dragger) {
-  background: linear-gradient(
-    135deg,
-    rgba(40, 40, 60, 0.5) 0%,
-    rgba(50, 40, 70, 0.5) 100%
-  );
+  background: linear-gradient(135deg, rgba(35, 41, 64, 0.9) 0%, rgba(45, 37, 67, 0.88) 100%);
 }
 
 .upload-area :deep(.el-upload-dragger:hover) {
   border-color: #667eea;
-  transform: scale(1.02);
+  transform: translateY(-2px);
 }
 
-html.light .upload-area :deep(.el-upload-dragger:hover) {
-  background: linear-gradient(135deg, #eef1ff 0%, #fdeeff 100%);
-}
-
-html.dark .upload-area :deep(.el-upload-dragger:hover) {
-  background: linear-gradient(
-    135deg,
-    rgba(50, 50, 70, 0.6) 0%,
-    rgba(60, 50, 80, 0.6) 100%
-  );
-}
-
-.upload-icon {
-  font-size: 64px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  margin-bottom: 24px;
-  animation: pulse 2s ease-in-out infinite;
-}
-
-@keyframes pulse {
-  0%,
-  100% {
-    transform: scale(1);
-  }
-  50% {
-    transform: scale(1.1);
-  }
-}
-
-.text {
-  font-size: 18px;
-  font-weight: 600;
-  margin-bottom: 8px;
-}
-
-html.light .text {
-  color: #303133;
-}
-
-html.dark .text {
-  color: #e0e0e0;
-}
-
-.sub-text {
-  font-size: 14px;
-}
-
-html.light .sub-text {
-  color: #909399;
-}
-
-html.dark .sub-text {
-  color: #a0a0a0;
-}
-
+.upload-placeholder,
+.selected-song-info,
 .loading-placeholder {
+  width: 100%;
   text-align: center;
 }
 
-.loading-tips {
-  margin-top: 24px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  font-size: 16px;
-  font-weight: 600;
-  animation: shimmer 2s ease-in-out infinite;
-}
-
-@keyframes shimmer {
-  0%,
-  100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.6;
-  }
-}
-
-/* 选中歌曲信息样式 */
-.selected-song-info {
-  text-align: center;
-}
-
+.upload-icon,
 .selected-icon {
   font-size: 64px;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
-  margin-bottom: 24px;
-  animation: bounce 1s ease-in-out infinite;
+  margin-bottom: 22px;
 }
 
-@keyframes bounce {
-  0%,
-  100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-10px);
-  }
-}
-
+.text,
 .selected-text {
   font-size: 18px;
-  font-weight: 600;
-  margin-bottom: 12px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+html.light .text,
+html.light .selected-name {
+  color: #303133;
+}
+
+html.dark .text,
+html.dark .selected-name {
+  color: #e0e0e0;
+}
+
+.sub-text {
+  font-size: 14px;
+  color: #909399;
 }
 
 .selected-name {
@@ -730,17 +728,9 @@ html.dark .sub-text {
   margin-bottom: 24px;
 }
 
-html.light .selected-name {
-  color: #303133;
-}
-
-html.dark .selected-name {
-  color: #e0e0e0;
-}
-
 .selected-actions {
   display: flex;
-  gap: 16px;
+  gap: 14px;
   justify-content: center;
   margin-top: 24px;
 }
@@ -748,149 +738,65 @@ html.dark .selected-name {
 .generate-btn {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
   border: none !important;
-  color: white !important;
-  padding: 12px 32px !important;
-  font-size: 16px !important;
-  font-weight: 600 !important;
-  border-radius: 12px !important;
-  transition: all 0.3s ease !important;
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3) !important;
-}
-
-.generate-btn:hover {
-  transform: translateY(-2px) !important;
-  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4) !important;
+  border-radius: 14px !important;
+  padding: 12px 28px !important;
+  box-shadow: 0 10px 24px rgba(102, 126, 234, 0.24) !important;
 }
 
 .cancel-btn {
-  padding: 12px 32px !important;
-  font-size: 16px !important;
-  border-radius: 12px !important;
-  transition: all 0.3s ease !important;
+  border-radius: 14px !important;
+  padding: 12px 28px !important;
 }
 
-html.light .cancel-btn {
-  background: rgba(0, 0, 0, 0.05) !important;
-  border: 1px solid rgba(0, 0, 0, 0.1) !important;
-  color: #606266 !important;
+.loading-tips {
+  margin-top: 20px;
+  font-size: 16px;
+  font-weight: 600;
+  color: #6d7bd8;
 }
 
-html.dark .cancel-btn {
-  background: rgba(255, 255, 255, 0.05) !important;
-  border: 1px solid rgba(255, 255, 255, 0.1) !important;
-  color: #e0e0e0 !important;
-}
-
-.cancel-btn:hover {
-  transform: translateY(-2px) !important;
-}
-
-.selected-tip {
-  font-size: 14px;
-  animation: shimmer 2s ease-in-out infinite;
-}
-
-html.light .selected-tip {
-  color: #909399;
-}
-
-html.dark .selected-tip {
-  color: #a0a0a0;
-}
-
-/* 列表样式 */
 .history-list {
   flex: 1;
   overflow-y: auto;
   padding: 20px;
 }
 
-.history-list::-webkit-scrollbar {
-  width: 6px;
-}
-
-.history-list::-webkit-scrollbar-thumb {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  border-radius: 10px;
-}
-
 .history-item {
   display: flex;
   align-items: center;
-  padding: 16px 20px;
+  padding: 16px 18px;
   margin-bottom: 12px;
-  border-radius: 16px;
+  border-radius: 18px;
   cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  position: relative;
-  overflow: hidden;
+  transition: all 0.28s ease;
 }
 
 html.light .history-item {
-  background: linear-gradient(135deg, #f8f9ff 0%, #fff 100%);
-  border: 1px solid rgba(102, 126, 234, 0.1);
+  background: linear-gradient(135deg, rgba(247, 248, 255, 0.96) 0%, rgba(255, 255, 255, 0.98) 100%);
+  border: 1px solid rgba(102, 126, 234, 0.08);
 }
 
 html.dark .history-item {
-  background: linear-gradient(
-    135deg,
-    rgba(40, 40, 60, 0.6) 0%,
-    rgba(30, 30, 46, 0.6) 100%
-  );
-  border: 1px solid rgba(102, 126, 234, 0.2);
-}
-
-.history-item::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 4px;
-  height: 100%;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  transform: scaleY(0);
-  transition: transform 0.3s ease;
-}
-
-.history-item:hover::before {
-  transform: scaleY(1);
+  background: linear-gradient(135deg, rgba(39, 46, 72, 0.9) 0%, rgba(31, 37, 58, 0.92) 100%);
+  border: 1px solid rgba(102, 126, 234, 0.16);
 }
 
 .history-item:hover {
-  box-shadow: 0 8px 24px rgba(102, 126, 234, 0.2);
-  border-color: rgba(102, 126, 234, 0.4);
-  transform: translateX(8px);
-}
-
-html.light .history-item:hover {
-  background: linear-gradient(135deg, #fff 0%, #f8f9ff 100%);
-}
-
-html.dark .history-item:hover {
-  background: linear-gradient(
-    135deg,
-    rgba(50, 50, 70, 0.7) 0%,
-    rgba(40, 40, 60, 0.7) 100%
-  );
+  transform: translateX(6px);
+  box-shadow: 0 12px 24px rgba(102, 126, 234, 0.14);
 }
 
 .item-icon {
   width: 48px;
   height: 48px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: #fff;
   border-radius: 14px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 24px;
   margin-right: 16px;
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
-  transition: all 0.3s ease;
-}
-
-.history-item:hover .item-icon {
-  transform: rotate(360deg) scale(1.1);
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: #fff;
+  box-shadow: 0 8px 18px rgba(102, 126, 234, 0.24);
 }
 
 .item-info {
@@ -917,18 +823,7 @@ html.dark .item-name {
 
 .item-meta {
   font-size: 13px;
-}
-
-html.light .item-meta {
   color: #909399;
-}
-
-html.dark .item-meta {
-  color: #a0a0a0;
-}
-
-.dot {
-  margin: 0 8px;
 }
 
 .item-actions {
@@ -940,80 +835,95 @@ html.dark .item-meta {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   border: none;
   color: #fff;
-  transition: all 0.3s ease;
 }
 
-.item-actions :deep(.el-button:hover) {
-  transform: scale(1.1);
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+.rename-tip {
+  margin-top: 8px;
+  font-size: 12px;
+  color: #909399;
 }
 
-.card-header {
+.dialog-footer {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-weight: 600;
-  font-size: 16px;
-}
-
-html.light .card-header {
-  color: #303133;
-}
-
-html.dark .card-header {
-  color: #e0e0e0;
+  justify-content: flex-end;
+  gap: 12px;
 }
 
 :deep(.el-dialog) {
-  border-radius: 20px;
+  border-radius: 22px;
   overflow: hidden;
 }
 
 :deep(.el-dialog__header) {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
-  color: #fff !important;
   padding: 20px !important;
 }
 
 :deep(.el-dialog__title) {
   color: #fff !important;
-  font-weight: 600 !important;
-}
-
-:deep(.el-dialog__headerbtn) {
-  top: 20px !important;
-  right: 20px !important;
-  width: 32px !important;
-  height: 32px !important;
+  font-weight: 700 !important;
 }
 
 :deep(.el-dialog__headerbtn .el-dialog__close) {
-  color: white !important;
-  font-size: 22px !important;
-  font-weight: bold !important;
-  width: 100% !important;
-  height: 100% !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  transition: all 0.3s ease !important;
+  color: #fff !important;
 }
 
-:deep(.el-dialog__headerbtn:hover) {
-  background: rgba(255, 255, 255, 0.2) !important;
-  border-radius: 8px !important;
+@media (max-width: 1024px) {
+  .ai-hero {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .ai-hero-stats {
+    width: 100%;
+  }
+
+  .hero-stat-card {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .content-wrapper {
+    flex-direction: column;
+    min-height: auto;
+  }
+
+  .left-panel,
+  .right-panel {
+    min-height: 420px;
+  }
+
+  .upload-card,
+  .history-card {
+    height: auto;
+    min-height: 420px;
+  }
 }
 
-:deep(.el-dialog__headerbtn:hover .el-dialog__close) {
-  color: white !important;
-  transform: scale(1.1) !important;
-}
+@media (max-width: 768px) {
+  .ai-page-container {
+    padding: 14px;
+  }
 
-:deep(.el-dialog__body) {
-  padding: 24px;
-}
+  .ai-hero {
+    min-height: auto;
+    padding: 22px 18px;
+  }
 
-:deep(.el-progress__text) {
-  font-weight: 600;
+  .ai-hero-stats {
+    flex-direction: column;
+  }
+
+  .upload-container {
+    padding: 20px;
+  }
+
+  .upload-area :deep(.el-upload-dragger) {
+    height: 300px;
+  }
+
+  .selected-actions {
+    flex-direction: column;
+  }
 }
 </style>
