@@ -1,29 +1,79 @@
 import { http } from '@/utils/http'
 
-// 这里的地址对应你本地运行的 SpringBoot 地址
-const BASE_URL = 'http://localhost:8080'
+interface ApiResult<T = any> {
+  code: number
+  message: string
+  data: T
+}
 
-// 上传音频并生成视频的接口
+export interface AiVideoTaskItem {
+  id: number
+  songName: string
+  artistName?: string
+  status: 'QUEUED' | 'PROCESSING' | 'SUCCESS' | 'FAILED'
+  statusText?: string
+  mvName?: string
+  mvFileName?: string
+  mvUrl?: string
+  errorMessage?: string
+  startTime?: string
+  finishTime?: string
+  createTime?: string
+  updateTime?: string
+}
+
+export interface AiHistoryItem {
+  fileName: string
+  mvName?: string
+  songName?: string
+  url: string
+  createTime: string
+  size: string
+}
+
+export interface CreateVideoTaskParams {
+  songName: string
+  artistName?: string
+  audioUrl: string
+  styleCode?: string
+  styleLabel?: string
+}
+
+// 兼容旧版同步接口，当前 AI 创作页已不再使用
 export const generateVideoApi = (params: FormData) => {
-  return http('post', '/api/ai/generate', {
+  return http<ApiResult<string>>('post', '/api/ai/generate', {
     data: params,
     headers: {
       'Content-Type': 'multipart/form-data',
     },
-    // 设置超时，防止AI生成时间过长前端报错
     timeout: 60000000,
   })
 }
 
-// 获取历史记录
-export const getHistoryApi = () => {
-  return http('get', '/api/ai/history')
+// 创建异步 MV 任务
+export const createVideoTaskApi = (data: CreateVideoTaskParams) => {
+  return http<ApiResult<AiVideoTaskItem>>('post', '/api/ai/tasks', { data })
 }
 
-// 重命名MV文件
+// 获取当前用户任务列表
+export const getVideoTaskListApi = () => {
+  return http<ApiResult<AiVideoTaskItem[]>>('get', '/api/ai/tasks')
+}
+
+// 删除当前用户的单个任务
+export const deleteVideoTaskApi = (taskId: number) => {
+  return http<ApiResult<string>>('delete', `/api/ai/tasks/${taskId}`)
+}
+
+// 获取作品库历史
+export const getHistoryApi = () => {
+  return http<ApiResult<AiHistoryItem[]>>('get', '/api/ai/history')
+}
+
+// 重命名作品
 export const renameMvFileApi = (oldFileName: string, newFileName: string) => {
   const params = new URLSearchParams()
   params.append('oldFileName', oldFileName)
   params.append('newFileName', newFileName)
-  return http('put', `/api/ai/rename?${params.toString()}`)
+  return http<ApiResult<string>>('put', `/api/ai/rename?${params.toString()}`)
 }

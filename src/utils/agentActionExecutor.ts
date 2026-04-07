@@ -39,11 +39,48 @@ const convertSongDetailToTrack = (song: any): trackModel | null => {
 }
 
 /**
- * 生成动作执行前的提示文案，让用户知道助手正在做什么
+ * 根据搜索类型解析实际要跳转的目标页面。
+ *
+ * 规则：
+ * 1. 歌曲搜索统一走全站综合搜索页 `/search`
+ * 2. 歌手、歌单、社区搜索走各自页面，让页面内搜索框接管
+ */
+const resolveSearchTarget = (payload: Record<string, any>) => {
+  const searchType = String(payload.searchType || '').trim()
+
+  if (searchType === 'artist') {
+    return {
+      path: '/artist',
+      pageName: payload.pageName || '歌手页',
+    }
+  }
+
+  if (searchType === 'playlist') {
+    return {
+      path: '/playlist',
+      pageName: payload.pageName || '歌单页',
+    }
+  }
+
+  if (searchType === 'community') {
+    return {
+      path: '/community',
+      pageName: payload.pageName || '社区页',
+    }
+  }
+
+  return {
+    path: '/search',
+    pageName: payload.pageName || '全站综合搜索',
+  }
+}
+
+/**
+ * 生成动作执行前的提示文案
  */
 export const getAgentActionPendingMessages = (actions: AgentAction[] = []) => {
   return actions
-    .map((action) => {
+    .map(action => {
       const payload = action.payload || {}
 
       if (action.type === 'navigate_to') {
@@ -61,8 +98,10 @@ export const getAgentActionPendingMessages = (actions: AgentAction[] = []) => {
       }
 
       if (action.type === 'search_site') {
-        return `正在为你搜索${payload.keyword || '相关内容'}...`
+        const target = resolveSearchTarget(payload)
+        return `正在为你搜索${payload.keyword || '相关内容'}，并打开${target.pageName}...`
       }
+
       return ''
     })
     .filter(Boolean)
@@ -86,6 +125,7 @@ export const executeAgentActions = async (
         if (options.router.currentRoute.value.path !== payload.path) {
           await options.router.push(payload.path)
         }
+
         feedbacks.push({
           status: 'success',
           message: `已为你打开${payload.pageName || '目标页面'}。`,
@@ -93,7 +133,7 @@ export const executeAgentActions = async (
       } catch (error: any) {
         feedbacks.push({
           status: 'error',
-          message: error?.message || `页面打开失败，请稍后再试。`,
+          message: error?.message || '页面打开失败，请稍后再试。',
         })
       }
       continue
@@ -137,9 +177,9 @@ export const executeAgentActions = async (
           continue
         }
 
-        // 如果播放列表中已存在这首歌，则直接切换索引
+        // 如果播放列表中已经存在这首歌，则直接切换索引
         const existingIndex = options.audioStore.trackList.findIndex(
-          (item) => Number(item.id) === songId
+          item => Number(item.id) === songId
         )
 
         if (existingIndex >= 0) {
@@ -161,20 +201,23 @@ export const executeAgentActions = async (
           message: error?.message || '播放歌曲时出现异常，请稍后再试。',
         })
       }
+      continue
     }
 
     // 站内搜索动作
-    if (action.type === 'search_site' && payload.path) {
+    if (action.type === 'search_site') {
       try {
         const keyword = String(payload.keyword || '').trim()
+        const target = resolveSearchTarget(payload)
+
         await options.router.push({
-          path: payload.path,
+          path: target.path,
           query: keyword ? { query: keyword } : {},
         })
 
         feedbacks.push({
           status: 'success',
-          message: `已为你搜索${keyword || '相关内容'}，正在打开${payload.pageName || '目标页面'}。`,
+          message: `已为你搜索${keyword || '相关内容'}，并打开${target.pageName}。`,
         })
       } catch (error: any) {
         feedbacks.push({

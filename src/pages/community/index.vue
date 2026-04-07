@@ -152,11 +152,6 @@ const clearTagFilter = () => {
   fetchPosts()
 }
 
-// 跳转到标签广场
-const goToTagsPage = () => {
-  router.push('/community/tags')
-}
-
 // 搜索
 const handleSearch = () => {
   currentPage.value = 1
@@ -239,6 +234,15 @@ watch(
       console.log('>>> [列表页] 从详情页返回，刷新列表')
       fetchPosts()
     }
+  }
+)
+
+watch(
+  () => route.query.tag,
+  (newTag) => {
+    selectedTag.value = typeof newTag === 'string' ? newTag : ''
+    currentPage.value = 1
+    fetchPosts()
   }
 )
 
@@ -394,12 +398,20 @@ onMounted(() => {
             <i class="i-carbon-tag mr-1" />
             热门标签
           </span>
-          <el-button text size="small" @click="goToTagsPage">
-            查看更多
-            <i class="i-carbon-arrow-right ml-1" />
-          </el-button>
+          <div v-if="selectedTag" class="tag-filter-status">
+            <span class="status-label">当前筛选</span>
+            <strong># {{ selectedTag }}</strong>
+          </div>
         </div>
         <div class="hot-tags">
+          <div
+            class="tag-item tag-item-all"
+            :class="{ active: !selectedTag }"
+            @click="clearTagFilter"
+          >
+            <i class="i-carbon-grid mr-1" />
+            全部
+          </div>
           <div
             v-for="tag in hotTags"
             :key="tag.tagName"
@@ -561,17 +573,17 @@ onMounted(() => {
               <span class="stat-item">
                 <i class="i-carbon-view" />
                 <span class="stat-label">浏览</span>
-                {{ post.viewCount }}
+                <span class="stat-value">{{ post.viewCount }}</span>
               </span>
               <span class="stat-item">
                 <i class="i-carbon-thumbs-up" />
                 <span class="stat-label">点赞</span>
-                {{ post.likeCount }}
+                <span class="stat-value">{{ post.likeCount }}</span>
               </span>
               <span class="stat-item">
                 <i class="i-carbon-chat" />
                 <span class="stat-label">评论</span>
-                {{ post.commentCount }}
+                <span class="stat-value">{{ post.commentCount }}</span>
               </span>
             </div>
           </div>
@@ -708,6 +720,12 @@ onMounted(() => {
       align-items: center;
       margin-bottom: 12px;
 
+      .section-copy {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+
       .section-title {
         font-size: 14px;
         font-weight: 600;
@@ -718,6 +736,24 @@ onMounted(() => {
         i {
           color: #667eea;
         }
+      }
+
+      .section-subtitle {
+        font-size: 12px;
+        color: var(--el-text-color-secondary);
+        line-height: 1.6;
+      }
+
+      .tag-filter-status {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 12px;
+        border-radius: 999px;
+        background: rgba(102, 126, 234, 0.1);
+        color: #4f5fcf;
+        font-size: 12px;
+        font-weight: 600;
       }
     }
 
@@ -759,6 +795,10 @@ onMounted(() => {
           &:hover {
             background: #f78989;
           }
+        }
+
+        &.tag-item-all {
+          font-weight: 600;
         }
 
         .tag-count {
@@ -2332,6 +2372,19 @@ onMounted(() => {
   }
 
   .header-left {
+    position: relative;
+    max-width: 620px;
+
+    &::before {
+      content: 'Community Square';
+      display: block;
+      margin-bottom: 10px;
+      font-size: 12px;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: #6f7fd6;
+    }
+
     .title {
       font-size: 36px;
       letter-spacing: 1px;
@@ -2343,6 +2396,31 @@ onMounted(() => {
     .subtitle {
       font-size: 15px;
       color: #66758f;
+      line-height: 1.75;
+      max-width: 560px;
+      margin-bottom: 0;
+    }
+
+    &::after {
+      content: '帖子总量 ' attr(data-total);
+      display: none;
+    }
+
+    .title + .subtitle {
+      position: relative;
+      padding-bottom: 18px;
+      margin-bottom: 18px;
+    }
+
+    .title + .subtitle::after {
+      content: '';
+      position: absolute;
+      left: 0;
+      bottom: 0;
+      width: 88px;
+      height: 4px;
+      border-radius: 999px;
+      background: linear-gradient(90deg, rgba(95, 132, 223, 0.95), rgba(240, 142, 166, 0.9));
     }
   }
 
@@ -2452,6 +2530,24 @@ onMounted(() => {
     #fff;
   box-shadow: 0 16px 34px rgba(89, 116, 172, 0.1);
 
+  &::before {
+    content: '内容筛选';
+    display: block;
+    margin-bottom: 6px;
+    font-size: 18px;
+    font-weight: 700;
+    color: #273856;
+  }
+
+  &::after {
+    content: '先按分类和标签缩小范围，再用搜索和排序快速定位感兴趣的帖子。';
+    display: block;
+    margin-bottom: 18px;
+    font-size: 13px;
+    line-height: 1.7;
+    color: #73819a;
+  }
+
   .category-tabs {
     gap: 10px;
     margin-bottom: 18px;
@@ -2482,6 +2578,15 @@ onMounted(() => {
     border: 1px solid rgba(143, 173, 228, 0.16);
     border-radius: 18px;
     background: linear-gradient(180deg, rgba(242, 247, 255, 0.84), rgba(255, 249, 252, 0.84));
+
+    .section-subtitle {
+      color: #70819d;
+    }
+
+    .tag-filter-status {
+      border: 1px solid rgba(113, 140, 208, 0.18);
+      box-shadow: 0 8px 18px rgba(108, 131, 177, 0.08);
+    }
 
     .section-title {
       color: #33455f;
@@ -2563,6 +2668,54 @@ onMounted(() => {
     padding-top: 14px;
     border-top: 1px solid rgba(145, 173, 228, 0.14);
   }
+
+  .post-stats {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  .stat-item {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-width: 96px;
+    min-height: 44px;
+    padding: 8px 12px;
+    border-radius: 999px;
+    background: rgba(242, 246, 253, 0.94);
+    color: #5f6f8c !important;
+    text-align: center;
+    line-height: 1;
+    vertical-align: middle;
+  }
+
+  .stat-item i {
+    color: #d56c74 !important;
+    line-height: 1;
+  }
+
+  .stat-item .stat-label {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 28px;
+    color: #667792 !important;
+    line-height: 1;
+  }
+
+  .stat-item .stat-value {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 16px;
+    color: #4b5a76 !important;
+    font-weight: 600;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+  }
 }
 
 .pagination {
@@ -2621,6 +2774,512 @@ onMounted(() => {
       padding: 18px;
       border-radius: 20px;
     }
+  }
+}
+</style>
+
+<style scoped lang="scss">
+.post-list .post-card .post-footer .post-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+.post-list .post-card .post-footer .post-stats .stat-item {
+  display: inline-grid !important;
+  grid-auto-flow: column;
+  grid-auto-columns: max-content;
+  align-items: center;
+  justify-content: center;
+  column-gap: 6px;
+  min-width: 112px;
+  height: 42px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.72) !important;
+  background: rgba(255, 255, 255, 0.88) !important;
+  box-shadow:
+    0 10px 20px rgba(44, 63, 103, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.92);
+  color: #485774 !important;
+  line-height: 1 !important;
+  white-space: nowrap;
+  backdrop-filter: blur(10px);
+}
+
+.post-list .post-card .post-footer .post-stats .stat-item i {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  font-size: 16px;
+  color: #d96a72 !important;
+  line-height: 1 !important;
+}
+
+.post-list .post-card .post-footer .post-stats .stat-item .stat-label,
+.post-list .post-card .post-footer .post-stats .stat-item .stat-value {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  height: 18px;
+  margin: 0;
+  line-height: 1 !important;
+}
+
+.post-list .post-card .post-footer .post-stats .stat-item .stat-label {
+  min-width: 30px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #5a6985 !important;
+}
+
+.post-list .post-card .post-footer .post-stats .stat-item .stat-value {
+  min-width: 18px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #23314d !important;
+  font-variant-numeric: tabular-nums;
+}
+</style>
+
+<style scoped lang="scss">
+.banner-hot-section {
+  align-items: stretch;
+  grid-auto-rows: 1fr;
+}
+
+.banner-hot-section .banner-container {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+  min-height: 340px;
+  padding: 12px;
+  border-radius: 30px;
+  background:
+    radial-gradient(circle at top left, rgba(141, 183, 255, 0.2), transparent 30%),
+    radial-gradient(circle at bottom right, rgba(255, 174, 196, 0.22), transparent 34%),
+    linear-gradient(145deg, rgba(252, 253, 255, 0.98), rgba(243, 248, 255, 0.95));
+  box-shadow:
+    0 26px 52px rgba(100, 127, 184, 0.16),
+    inset 0 1px 0 rgba(255, 255, 255, 0.88);
+}
+
+.banner-hot-section .banner-container::before {
+  content: '';
+  position: absolute;
+  inset: 10px;
+  border-radius: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  pointer-events: none;
+}
+
+.banner-hot-section .banner-container :deep(.el-carousel) {
+  flex: 1;
+  width: 100%;
+  border-radius: 24px;
+  overflow: hidden;
+}
+
+.banner-hot-section .banner-container :deep(.el-carousel__container) {
+  height: 100% !important;
+  border-radius: 24px;
+}
+
+.banner-hot-section .banner-container :deep(.el-carousel__arrow) {
+  width: 44px;
+  height: 44px;
+  background: rgba(20, 31, 58, 0.34);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  backdrop-filter: blur(10px);
+  transition: all 0.25s ease;
+}
+
+.banner-hot-section .banner-container :deep(.el-carousel__arrow:hover) {
+  background: rgba(20, 31, 58, 0.5);
+  transform: scale(1.06);
+}
+
+.banner-hot-section .banner-container :deep(.el-carousel__indicators--horizontal) {
+  bottom: 16px;
+}
+
+.banner-hot-section .banner-container :deep(.el-carousel__button) {
+  width: 26px;
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.48);
+}
+
+.banner-hot-section .banner-container .banner-item {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  border-radius: 24px;
+  overflow: hidden;
+}
+
+.banner-hot-section .banner-container .banner-item::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(90deg, rgba(13, 22, 46, 0.72) 0%, rgba(13, 22, 46, 0.12) 44%, rgba(13, 22, 46, 0.24) 100%),
+    linear-gradient(180deg, rgba(13, 22, 46, 0.04), rgba(13, 22, 46, 0.26));
+  pointer-events: none;
+}
+
+.banner-hot-section .banner-container .banner-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: scale(1.01);
+  filter: saturate(1.05) contrast(1.04);
+}
+
+.banner-hot-section .banner-container .banner-overlay {
+  inset: auto 0 0 0;
+  padding: 20px 24px 28px;
+  background: linear-gradient(180deg, rgba(8, 16, 38, 0.02), rgba(8, 16, 38, 0.78));
+}
+
+.banner-hot-section .banner-container .banner-title {
+  max-width: 72%;
+  margin: 0 0 10px;
+  font-size: 28px;
+  line-height: 1.2;
+  font-weight: 700;
+  color: #fff;
+  text-shadow: 0 10px 26px rgba(0, 0, 0, 0.32);
+}
+
+.banner-hot-section .banner-container .banner-desc {
+  max-width: 58%;
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.75;
+  color: rgba(241, 246, 255, 0.9);
+}
+
+.banner-hot-section .hot-recommend {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: 340px;
+  max-height: 340px;
+  padding: 24px;
+  border-radius: 30px;
+  background:
+    radial-gradient(circle at top right, rgba(255, 188, 166, 0.22), transparent 28%),
+    radial-gradient(circle at bottom left, rgba(131, 166, 255, 0.16), transparent 32%),
+    linear-gradient(155deg, rgba(255, 255, 255, 0.98), rgba(246, 249, 255, 0.95));
+  box-shadow:
+    0 24px 50px rgba(99, 124, 179, 0.14),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+.banner-hot-section .hot-recommend::before {
+  content: '';
+  position: absolute;
+  inset: 12px;
+  border-radius: 22px;
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  pointer-events: none;
+}
+
+.banner-hot-section .hot-recommend .hot-header,
+.banner-hot-section .hot-recommend .hot-list {
+  position: relative;
+  z-index: 1;
+}
+
+.banner-hot-section .hot-recommend .hot-header {
+  justify-content: space-between;
+  margin-bottom: 18px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid rgba(145, 172, 228, 0.18);
+}
+
+.banner-hot-section .hot-recommend .hot-header i {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(255, 164, 116, 0.22), rgba(255, 117, 130, 0.24));
+  color: #ff7b6c;
+}
+
+.banner-hot-section .hot-recommend .hot-list {
+  flex: 1;
+  overflow-y: auto;
+  gap: 14px;
+  padding-right: 6px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(124, 146, 199, 0.65) rgba(233, 238, 249, 0.72);
+}
+
+.banner-hot-section .hot-recommend .hot-list::-webkit-scrollbar {
+  width: 8px;
+}
+
+.banner-hot-section .hot-recommend .hot-list::-webkit-scrollbar-track {
+  border-radius: 999px;
+  background: rgba(233, 238, 249, 0.72);
+}
+
+.banner-hot-section .hot-recommend .hot-list::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(118, 145, 221, 0.9), rgba(238, 144, 169, 0.9));
+}
+
+.banner-hot-section .hot-recommend .hot-item {
+  position: relative;
+  align-items: center;
+  gap: 14px;
+  min-height: 92px;
+  padding: 16px 16px 16px 14px;
+  border: 1px solid rgba(144, 171, 223, 0.14);
+  border-radius: 22px;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(243, 247, 255, 0.92));
+  box-shadow:
+    0 14px 28px rgba(93, 119, 171, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.78);
+  overflow: hidden;
+}
+
+.banner-hot-section .hot-recommend .hot-item::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 12px;
+  bottom: 12px;
+  width: 4px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #6f90ec, #f295aa);
+  opacity: 0.85;
+}
+
+.banner-hot-section .hot-recommend .hot-item:hover {
+  transform: translateX(6px);
+  border-color: rgba(119, 151, 220, 0.22);
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(239, 245, 255, 0.96));
+  box-shadow:
+    0 18px 34px rgba(96, 122, 175, 0.14),
+    inset 0 1px 0 rgba(255, 255, 255, 0.84);
+}
+
+.banner-hot-section .hot-recommend .hot-rank {
+  width: 42px;
+  height: 42px;
+  border-radius: 16px;
+  font-size: 22px;
+  font-weight: 800;
+  box-shadow: 0 10px 20px rgba(102, 120, 158, 0.14);
+}
+
+.banner-hot-section .hot-recommend .hot-rank.rank-1 {
+  background: linear-gradient(135deg, #ffd84f, #ffb020);
+  color: #fff;
+}
+
+.banner-hot-section .hot-recommend .hot-rank.rank-2 {
+  background: linear-gradient(135deg, #dbe6f8, #bbc8e3);
+  color: #526482;
+}
+
+.banner-hot-section .hot-recommend .hot-rank.rank-3 {
+  background: linear-gradient(135deg, #efb37d, #d88346);
+  color: #fff;
+}
+
+.banner-hot-section .hot-recommend .hot-content {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.banner-hot-section .hot-recommend .hot-title {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 700;
+  color: #243653;
+  line-height: 1.35;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.banner-hot-section .hot-recommend .hot-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.banner-hot-section .hot-recommend .hot-stats span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 34px;
+  padding: 0 12px;
+  border-radius: 999px;
+  background: rgba(245, 248, 255, 0.96);
+  color: #65758f;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.banner-hot-section .hot-recommend .hot-stats span i {
+  font-size: 15px;
+  color: #6c84c4;
+}
+
+@media (max-width: 768px) {
+  .banner-hot-section .banner-container {
+    padding: 12px;
+    border-radius: 24px;
+    min-height: 300px;
+  }
+
+  .banner-hot-section .banner-container .banner-overlay {
+    padding: 18px 18px 24px;
+  }
+
+  .banner-hot-section .banner-container .banner-title,
+  .banner-hot-section .banner-container .banner-desc {
+    max-width: 100%;
+  }
+
+  .banner-hot-section .banner-container .banner-title {
+    font-size: 22px;
+  }
+
+  .banner-hot-section .hot-recommend {
+    padding: 20px;
+    border-radius: 24px;
+    min-height: unset;
+    max-height: unset;
+  }
+
+  .banner-hot-section .hot-recommend .hot-item {
+    min-height: 84px;
+    border-radius: 18px;
+  }
+
+  .banner-hot-section .hot-recommend .hot-title {
+    font-size: 18px;
+  }
+}
+</style>
+
+<style scoped lang="scss">
+.post-list .post-card.post-highlight {
+  outline: 2px solid rgba(255, 202, 72, 0.96);
+  outline-offset: 3px;
+  border-color: rgba(255, 208, 96, 0.92) !important;
+  box-shadow:
+    0 0 0 4px rgba(255, 240, 180, 0.5),
+    0 0 28px rgba(255, 200, 60, 0.32),
+    0 20px 42px rgba(255, 184, 71, 0.18),
+    inset 0 1px 0 rgba(255, 251, 232, 0.92) !important;
+}
+
+.post-list .post-card.post-highlight:hover {
+  box-shadow:
+    0 0 0 4px rgba(255, 244, 192, 0.56),
+    0 0 36px rgba(255, 205, 77, 0.42),
+    0 24px 48px rgba(255, 184, 71, 0.24),
+    inset 0 1px 0 rgba(255, 251, 232, 0.96) !important;
+}
+
+.post-list .post-card.post-highlight .post-cover {
+  position: relative;
+  border-radius: 18px;
+  box-shadow:
+    0 0 0 2px rgba(255, 215, 92, 0.7),
+    0 16px 30px rgba(255, 184, 71, 0.22);
+}
+
+.post-list .post-card.post-highlight .post-cover::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(130deg, rgba(255, 255, 255, 0.34), transparent 32%, transparent 68%, rgba(255, 215, 120, 0.18));
+  pointer-events: none;
+}
+
+.post-list .post-card.post-highlight .post-header {
+  position: relative;
+  padding-top: 6px;
+}
+
+.post-list .post-card.post-highlight .post-header::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: -8px;
+  width: 168px;
+  height: 4px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(255, 213, 96, 1), rgba(255, 151, 80, 0.94), rgba(255, 213, 96, 0));
+  box-shadow: 0 0 16px rgba(255, 196, 66, 0.45);
+}
+
+.post-list .post-card.post-highlight .post-title {
+  text-shadow: 0 0 18px rgba(255, 208, 72, 0.18);
+}
+
+.post-list .post-card.post-highlight .post-footer {
+  position: relative;
+}
+
+.post-list .post-card.post-highlight .post-footer::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -2px;
+  height: 1px;
+  background: linear-gradient(90deg, rgba(255, 213, 96, 0.75), rgba(255, 255, 255, 0.18), rgba(255, 144, 107, 0.65));
+}
+
+.post-list .post-card.post-highlight .tag-highlight {
+  position: relative;
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #ffe16c 0%, #ffbc3f 45%, #ff8d61 100%) !important;
+  color: #fff !important;
+  border: 1px solid rgba(255, 247, 214, 0.4);
+  box-shadow:
+    0 10px 18px rgba(255, 183, 55, 0.28),
+    0 0 16px rgba(255, 206, 92, 0.26);
+}
+
+.post-list .post-card.post-highlight .tag-highlight i {
+  filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.38));
+}
+
+.post-list .post-card.post-highlight .tag-top-badge,
+.post-list .post-card.post-highlight .level-tag-badge {
+  box-shadow: 0 8px 16px rgba(31, 41, 55, 0.14);
+}
+
+@media (max-width: 768px) {
+  .post-list .post-card.post-highlight {
+    outline-offset: 2px;
+  }
+
+  .post-list .post-card.post-highlight .post-header::before {
+    width: 118px;
+    top: -3px;
   }
 }
 </style>

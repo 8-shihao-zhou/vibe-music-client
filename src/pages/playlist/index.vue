@@ -3,29 +3,23 @@ import { getAllPlaylists, getFavoritePlaylists } from '@/api/system'
 import coverImg from '@/assets/cover.png'
 import { ElNotification } from 'element-plus'
 
-// 路由
 const router = useRouter()
-// 播放列表
 const playlists = ref([])
-
 const selected = ref('all')
-// 搜索关键词
 const searchKeyword = ref('')
 
 const route = useRoute()
+const isPlaylistPage = computed(() => route.path === '/playlist')
 
-// 歌单类型列表
 const playlistsList = [
   { name: '精选歌单', value: 'all' },
   { name: '我的收藏', value: 'favorite' },
 ]
-// 歌单tag
 const playTags = ref<{ name: string }[]>([])
 const selectedTag = ref('全部')
 
-// 分页组件状态
-const currentPage = ref(1) // 当前页
-const pageSize = ref(12) // 每页显示的数量
+const currentPage = ref(1)
+const pageSize = ref(12)
 const state = reactive({
   size: 'default',
   disabled: false,
@@ -35,17 +29,17 @@ const state = reactive({
   pageSizes: [12, 24, 36, 48],
 })
 
-// 监听分页变化
 const handleSizeChange = () => {
   getPlaylists()
 }
-// 监听当前页变化
+
 const handleCurrentChange = () => {
   getPlaylists()
 }
 
-// 获取歌单
 const getPlaylists = async () => {
+  if (!isPlaylistPage.value) return
+
   try {
     const params = {
       pageNum: currentPage.value,
@@ -61,7 +55,7 @@ const getPlaylists = async () => {
       res = await getAllPlaylists(params)
     }
 
-    if (res.code === 0) {
+    if (res.code === 0 && res.data && Array.isArray(res.data.items)) {
       playlists.value = res.data.items.map((item) => ({
         id: item.playlistId,
         name: item.title,
@@ -74,6 +68,10 @@ const getPlaylists = async () => {
         subscribedCount: 0,
       }))
       state.total = res.data.total
+    } else if (res.code === 0 && res.data) {
+      // 无结果时后端也会返回成功，这里按空列表处理
+      playlists.value = []
+      state.total = res.data.total || 0
     } else {
       ElNotification({
         type: 'error',
@@ -90,13 +88,18 @@ const getPlaylists = async () => {
   }
 }
 
-// 选择歌单
 const selectPlaylist = (playlist: string) => {
   selected.value = playlist
+  currentPage.value = 1
   getPlaylists()
 }
 
-// 处理搜索
+const selectTag = (tagName: string) => {
+  selectedTag.value = tagName
+  currentPage.value = 1
+  getPlaylists()
+}
+
 const handleSearch = () => {
   currentPage.value = 1
   router.push({
@@ -108,6 +111,7 @@ const handleSearch = () => {
 watch(
   () => route.query.query,
   (newQuery) => {
+    if (!isPlaylistPage.value) return
     searchKeyword.value = typeof newQuery === 'string' ? newQuery : ''
     currentPage.value = 1
     getPlaylists()
@@ -115,7 +119,6 @@ watch(
   { immediate: true }
 )
 
-// 处理搜索框按下回车
 const handleKeyPress = (e: KeyboardEvent) => {
   if (e.key === 'Enter') {
     handleSearch()
@@ -123,7 +126,7 @@ const handleKeyPress = (e: KeyboardEvent) => {
 }
 
 onMounted(() => {
-  // 初始化歌单标签
+  if (!isPlaylistPage.value) return
   playTags.value = [
     { name: '全部' },
     { name: '节奏布鲁斯' },
@@ -145,28 +148,70 @@ onMounted(() => {
     { name: '古典' },
   ]
 })
+
+onActivated(() => {
+  if (!isPlaylistPage.value) return
+  searchKeyword.value =
+    typeof route.query.query === 'string' ? route.query.query : ''
+  getPlaylists()
+})
 </script>
+
 <template>
-  <div
-    class="flex flex-col h-full flex-1 overflow-hidden bg-background px-4 py-2 playlist-container"
-  >
-    <div class="py-4">
-      <div class="flex flex-col sm:flex-row gap-4">
-        <div class="relative flex-grow">
-          <icon-mdi:magnify
-            class="lucide lucide-search absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground search-icon"
-          />
+  <div class="playlist-page">
+    <section class="playlist-hero">
+      <div class="hero-copy">
+        <div class="hero-badge">
+          <div class="hero-icon">
+            <icon-ri:album-line class="hero-icon-inner" />
+          </div>
+          <span>Playlist Library</span>
+        </div>
+        <h1 class="hero-title">歌单</h1>
+        <p class="hero-subtitle">
+          用关键词、风格与收藏视角快速筛选歌单，找到适合当前心情的播放集合。
+        </p>
+        <div class="hero-stats">
+          <div class="stat-card">
+            <span class="stat-label">展示页码</span>
+            <strong>{{ currentPage }}</strong>
+          </div>
+          <div class="stat-card">
+            <span class="stat-label">每页数量</span>
+            <strong>{{ pageSize }}</strong>
+          </div>
+          <div class="stat-card">
+            <span class="stat-label">总歌单数</span>
+            <strong>{{ state.total }}</strong>
+          </div>
+        </div>
+      </div>
+
+      <div class="hero-note">
+        <div class="note-chip">Curated</div>
+        <div class="note-title">更清楚地区分精选与收藏</div>
+        <p class="note-text">
+          保留原有筛选和分页逻辑，只把搜索、标签和卡片展示做得更完整。
+        </p>
+      </div>
+    </section>
+
+    <section class="playlist-panel">
+      <div class="control-bar">
+        <div class="search-box">
+          <icon-mdi:magnify class="search-icon" />
           <input
             v-model="searchKeyword"
             @keydown="handleKeyPress"
-            class="search-input flex h-10 rounded-xl border border-input transform duration-300 bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-0 pl-10 w-72"
+            class="search-input"
             placeholder="搜索歌单..."
             type="search"
           />
         </div>
+
         <el-select
-          class="w-48 custom-select"
           v-model="selectedTag"
+          class="tag-select"
           @change="getPlaylists"
         >
           <el-option
@@ -177,305 +222,145 @@ onMounted(() => {
           />
         </el-select>
       </div>
-    </div>
-    <div class="flex-grow flex flex-col overflow-x-hidden cursor-pointer">
-      <div class="border-b pb-1">
-        <div
-          class="inline-flex h-10 items-center rounded-xl bg-muted/70 p-1 text-muted-foreground w-full justify-start mb-2 overflow-x-auto tab-container"
+
+      <div class="tabs-shell">
+        <button
+          v-for="playlist in playlistsList"
+          :key="playlist.value"
+          class="tab-button"
+          :class="{ active: selected === playlist.value }"
+          @click="selectPlaylist(playlist.value)"
         >
-          <button
-            v-for="playlist in playlistsList"
-            :key="playlist.value"
-            @click="selectPlaylist(playlist.value)"
-            :class="{
-              'bg-activeMenuBg text-foreground shadow-sm tab-active':
-                selected === playlist.value,
-            }"
-            class="tab-button inline-flex items-center justify-center whitespace-nowrap rounded-lg px-4 py-2 text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
-          >
-            {{ playlist.name }}
-          </button>
-        </div>
+          {{ playlist.name }}
+        </button>
       </div>
-      <div class="flex-1 overflow-x-hidden my-2">
-        <div class="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-6">
-          <div
-            v-for="playlist in playlists"
-            :key="playlist.id"
-            @click="router.push('/playlist/' + playlist.id)"
-            class="playlist-card rounded-xl hover:bg-background transition duration-300 border bg-card text-card-foreground shadow-sm overflow-hidden"
-          >
-            <div class="flex flex-col space-y-1.5 p-0">
-              <div class="relative playlist-cover-wrapper">
-                <el-image
-                  lazy
-                  :alt="playlist.name"
-                  class="w-full aspect-square object-cover playlist-cover"
-                  :src="playlist.coverImgUrl + '?param=330y330'"
+
+      <div class="tag-strip">
+        <button
+          v-for="item in playTags"
+          :key="item.name"
+          class="tag-chip"
+          :class="{ active: selectedTag === item.name }"
+          @click="selectTag(item.name)"
+        >
+          {{ item.name }}
+        </button>
+      </div>
+
+      <div v-if="playlists.length > 0" class="playlist-grid">
+        <div
+          v-for="playlist in playlists"
+          :key="playlist.id"
+          class="playlist-card"
+          @click="router.push('/playlist/' + playlist.id)"
+        >
+          <div class="playlist-cover-wrap">
+            <el-image
+              lazy
+              :alt="playlist.name"
+              class="playlist-cover"
+              :src="playlist.coverImgUrl + '?param=330y330'"
+            />
+            <button class="play-button">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polygon points="6 3 20 12 6 21 6 3"></polygon>
+              </svg>
+            </button>
+          </div>
+          <div class="playlist-body">
+            <h3 class="playlist-title">{{ playlist.name }}</h3>
+            <div class="playlist-meta">
+              <span class="creator-avatar">
+                <el-avatar
+                  :alt="playlist.creator.nickname"
+                  :src="playlist.creator.avatarUrl"
                 />
-                <button
-                  class="play-button inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 bg-secondary text-secondary-foreground hover:bg-secondary/80 h-12 w-12 absolute bottom-3 right-3 rounded-full"
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="24"
-                    height="24"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    class="lucide lucide-play h-5 w-5"
-                  >
-                    <polygon points="6 3 20 12 6 21 6 3"></polygon>
-                  </svg>
-                </button>
-              </div>
-            </div>
-            <div class="px-4 pb-3 pt-2">
-              <h3
-                class="font-semibold tracking-tight text-base mb-2 line-clamp-1 playlist-title"
-              >
-                {{ playlist.name }}
-              </h3>
-              <div class="flex items-center text-sm text-muted-foreground">
-                <span
-                  class="relative flex shrink-0 overflow-hidden rounded-full w-6 h-6 mr-2"
-                >
-                  <el-avatar
-                    class="aspect-square h-full w-full"
-                    :alt="playlist.creator.nickname"
-                    :src="playlist.creator.avatarUrl"
-                  />
-                </span>
-                <span class="creator-name">{{
-                  playlist.creator.nickname
-                }}</span>
-              </div>
+              </span>
+              <span class="creator-name">{{ playlist.creator.nickname }}</span>
             </div>
           </div>
         </div>
       </div>
-    </div>
-    <nav class="mx-auto flex w-full justify-center mt-3">
-      <el-pagination
-        v-model:page-size="pageSize"
-        v-model:currentPage="currentPage"
-        v-bind="state"
-        @size-change="handleSizeChange"
-        @current-change="handleCurrentChange"
-        class="mb-3 custom-pagination"
-      />
-    </nav>
+
+      <div v-else class="empty-state">
+        <div class="empty-state-icon">
+          <icon-solar:music-library-2-outline />
+        </div>
+        <h3 class="empty-state-title">当前条件下还没有找到歌单</h3>
+        <p class="empty-state-text">
+          可以试试切换风格标签、清空搜索词，或者回到“精选歌单”看看其它内容。
+        </p>
+      </div>
+
+      <nav class="pagination-wrap">
+        <el-pagination
+          v-model:page-size="pageSize"
+          v-model:currentPage="currentPage"
+          v-bind="state"
+          class="custom-pagination"
+          @size-change="handleSizeChange"
+          @current-change="handleCurrentChange"
+        />
+      </nav>
+    </section>
   </div>
 </template>
 
 <style scoped>
-.playlist-container {
-  backdrop-filter: blur(20px);
-}
-
-html.light .playlist-container {
-  background: linear-gradient(
-    135deg,
-    rgba(255, 255, 255, 0.9) 0%,
-    rgba(248, 249, 255, 0.9) 100%
-  );
-}
-
-html.dark .playlist-container {
-  background: linear-gradient(
-    135deg,
-    rgba(30, 30, 46, 0.6) 0%,
-    rgba(26, 26, 46, 0.6) 100%
-  );
-}
-
-.search-input {
-  border: 1px solid rgba(102, 126, 234, 0.2);
-  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.1);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-html.light .search-input {
-  background: rgba(255, 255, 255, 0.95);
-}
-
-html.dark .search-input {
-  background: rgba(40, 40, 60, 0.95);
-  color: #e0e0e0;
-}
-
-.search-input:focus {
-  border-color: #667eea;
-  box-shadow: 0 4px 16px rgba(102, 126, 234, 0.25);
-  width: 20rem;
-}
-
-html.light .search-input:focus {
-  background: rgba(255, 255, 255, 1);
-}
-
-html.dark .search-input:focus {
-  background: rgba(50, 50, 70, 1);
-}
-
-.search-icon {
-  transition: all 0.3s ease;
-}
-
-.search-input:focus + .search-icon {
-  color: #667eea;
-}
-
-.tab-container {
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(102, 126, 234, 0.1);
-}
-
-html.light .tab-container {
-  background: rgba(255, 255, 255, 0.6);
-}
-
-html.dark .tab-container {
-  background: rgba(40, 40, 60, 0.6);
-}
-
-.tab-button {
-  transition: all 0.3s ease;
-}
-
-.tab-button:hover {
-  background: rgba(102, 126, 234, 0.1);
-}
-
-.tab-active {
-  background: linear-gradient(
-    135deg,
-    rgba(102, 126, 234, 0.2) 0%,
-    rgba(118, 75, 162, 0.2) 100%
-  ) !important;
-  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.2);
-}
-
-.playlist-card {
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(102, 126, 234, 0.1);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-html.light .playlist-card {
-  background: rgba(255, 255, 255, 0.95);
-}
-
-html.dark .playlist-card {
-  background: rgba(40, 40, 60, 0.95);
-}
-
-.playlist-card:hover {
-  transform: translateY(-8px);
-  box-shadow: 0 12px 32px rgba(102, 126, 234, 0.25);
-  border-color: rgba(102, 126, 234, 0.4);
-}
-
-.playlist-cover-wrapper {
-  overflow: hidden;
-  border-radius: 12px 12px 0 0;
-}
-
-.playlist-cover {
-  transition: all 0.5s ease;
-}
-
-.playlist-card:hover .playlist-cover {
-  transform: scale(1.1);
-}
-
-.play-button {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
-  opacity: 0;
-  transform: translateY(10px);
-  transition: all 0.3s ease;
-}
-
-.playlist-card:hover .play-button {
-  opacity: 1;
-  transform: translateY(0);
-}
-
-.play-button:hover {
-  transform: scale(1.1);
-  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
-}
-
-.playlist-title {
-  transition: all 0.3s ease;
-}
-
-.playlist-card:hover .playlist-title {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
-
-.creator-name {
-  transition: all 0.3s ease;
-}
-
-.playlist-card:hover .creator-name {
-  color: #667eea;
-}
-
-:deep(.custom-select .el-input__wrapper) {
-  border-radius: 12px;
-  border: 1px solid rgba(102, 126, 234, 0.2);
-  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.1);
-  transition: all 0.3s ease;
-}
-
-html.light :deep(.custom-select .el-input__wrapper) {
-  background: rgba(255, 255, 255, 0.95);
-}
-
-html.dark :deep(.custom-select .el-input__wrapper) {
-  background: rgba(40, 40, 60, 0.95);
-}
-
-:deep(.custom-select .el-input__wrapper:hover) {
-  border-color: #667eea;
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
-}
-
-:deep(.custom-pagination .el-pagination__total),
-:deep(.custom-pagination .el-pagination__jump) {
-  color: #667eea;
-  font-weight: 500;
-}
-
-:deep(.custom-pagination .el-pager li) {
-  border-radius: 8px;
-  margin: 0 4px;
-  transition: all 0.3s ease;
-}
-
-html.light :deep(.custom-pagination .el-pager li) {
-  background: rgba(255, 255, 255, 0.8);
-}
-
-html.dark :deep(.custom-pagination .el-pager li) {
-  background: rgba(40, 40, 60, 0.8);
-}
-
-:deep(.custom-pagination .el-pager li:hover) {
-  background: rgba(102, 126, 234, 0.15);
-  color: #667eea;
-}
-
-:deep(.custom-pagination .el-pager li.is-active) {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-}
+.playlist-page{min-height:100%;padding:20px;background:radial-gradient(circle at top left, rgba(118,163,255,.12), transparent 26%),radial-gradient(circle at top right, rgba(255,194,210,.12), transparent 22%),linear-gradient(180deg, rgba(246,249,255,.96), rgba(252,252,255,.98))}
+.playlist-hero,.playlist-panel{border:1px solid rgba(140,168,230,.16);background:linear-gradient(180deg, rgba(255,255,255,.96), rgba(247,250,255,.94)),#fff;box-shadow:0 18px 38px rgba(87,111,167,.1)}
+.playlist-hero{display:grid;grid-template-columns:minmax(0,1.5fr) 320px;gap:24px;padding:28px;border-radius:30px}
+.hero-badge{display:inline-flex;align-items:center;gap:12px;padding:10px 14px 10px 10px;border-radius:999px;background:rgba(255,255,255,.8);border:1px solid rgba(138,166,227,.16);color:#687892;font-size:13px;font-weight:700;letter-spacing:.08em;text-transform:uppercase}
+.hero-icon{display:flex;align-items:center;justify-content:center;width:42px;height:42px;border-radius:14px;background:linear-gradient(135deg,#4f84e7 0%,#757fe8 58%,#ee91a8 100%);box-shadow:0 10px 22px rgba(103,126,214,.25)}
+.hero-icon-inner{font-size:24px;color:#fff}
+.hero-title{margin:18px 0 0;font-size:40px;line-height:1.12;color:#223350}
+.hero-subtitle{max-width:720px;margin:14px 0 0;font-size:15px;line-height:1.85;color:#687891}
+.hero-stats{display:flex;gap:14px;margin-top:22px;flex-wrap:wrap}
+.stat-card{min-width:150px;padding:14px 16px;border:1px solid rgba(143,171,228,.16);border-radius:18px;background:rgba(255,255,255,.76);box-shadow:0 10px 22px rgba(95,121,178,.09)}
+.stat-label{display:block;font-size:12px;color:#7c89a3}
+.stat-card strong{display:block;margin-top:8px;font-size:22px;color:#243653}
+.hero-note{padding:22px;border:1px solid rgba(142,170,228,.15);border-radius:24px;background:linear-gradient(180deg, rgba(255,255,255,.92), rgba(246,250,255,.9)),#fff;box-shadow:0 16px 32px rgba(89,116,172,.1)}
+.note-chip{display:inline-flex;align-items:center;height:28px;padding:0 10px;border-radius:999px;background:rgba(99,125,214,.12);color:#5671cf;font-size:12px;font-weight:700}
+.note-title{margin-top:16px;font-size:20px;font-weight:700;line-height:1.4;color:#233451}
+.note-text{margin:10px 0 0;font-size:14px;line-height:1.8;color:#6f809a}
+.playlist-panel{margin-top:22px;padding:22px;border-radius:28px}
+.control-bar{display:flex;gap:14px;align-items:center}
+.search-box{position:relative;flex:1}
+.search-icon{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:#8793aa;font-size:16px;z-index:1}
+.search-input{width:100%;min-height:46px;padding:0 14px 0 42px;border:1px solid rgba(143,168,215,.2);border-radius:16px;background:rgba(255,255,255,.92);color:#2a3a56;font-size:14px;transition:all .25s ease;box-shadow:0 10px 20px rgba(108,131,177,.08)}
+.search-input:focus{outline:none;border-color:rgba(93,119,215,.36);box-shadow:0 12px 22px rgba(97,123,182,.14)}
+:deep(.tag-select .el-input__wrapper){min-height:46px;border-radius:16px;background:rgba(255,255,255,.92);box-shadow:0 0 0 1px rgba(143,167,213,.18),0 10px 20px rgba(108,131,177,.08)}
+.tabs-shell{display:inline-flex;gap:10px;margin-top:18px;padding:8px;border:1px solid rgba(145,172,228,.12);border-radius:18px;background:rgba(243,247,255,.82)}
+.tab-button{min-height:40px;padding:0 16px;border-radius:12px;color:#5c6d88;font-size:14px;font-weight:700;transition:all .25s ease}
+.tab-button:hover{background:rgba(102,126,234,.1)}
+.tab-button.active{background:linear-gradient(135deg,#5f87e6 0%,#7d7fe8 58%,#eb8fa8 100%);color:#fff;box-shadow:0 10px 20px rgba(103,126,214,.2)}
+.tag-strip{display:flex;flex-wrap:wrap;gap:10px;margin-top:18px}
+.tag-chip{min-height:34px;padding:0 12px;border:1px solid rgba(143,168,215,.18);border-radius:999px;background:rgba(255,255,255,.94);color:#5a6b87;font-size:13px;transition:all .25s ease}
+.tag-chip:hover{border-color:rgba(102,126,234,.28);color:#5974d5}
+.tag-chip.active{border-color:transparent;background:linear-gradient(135deg,#5f87e6 0%,#7d7fe8 58%,#eb8fa8 100%);color:#fff;box-shadow:0 10px 20px rgba(103,126,214,.2)}
+.playlist-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:20px;margin-top:22px}
+.playlist-card{overflow:hidden;border:1px solid rgba(144,170,223,.14);border-radius:24px;background:linear-gradient(180deg, rgba(255,255,255,.98), rgba(248,251,255,.95)),#fff;box-shadow:0 14px 28px rgba(91,116,172,.1);cursor:pointer;transition:transform .28s ease, box-shadow .28s ease, border-color .28s ease}
+.playlist-card:hover{transform:translateY(-6px);border-color:rgba(109,142,218,.24);box-shadow:0 18px 34px rgba(91,116,172,.15)}
+.playlist-cover-wrap{position:relative;aspect-ratio:1/1;overflow:hidden}
+.playlist-cover{width:100%;height:100%;object-fit:cover;transition:transform .35s ease}
+.playlist-card:hover .playlist-cover{transform:scale(1.06)}
+.play-button{position:absolute;right:14px;bottom:14px;display:inline-flex;align-items:center;justify-content:center;width:48px;height:48px;border-radius:999px;background:linear-gradient(135deg,#5f87e6 0%,#7d7fe8 58%,#eb8fa8 100%);color:#fff;box-shadow:0 12px 24px rgba(102,126,234,.28);opacity:0;transform:translateY(10px);transition:all .25s ease}
+.playlist-card:hover .play-button{opacity:1;transform:translateY(0)}
+.playlist-body{padding:16px}
+.playlist-title{margin:0;font-size:16px;font-weight:700;line-height:1.5;color:#243653}
+.playlist-meta{display:flex;align-items:center;gap:10px;margin-top:12px;color:#73829d;font-size:13px}
+.creator-avatar :deep(.el-avatar){width:28px;height:28px}
+.creator-name{transition:color .25s ease}
+.playlist-card:hover .creator-name{color:#5974d5}
+.empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;margin-top:22px;padding:48px 24px;border:1px dashed rgba(143,168,215,.32);border-radius:28px;background:linear-gradient(180deg,rgba(255,255,255,.96),rgba(246,249,255,.94));text-align:center;box-shadow:0 14px 28px rgba(91,116,172,.08)}
+.empty-state-icon{display:flex;align-items:center;justify-content:center;width:74px;height:74px;border-radius:24px;background:linear-gradient(135deg,rgba(95,135,230,.14),rgba(235,143,168,.16));color:#5f79d8;font-size:34px;box-shadow:inset 0 1px 0 rgba(255,255,255,.7)}
+.empty-state-title{margin:0;font-size:22px;font-weight:700;color:#263755}
+.empty-state-text{max-width:460px;margin:0;font-size:14px;line-height:1.85;color:#71819d}
+.pagination-wrap{display:flex;justify-content:center;margin-top:24px}
+:deep(.custom-pagination .el-pagination__total),:deep(.custom-pagination .el-pagination__jump){color:#687892;font-weight:500}
+:deep(.custom-pagination .el-pager li){border-radius:10px;margin:0 4px;transition:all .25s ease}
+:deep(.custom-pagination .el-pager li:hover){background:rgba(102,126,234,.12);color:#5d76d7}
+:deep(.custom-pagination .el-pager li.is-active){background:linear-gradient(135deg,#5f87e6 0%,#7d7fe8 58%,#eb8fa8 100%);color:#fff;box-shadow:0 10px 20px rgba(103,126,214,.22)}
+@media (max-width:980px){.playlist-hero{grid-template-columns:1fr}}
+@media (max-width:768px){.playlist-page{padding:14px}.playlist-hero,.playlist-panel{padding:18px 16px;border-radius:22px}.hero-title{font-size:30px}.control-bar{flex-direction:column;align-items:stretch}.tabs-shell{width:100%;overflow-x:auto}.playlist-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}}
 </style>

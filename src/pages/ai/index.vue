@@ -1,23 +1,26 @@
-/* eslint-disable */
 <template>
   <div class="ai-page-container">
     <section class="ai-hero">
       <div class="ai-hero-copy">
-        <p class="ai-hero-kicker">AI Music Video Studio</p>
+        <p class="ai-hero-kicker">AI Musicadmin Studio</p>
         <h2>AI 音乐视频创作</h2>
         <p class="subtitle">
-          上传音频或从曲库带入歌曲，快速生成专属 MV。创作区与作品库分栏展示，操作路径更清晰。
+          仅支持从曲库选择站内歌曲发起 MV 生成任务。任务提交后会在后台异步执行，刷新页面或切换界面也不会丢失状态。
         </p>
       </div>
 
       <div class="ai-hero-stats">
         <div class="hero-stat-card">
-          <span class="hero-stat-label">当前作品</span>
+          <span class="hero-stat-label">作品总数</span>
           <strong>{{ historyList.length }}</strong>
         </div>
         <div class="hero-stat-card">
-          <span class="hero-stat-label">创作状态</span>
-          <strong>{{ loading ? '生成中' : '可开始' }}</strong>
+          <span class="hero-stat-label">进行中任务</span>
+          <strong>{{ activeTaskCount }}</strong>
+        </div>
+        <div class="hero-stat-card">
+          <span class="hero-stat-label">任务总数</span>
+          <strong>{{ taskList.length }}</strong>
         </div>
       </div>
 
@@ -27,62 +30,150 @@
 
     <div class="content-wrapper">
       <div class="left-panel">
-        <el-card class="vibe-card upload-card" shadow="hover">
+        <el-card class="vibe-card create-card" shadow="hover">
           <template #header>
             <div class="card-header card-header-rich">
               <div>
                 <p class="card-kicker">Create</p>
-                <span class="card-title">开始新的 MV 创作</span>
+                <span class="card-title">发起新的 MV 任务</span>
               </div>
-              <span class="card-tip">支持 MP3 音频上传</span>
+              <span class="card-tip">仅可从曲库进入</span>
             </div>
           </template>
 
-          <div class="upload-container">
-            <el-upload
-              class="upload-area"
-              drag
-              action="#"
-              :http-request="handleUpload"
-              :show-file-list="false"
-              accept=".mp3"
-              :disabled="loading || !!selectedSongInfo"
-            >
-              <div v-if="!loading && !selectedSongInfo" class="upload-placeholder">
-                <el-icon class="upload-icon"><Headset /></el-icon>
-                <div class="text">点击或拖拽 MP3 到这里</div>
-                <div class="sub-text">支持 15-60 秒音频，上传后可直接开始生成</div>
-              </div>
+          <div class="create-panel-body">
+            <div v-if="!isLoggedIn" class="state-panel">
+              <el-empty description="登录后即可创建 AI MV 任务">
+                <el-button type="primary" @click="handleLogin">立即登录</el-button>
+              </el-empty>
+            </div>
 
-              <div v-else-if="!loading && selectedSongInfo" class="selected-song-info">
-                <el-icon class="selected-icon"><Headset /></el-icon>
-                <div class="selected-text">已选择歌曲</div>
-                <div class="selected-name">{{ selectedSongInfo }}</div>
-                <div class="selected-actions">
+            <template v-else>
+              <div v-if="selectedSongInfo" class="selected-song-card">
+                <div class="selected-song-head">
+                  <div class="selected-song-icon">
+                    <el-icon><Headset /></el-icon>
+                  </div>
+                  <div class="selected-song-meta">
+                    <p class="selected-song-label">当前已选歌曲</p>
+                    <h3>{{ selectedSongInfo }}</h3>
+                    <span>将基于该歌曲音频异步生成 MV，可提交后离开当前页面。</span>
+                  </div>
+                </div>
+
+                <div class="style-panel">
+                  <div class="style-panel-header">
+                    <p class="style-panel-label">生成风格</p>
+                    <span class="style-panel-tip">当前选择：{{ selectedStyleLabel }}</span>
+                  </div>
+                  <div class="style-chip-list">
+                    <button
+                      v-for="style in styleOptions"
+                      :key="style.code"
+                      type="button"
+                      class="style-chip"
+                      :class="{ active: selectedStyleCode === style.code }"
+                      @click="selectedStyleCode = style.code"
+                    >
+                      <strong>{{ style.label }}</strong>
+                      <span>{{ style.description }}</span>
+                    </button>
+                  </div>
+                </div>
+
+                <div class="selected-song-actions">
                   <el-button
                     type="primary"
                     size="large"
-                    @click.stop="handleGenerateFromUrl"
+                    :loading="submitting"
                     class="generate-btn"
+                    @click="handleCreateTask"
                   >
                     <icon-ri:magic-line class="mr-2" />
-                    开始生成 MV
+                    提交生成任务
                   </el-button>
-                  <el-button
-                    size="large"
-                    @click.stop="selectedSongInfo = ''; selectedAudioUrl = ''"
-                    class="cancel-btn"
-                  >
-                    取消选择
+                  <el-button size="large" class="cancel-btn" @click="clearSelection">
+                    清空选择
                   </el-button>
                 </div>
               </div>
 
-              <div v-else class="loading-placeholder">
-                <el-progress type="dashboard" :percentage="progress" />
-                <p class="loading-tips">AI 正在渲染中，请稍候...</p>
+              <div v-else class="state-panel select-tip-panel">
+                <div class="tip-badge">
+                  <el-icon><Opportunity /></el-icon>
+                  <span>创作方式已收紧</span>
+                </div>
+                <h3>请从曲库页面选择歌曲后再进入此处</h3>
+                <p>
+                  为了保证平台音频版权合规，AI 创作页不再支持本地上传或拖拽音频，只允许通过曲库歌曲的“创作 MV”入口发起任务。
+                </p>
+                <el-button type="primary" plain @click="router.push('/library')">
+                  前往曲库
+                </el-button>
               </div>
-            </el-upload>
+
+              <div class="task-section">
+                <div class="task-header">
+                  <div>
+                    <p class="card-kicker">Tasks</p>
+                    <h3>任务状态</h3>
+                  </div>
+                  <el-button link type="primary" :icon="Refresh" @click="fetchTaskList">
+                    刷新任务
+                  </el-button>
+                </div>
+
+                <div v-if="taskList.length === 0" class="task-empty">
+                  <el-empty description="还没有提交过 AI MV 任务" />
+                </div>
+
+                <div v-else class="task-list">
+                  <div
+                    v-for="task in taskList"
+                    :key="task.id"
+                    class="task-card"
+                    :class="`status-${(task.status || '').toLowerCase()}`"
+                  >
+                    <div class="task-main">
+                      <div class="task-title-row">
+                        <div class="task-title-info">
+                          <h4>{{ task.songName }}<span v-if="task.artistName"> · {{ task.artistName }}</span></h4>
+                          <p>{{ task.statusText || getStatusLabel(task.status) }}</p>
+                        </div>
+                        <span class="status-badge" :class="`badge-${(task.status || '').toLowerCase()}`">
+                          {{ getStatusLabel(task.status) }}
+                        </span>
+                      </div>
+
+                      <div class="task-meta">
+                        <span>提交时间：{{ task.createTime || '--' }}</span>
+                        <span v-if="task.finishTime">完成时间：{{ task.finishTime }}</span>
+                      </div>
+
+                      <div v-if="task.status === 'FAILED' && task.errorMessage" class="task-error">
+                        {{ task.errorMessage }}
+                      </div>
+                    </div>
+
+                    <div class="task-side">
+                      <div class="task-actions">
+                        <span class="task-side-tip">
+                          {{ getTaskSideTip(task.status) }}
+                        </span>
+                        <el-button
+                          circle
+                          plain
+                          class="task-delete-btn"
+                          :icon="Delete"
+                          title="????"
+                          @click="handleDeleteTask(task)"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </template>
           </div>
         </el-card>
       </div>
@@ -102,7 +193,7 @@
                 :icon="Refresh"
                 @click="fetchHistory"
               >
-                刷新
+                刷新作品
               </el-button>
             </div>
           </template>
@@ -117,7 +208,7 @@
 
             <el-empty
               v-else-if="historyList.length === 0"
-              description="暂时还没有作品"
+              description="暂时还没有生成完成的 MV 作品"
             />
 
             <div
@@ -131,7 +222,7 @@
                 <el-icon><VideoPlay /></el-icon>
               </div>
               <div class="item-info">
-                <div class="item-name">{{ item.fileName }}</div>
+                <div class="item-name">{{ item.mvName || item.fileName }}</div>
                 <div class="item-meta">{{ item.createTime }} · {{ item.size }}</div>
               </div>
               <div class="item-actions">
@@ -145,7 +236,7 @@
                   circle
                   :icon="Download"
                   @click.stop="downloadVideo(item)"
-                  title="下载"
+                  title="下载作品"
                 />
               </div>
             </div>
@@ -181,14 +272,12 @@
         <el-form-item label="MV名称">
           <el-input
             v-model="newMvName"
-            placeholder="请输入 MV 名称，不需要手动添加 .mp4"
+            placeholder="请输入 MV 名称，不需要手动输入 .mp4"
             maxlength="100"
             show-word-limit
             @keyup.enter="saveMvName"
           />
-          <div class="rename-tip">
-            提示：只需要输入名称本体，系统会自动保留视频文件扩展名。
-          </div>
+          <div class="rename-tip">系统会自动保留视频文件后缀，你只需要填写展示名称即可。</div>
         </el-form-item>
       </el-form>
       <template #footer>
@@ -202,77 +291,131 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, computed, watch } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { Headset, VideoPlay, Download, Refresh, Edit } from '@element-plus/icons-vue'
-import { ElMessage } from 'element-plus'
-import { generateVideoApi, getHistoryApi, renameMvFileApi } from '@/api/ai'
+import {
+  Delete,
+  Download,
+  Edit,
+  Headset,
+  Opportunity,
+  Refresh,
+  VideoPlay,
+} from '@element-plus/icons-vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import {
+  type AiHistoryItem,
+  type AiVideoTaskItem,
+  createVideoTaskApi,
+  deleteVideoTaskApi,
+  getHistoryApi,
+  getVideoTaskListApi,
+  renameMvFileApi,
+} from '@/api/ai'
 import { UserStore } from '@/stores/modules/user'
 
 const route = useRoute()
 const router = useRouter()
 const userStore = UserStore()
-const loading = ref(false)
-const progress = ref(0)
-const historyList = ref<any[]>([])
+
+const submitting = ref(false)
+const historyList = ref<AiHistoryItem[]>([])
+const taskList = ref<AiVideoTaskItem[]>([])
 const dialogVisible = ref(false)
 const currentVideoUrl = ref('')
-const selectedSongInfo = ref<string>('')
-const selectedAudioUrl = ref<string>('')
+const selectedSongInfo = ref('')
+const selectedSongName = ref('')
+const selectedArtistName = ref('')
+const selectedAudioUrl = ref('')
+const selectedStyleCode = ref('healing')
 const editDialogVisible = ref(false)
-const editingMv = ref<any>(null)
+const editingMv = ref<AiHistoryItem | null>(null)
 const newMvName = ref('')
-let timer: any = null
 
-// 检查登录状态，使用 Pinia store
-const isLoggedIn = computed(() => {
-  return userStore.isLoggedIn && !!userStore.userInfo?.token
-})
+const styleOptions = [
+  { code: 'healing', label: '梦幻治愈', description: '柔和光影、轻盈氛围' },
+  { code: 'cyberpunk', label: '赛博霓虹', description: '霓虹夜景、未来感画面' },
+  { code: 'ink', label: '国风水墨', description: '山水留白、东方意境' },
+  { code: 'campus', label: '清新校园', description: '明亮自然、青春氛围' },
+  { code: 'cinematic', label: '电影氛围', description: '强叙事感、镜头氛围' },
+  { code: 'stage', label: '舞台热力', description: '灯光节奏、现场能量' },
+] as const
 
-// 处理登录按钮点击
+let pollTimer: number | null = null
+const taskStatusCache = new Map<number, string>()
+
+const isLoggedIn = computed(() => userStore.isLoggedIn && !!userStore.userInfo?.token)
+const activeTaskCount = computed(() =>
+  taskList.value.filter(task => task.status === 'QUEUED' || task.status === 'PROCESSING').length,
+)
+const selectedStyleLabel = computed(
+  () => styleOptions.find(item => item.code === selectedStyleCode.value)?.label || '梦幻治愈',
+)
+
 const handleLogin = () => {
-  ElMessage.info('请点击右上角登录按钮进行登录')
+  ElMessage.info('请点击右上角登录后再使用 AI 创作功能')
 }
 
-// 处理从曲库跳转过来的歌曲选择
-const handleSongSelection = () => {
-  if (route.query.audioUrl) {
-    const audioUrl = route.query.audioUrl as string
-    const songName = (route.query.songName as string) || '未知歌曲'
-    const artistName = (route.query.artistName as string) || '未知歌手'
+// 从曲库跳转时读取歌曲信息
+const syncSongSelectionFromRoute = () => {
+  const audioUrl = typeof route.query.audioUrl === 'string' ? route.query.audioUrl : ''
+  const songName = typeof route.query.songName === 'string' ? route.query.songName : ''
+  const artistName = typeof route.query.artistName === 'string' ? route.query.artistName : ''
 
-    selectedSongInfo.value = `${songName} - ${artistName}`
-    selectedAudioUrl.value = audioUrl
+  if (!audioUrl || !songName) {
+    return
+  }
 
-    ElMessage.success(`已选择：${selectedSongInfo.value}`)
+  const nextInfo = artistName ? `${songName} - ${artistName}` : songName
+  const hasChanged =
+    selectedAudioUrl.value !== audioUrl ||
+    selectedSongName.value !== songName ||
+    selectedArtistName.value !== artistName
+
+  selectedAudioUrl.value = audioUrl
+  selectedSongName.value = songName
+  selectedArtistName.value = artistName
+  selectedSongInfo.value = nextInfo
+
+  if (hasChanged) {
+    ElMessage.success(`已选择歌曲：${nextInfo}`)
   }
 }
 
-watch(
-  () => route.query,
-  () => {
-    handleSongSelection()
-  },
-  { immediate: true },
-)
+const clearSelection = () => {
+  selectedSongInfo.value = ''
+  selectedSongName.value = ''
+  selectedArtistName.value = ''
+  selectedAudioUrl.value = ''
+}
 
-watch(
-  () => userStore.userInfo?.userId,
-  (newUserId, oldUserId) => {
-    if (newUserId !== oldUserId) {
-      historyList.value = []
-      if (isLoggedIn.value) {
-        fetchHistory()
-      }
-    }
-  },
-)
-
-onMounted(() => {
-  if (isLoggedIn.value) {
-    fetchHistory()
+const getStatusLabel = (status?: string) => {
+  switch (status) {
+    case 'QUEUED':
+      return '排队中'
+    case 'PROCESSING':
+      return '生成中'
+    case 'SUCCESS':
+      return '已完成'
+    case 'FAILED':
+      return '失败'
+    default:
+      return '未知'
   }
-})
+}
+
+const getTaskSideTip = (status?: string) => {
+  if (status === 'PROCESSING') {
+    return '后台生成中'
+  }
+  if (status === 'QUEUED') {
+    return '等待执行'
+  }
+  if (status === 'SUCCESS') {
+    return '请到作品库查看成片'
+  }
+  return '请稍后重试'
+}
 
 const fetchHistory = async () => {
   if (!isLoggedIn.value) {
@@ -282,94 +425,158 @@ const fetchHistory = async () => {
 
   try {
     const res = await getHistoryApi()
-    if (res.code === 0 || res.code === 200) {
-      historyList.value = res.data
+    if (res.code === 0) {
+      historyList.value = res.data || []
     }
   } catch (error) {
-    console.error('获取历史失败', error)
+    console.error('获取作品库失败', error)
   }
 }
 
-const handleUpload = async (options: any) => {
-  loading.value = true
-  startFakeProgress()
-  const formData = new FormData()
-  formData.append('file', options.file)
+const notifyTaskStatusChange = (task: AiVideoTaskItem) => {
+  const previousStatus = taskStatusCache.get(task.id)
+  taskStatusCache.set(task.id, task.status)
 
-  if (selectedSongInfo.value) {
-    formData.append('songName', selectedSongInfo.value)
+  if (!previousStatus || previousStatus === task.status) {
+    return
   }
 
-  try {
-    const res = await generateVideoApi(formData)
-    if (res.code === 0 || res.code === 200) {
-      progress.value = 100
-      ElMessage.success('生成成功')
-      await fetchHistory()
-      selectedSongInfo.value = ''
-      selectedAudioUrl.value = ''
-    } else {
-      ElMessage.error(res.message || '失败')
-    }
-  } catch (error) {
-    ElMessage.error('超时或错误')
-  } finally {
-    loading.value = false
-    stopFakeProgress()
+  if (task.status === 'SUCCESS') {
+    ElMessage.success(`${task.songName} 的 MV 已生成完成`)
+  } else if (task.status === 'FAILED') {
+    ElMessage.error(`${task.songName} 的 MV 生成失败`)
   }
 }
 
-// 手动触发从 URL 生成 MV
-const handleGenerateFromUrl = async () => {
-  if (!selectedAudioUrl.value) {
-    ElMessage.warning('请先选择一首歌曲')
+const fetchTaskList = async () => {
+  if (!isLoggedIn.value) {
+    taskList.value = []
+    stopTaskPolling()
     return
   }
 
   try {
-    ElMessage.info('正在准备音频文件...')
-    loading.value = true
-    startFakeProgress()
+    const res = await getVideoTaskListApi()
+    if (res.code === 0) {
+      taskList.value = res.data || []
+      taskList.value.forEach(notifyTaskStatusChange)
 
-    const response = await fetch(selectedAudioUrl.value)
-    if (!response.ok) {
-      throw new Error('下载音频文件失败')
+      const shouldPolling = taskList.value.some(
+        task => task.status === 'QUEUED' || task.status === 'PROCESSING',
+      )
+
+      if (shouldPolling) {
+        startTaskPolling()
+      } else {
+        stopTaskPolling()
+      }
     }
-
-    const blob = await response.blob()
-    const fileName = selectedSongInfo.value ? `${selectedSongInfo.value}.mp3` : 'audio.mp3'
-    const file = new File([blob], fileName, { type: 'audio/mpeg' })
-
-    const formData = new FormData()
-    formData.append('file', file)
-    if (selectedSongInfo.value) {
-      formData.append('songName', selectedSongInfo.value)
-    }
-
-    const res = await generateVideoApi(formData)
-    if (res.code === 0 || res.code === 200) {
-      progress.value = 100
-      ElMessage.success('AI 正在为您生成 MV')
-      await fetchHistory()
-      selectedSongInfo.value = ''
-      selectedAudioUrl.value = ''
-    } else {
-      ElMessage.error(res.message || '生成失败')
-    }
-  } catch (error: any) {
-    ElMessage.error(error.message || '处理音频文件失败')
-  } finally {
-    loading.value = false
-    stopFakeProgress()
+  } catch (error) {
+    console.error('获取任务列表失败', error)
   }
 }
 
-const playVideo = (item: any) => {
+const fetchAiData = async () => {
+  await Promise.all([fetchTaskList(), fetchHistory()])
+}
+
+const startTaskPolling = () => {
+  if (pollTimer) {
+    return
+  }
+
+  pollTimer = window.setInterval(async () => {
+    await Promise.all([fetchTaskList(), fetchHistory()])
+  }, 8000)
+}
+
+const stopTaskPolling = () => {
+  if (pollTimer) {
+    window.clearInterval(pollTimer)
+    pollTimer = null
+  }
+}
+
+const handleDeleteTask = async (task: AiVideoTaskItem) => {
+  try {
+    await ElMessageBox.confirm(
+      `确定删除任务“${task.songName}${task.artistName ? ` - ${task.artistName}` : ''}”吗？`,
+      '删除任务',
+      {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning',
+      },
+    )
+
+    const res = await deleteVideoTaskApi(task.id)
+    if (res.code === 0) {
+      taskStatusCache.delete(task.id)
+      ElMessage.success('任务已删除')
+      await fetchTaskList()
+      return
+    }
+
+    ElMessage.error(res.message || '删除任务失败')
+  } catch (error: any) {
+    if (error === 'cancel' || error === 'close' || error?.message === 'cancel') {
+      return
+    }
+    console.error('删除任务失败', error)
+    ElMessage.error('删除任务失败')
+  }
+}
+
+const handleCreateTask = async () => {
+  if (!isLoggedIn.value) {
+    ElMessage.warning('请先登录')
+    return
+  }
+
+  if (!selectedAudioUrl.value || !selectedSongName.value) {
+    ElMessage.warning('请先从曲库选择歌曲')
+    return
+  }
+
+  submitting.value = true
+  try {
+    const res = await createVideoTaskApi({
+      songName: selectedSongName.value,
+      artistName: selectedArtistName.value,
+      audioUrl: selectedAudioUrl.value,
+      styleCode: selectedStyleCode.value,
+      styleLabel: selectedStyleLabel.value,
+    })
+
+    if (res.code === 0) {
+      ElMessage.success('任务已提交，后台开始生成，你可以先去处理其他事情')
+      clearSelection()
+      await fetchTaskList()
+    } else {
+      ElMessage.error(res.message || '任务提交失败')
+    }
+  } catch (error) {
+    console.error('创建任务失败', error)
+    ElMessage.error('任务提交失败，请稍后重试')
+  } finally {
+    submitting.value = false
+  }
+}
+
+const playVideo = (item: AiHistoryItem) => {
   currentVideoUrl.value = item.url
   dialogVisible.value = true
 }
 
-const downloadVideo = (item: any) => {
+const previewTaskVideo = (task: AiVideoTaskItem) => {
+  if (!task.mvUrl) {
+    return
+  }
+  currentVideoUrl.value = task.mvUrl
+  dialogVisible.value = true
+}
+
+const downloadVideo = (item: AiHistoryItem) => {
   const link = document.createElement('a')
   link.href = item.url
   link.setAttribute('download', item.fileName)
@@ -378,9 +585,9 @@ const downloadVideo = (item: any) => {
   document.body.removeChild(link)
 }
 
-const openEditDialog = (item: any) => {
+const openEditDialog = (item: AiHistoryItem) => {
   editingMv.value = item
-  let name = item.fileName
+  let name = item.mvName || item.fileName
   if (name.toLowerCase().endsWith('.mp4')) {
     name = name.substring(0, name.length - 4)
   }
@@ -389,6 +596,9 @@ const openEditDialog = (item: any) => {
 }
 
 const saveMvName = async () => {
+  if (!editingMv.value) {
+    return
+  }
   if (!newMvName.value.trim()) {
     ElMessage.warning('MV 名称不能为空')
     return
@@ -404,23 +614,47 @@ const saveMvName = async () => {
       ElMessage.error(res.message || '重命名失败')
     }
   } catch (error) {
-    console.error('重命名 MV 失败:', error)
+    console.error('重命名作品失败', error)
     ElMessage.error('重命名失败')
   }
 }
 
-const startFakeProgress = () => {
-  progress.value = 0
-  timer = setInterval(() => {
-    if (progress.value < 95) progress.value += 1
-  }, 1000)
-}
+watch(
+  () => route.query,
+  () => {
+    syncSongSelectionFromRoute()
+  },
+  { immediate: true },
+)
 
-const stopFakeProgress = () => {
-  if (timer) clearInterval(timer)
-}
+watch(
+  () => userStore.userInfo?.userId,
+  async (newUserId, oldUserId) => {
+    if (newUserId === oldUserId) {
+      return
+    }
 
-onUnmounted(() => stopFakeProgress())
+    historyList.value = []
+    taskList.value = []
+    taskStatusCache.clear()
+
+    if (isLoggedIn.value) {
+      await fetchAiData()
+    } else {
+      stopTaskPolling()
+    }
+  },
+)
+
+onMounted(async () => {
+  if (isLoggedIn.value) {
+    await fetchAiData()
+  }
+})
+
+onUnmounted(() => {
+  stopTaskPolling()
+})
 </script>
 
 <style scoped>
@@ -480,7 +714,7 @@ html.dark .ai-hero {
 }
 
 .ai-hero-copy {
-  max-width: 620px;
+  max-width: 680px;
 }
 
 .ai-hero-kicker {
@@ -568,7 +802,7 @@ html.dark .hero-stat-card {
   display: flex;
   gap: 24px;
   flex: 1;
-  min-height: 560px;
+  min-height: 700px;
   align-items: stretch;
 }
 
@@ -582,7 +816,6 @@ html.dark .hero-stat-card {
 
 .vibe-card {
   width: 100%;
-  height: 100%;
   border-radius: 24px;
   display: flex;
   flex-direction: column;
@@ -591,9 +824,9 @@ html.dark .hero-stat-card {
   transition: transform 0.25s ease, box-shadow 0.25s ease;
 }
 
-.upload-card,
+.create-card,
 .history-card {
-  height: clamp(560px, calc(100vh - 240px), 760px);
+  height: clamp(760px, calc(100vh - 180px), 980px);
 }
 
 .vibe-card:hover {
@@ -649,90 +882,192 @@ html.dark .vibe-card {
   color: #8b97b7;
 }
 
-.upload-container {
-  flex: 1;
+.create-panel-body {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-height: 0;
+  height: 100%;
+  overflow: hidden;
+}
+
+.state-panel,
+.selected-song-card,
+.task-card {
+  border-radius: 22px;
+}
+
+html.light .state-panel,
+html.light .selected-song-card,
+html.light .task-card {
+  background: linear-gradient(135deg, rgba(247, 248, 255, 0.98) 0%, rgba(255, 255, 255, 0.96) 100%);
+  border: 1px solid rgba(102, 126, 234, 0.1);
+}
+
+html.dark .state-panel,
+html.dark .selected-song-card,
+html.dark .task-card {
+  background: linear-gradient(135deg, rgba(39, 46, 72, 0.9) 0%, rgba(31, 37, 58, 0.92) 100%);
+  border: 1px solid rgba(102, 126, 234, 0.14);
+}
+
+.state-panel {
+  min-height: 220px;
   padding: 28px;
   display: flex;
-  align-items: center;
+  flex-direction: column;
   justify-content: center;
-}
-
-.upload-area {
-  width: 100%;
-}
-
-.upload-area :deep(.el-upload-dragger) {
-  height: 360px;
-  border-radius: 22px;
-  border: 2px dashed rgba(102, 126, 234, 0.26);
-  display: flex;
   align-items: center;
-  justify-content: center;
-  transition: all 0.28s ease;
-}
-
-html.light .upload-area :deep(.el-upload-dragger) {
-  background: linear-gradient(135deg, rgba(242, 245, 255, 0.96) 0%, rgba(252, 245, 255, 0.92) 100%);
-}
-
-html.dark .upload-area :deep(.el-upload-dragger) {
-  background: linear-gradient(135deg, rgba(35, 41, 64, 0.9) 0%, rgba(45, 37, 67, 0.88) 100%);
-}
-
-.upload-area :deep(.el-upload-dragger:hover) {
-  border-color: #667eea;
-  transform: translateY(-2px);
-}
-
-.upload-placeholder,
-.selected-song-info,
-.loading-placeholder {
-  width: 100%;
   text-align: center;
 }
 
-.upload-icon,
-.selected-icon {
-  font-size: 64px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  margin-bottom: 22px;
+.select-tip-panel h3 {
+  margin: 16px 0 10px;
+  font-size: 24px;
 }
 
-.text,
-.selected-text {
-  font-size: 18px;
-  font-weight: 700;
-  margin-bottom: 8px;
+.select-tip-panel p {
+  max-width: 520px;
+  line-height: 1.8;
+  color: #7b86a8;
+  margin: 0 0 20px;
 }
 
-html.light .text,
-html.light .selected-name {
-  color: #303133;
+.tip-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-radius: 999px;
+  color: #5d69d7;
+  background: rgba(102, 126, 234, 0.12);
 }
 
-html.dark .text,
-html.dark .selected-name {
-  color: #e0e0e0;
+.selected-song-card {
+  padding: 20px;
+  flex-shrink: 0;
 }
 
-.sub-text {
-  font-size: 14px;
-  color: #909399;
-}
-
-.selected-name {
-  font-size: 16px;
-  font-weight: 500;
-  margin-bottom: 24px;
-}
-
-.selected-actions {
+.selected-song-head {
   display: flex;
   gap: 14px;
+  align-items: flex-start;
+}
+
+.selected-song-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
   justify-content: center;
-  margin-top: 24px;
+  font-size: 24px;
+  color: #fff;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  box-shadow: 0 12px 26px rgba(102, 126, 234, 0.24);
+}
+
+.selected-song-meta {
+  flex: 1;
+}
+
+.selected-song-meta h3 {
+  margin: 2px 0 6px;
+  font-size: 20px;
+  line-height: 1.35;
+}
+
+.selected-song-meta span,
+.selected-song-label {
+  color: #8893b5;
+}
+
+.selected-song-meta span {
+  display: block;
+  line-height: 1.6;
+}
+
+.selected-song-label {
+  margin: 0;
+  font-size: 13px;
+}
+
+.style-panel {
+  margin-top: 16px;
+  padding: 16px;
+  border-radius: 18px;
+  background: rgba(102, 126, 234, 0.07);
+  border: 1px solid rgba(102, 126, 234, 0.12);
+}
+
+.style-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.style-panel-label {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.style-panel-tip {
+  font-size: 12px;
+  color: #7f8aac;
+}
+
+.style-chip-list {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.style-chip {
+  padding: 12px 14px;
+  border-radius: 16px;
+  border: 1px solid rgba(102, 126, 234, 0.14);
+  background: rgba(255, 255, 255, 0.72);
+  text-align: left;
+  transition: all 0.22s ease;
+  cursor: pointer;
+}
+
+.style-chip strong,
+.style-chip span {
+  display: block;
+}
+
+.style-chip strong {
+  font-size: 13px;
+  color: #2f3656;
+}
+
+.style-chip span {
+  margin-top: 4px;
+  font-size: 11px;
+  line-height: 1.45;
+  color: #7782a3;
+}
+
+.style-chip:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 18px rgba(102, 126, 234, 0.12);
+}
+
+.style-chip.active {
+  border-color: rgba(102, 126, 234, 0.4);
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.16) 0%, rgba(118, 75, 162, 0.12) 100%);
+  box-shadow: 0 14px 24px rgba(102, 126, 234, 0.14);
+}
+
+.selected-song-actions {
+  display: flex;
+  gap: 14px;
+  margin-top: 16px;
 }
 
 .generate-btn {
@@ -748,11 +1083,134 @@ html.dark .selected-name {
   padding: 12px 28px !important;
 }
 
-.loading-tips {
-  margin-top: 20px;
-  font-size: 16px;
+.task-section {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-height: 0;
+  flex: 1;
+  overflow: hidden;
+}
+
+.task-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.task-header h3 {
+  margin: 0;
+  font-size: 22px;
+}
+
+.task-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-height: 220px;
+  max-height: 460px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.task-card {
+  padding: 18px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.task-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.task-title-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.task-title-info h4 {
+  margin: 0 0 6px;
+  font-size: 17px;
+  line-height: 1.5;
+}
+
+.task-title-info p {
+  margin: 0;
+  color: #7f8aac;
+}
+
+.task-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-top: 12px;
+  font-size: 13px;
+  color: #8f99b5;
+}
+
+.task-error {
+  margin-top: 12px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  color: #d84c5f;
+  background: rgba(216, 76, 95, 0.08);
+}
+
+.task-side {
+  display: flex;
+  align-items: center;
+}
+
+.task-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.task-side-tip {
+  font-size: 13px;
+  color: #8f99b5;
+}
+
+.task-delete-btn {
+  flex-shrink: 0;
+}
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 86px;
+  height: 32px;
+  padding: 0 14px;
+  border-radius: 999px;
+  font-size: 13px;
   font-weight: 600;
-  color: #6d7bd8;
+}
+
+.badge-queued {
+  background: rgba(102, 126, 234, 0.12);
+  color: #5c6be0;
+}
+
+.badge-processing {
+  background: rgba(52, 177, 156, 0.14);
+  color: #11907b;
+}
+
+.badge-success {
+  background: rgba(39, 174, 96, 0.14);
+  color: #1c8b4c;
+}
+
+.badge-failed {
+  background: rgba(216, 76, 95, 0.14);
+  color: #c54255;
 }
 
 .history-list {
@@ -851,7 +1309,7 @@ html.dark .item-name {
 
 :deep(.el-dialog) {
   border-radius: 22px;
-  overflow: hidden;
+  overflow-y: auto;
 }
 
 :deep(.el-dialog__header) {
@@ -868,7 +1326,20 @@ html.dark .item-name {
   color: #fff !important;
 }
 
-@media (max-width: 1024px) {
+@media (max-width: 1180px) {
+  .content-wrapper {
+    flex-direction: column;
+    min-height: auto;
+  }
+
+  .create-card,
+  .history-card {
+    height: auto;
+    min-height: 560px;
+  }
+}
+
+@media (max-width: 900px) {
   .ai-hero {
     flex-direction: column;
     align-items: flex-start;
@@ -876,27 +1347,27 @@ html.dark .item-name {
 
   .ai-hero-stats {
     width: 100%;
+    flex-wrap: wrap;
   }
 
   .hero-stat-card {
     flex: 1;
-    min-width: 0;
+    min-width: 140px;
   }
 
-  .content-wrapper {
+  .selected-song-head,
+  .task-card,
+  .task-title-row {
     flex-direction: column;
-    min-height: auto;
+    align-items: flex-start;
   }
 
-  .left-panel,
-  .right-panel {
-    min-height: 420px;
+  .selected-song-actions {
+    flex-direction: column;
   }
 
-  .upload-card,
-  .history-card {
-    height: auto;
-    min-height: 420px;
+  .style-chip-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
@@ -910,20 +1381,17 @@ html.dark .item-name {
     padding: 22px 18px;
   }
 
-  .ai-hero-stats {
-    flex-direction: column;
+  .create-panel-body {
+    padding: 18px;
   }
 
-  .upload-container {
-    padding: 20px;
+  .task-list {
+    min-height: 0;
+    max-height: none;
   }
 
-  .upload-area :deep(.el-upload-dragger) {
-    height: 300px;
-  }
-
-  .selected-actions {
-    flex-direction: column;
+  .style-chip-list {
+    grid-template-columns: 1fr;
   }
 }
 </style>

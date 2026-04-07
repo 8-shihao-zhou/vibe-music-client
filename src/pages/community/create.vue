@@ -11,11 +11,9 @@ const router = useRouter()
 const route = useRoute()
 const userStore = UserStore()
 
-// 是否为编辑模式
 const isEditMode = ref(false)
 const postId = ref<number | null>(null)
 
-// 表单数据
 const formData = reactive({
   title: '',
   content: '',
@@ -24,21 +22,19 @@ const formData = reactive({
   coverUrl: '',
   images: [] as string[],
   mvId: null as number | null,
-  status: 1, // 1-已发布, 0-草稿
+  status: 1,
 })
 
-// 分类选项
 const categories = [
   { label: '创作分享', value: 'SHARE' },
   { label: '技术交流', value: 'TECH' },
   { label: '问答互助', value: 'QA' },
-  { label: '灌水闲聊', value: 'CHAT' },
+  { label: '闲聊讨论', value: 'CHAT' },
 ]
 
 const submitting = ref(false)
 const loading = ref(false)
 
-// 加载帖子详情（编辑模式）
 const loadPostDetail = async (id: number) => {
   loading.value = true
   try {
@@ -50,7 +46,6 @@ const loadPostDetail = async (id: number) => {
       formData.category = post.category
       formData.coverUrl = post.coverUrl || ''
 
-      // 解析标签
       if (post.tags) {
         try {
           const tagsArray = JSON.parse(post.tags)
@@ -60,22 +55,13 @@ const loadPostDetail = async (id: number) => {
         }
       }
 
-      // 加载图片列表
       if (post.images && Array.isArray(post.images)) {
         formData.images = post.images
       }
 
-      // 加载MV信息（编辑模式下不显示，仅保存ID）
       if (post.mv && post.mv.mvId) {
         formData.mvId = post.mv.mvId
       }
-
-      console.log('>>> [编辑模式] 加载帖子数据成功:', {
-        title: formData.title,
-        images: formData.images.length,
-        mvId: formData.mvId,
-        mvInfo: post.mv,
-      })
     } else {
       ElMessage.error('加载帖子失败')
       router.push('/community')
@@ -89,11 +75,10 @@ const loadPostDetail = async (id: number) => {
   }
 }
 
-// 清空表单
 const resetForm = () => {
   formData.title = ''
   formData.content = ''
-  formData.category = '闲聊'
+  formData.category = 'SHARE'
   formData.tags = ''
   formData.coverUrl = ''
   formData.images = []
@@ -102,15 +87,7 @@ const resetForm = () => {
   postId.value = null
 }
 
-// 发布帖子
 const handleSubmit = async (isDraft = false) => {
-  console.log(
-    '>>> [发布帖子] 开始，isDraft:',
-    isDraft,
-    'isEditMode:',
-    isEditMode.value
-  )
-
   if (!formData.title.trim()) {
     ElMessage.warning('请输入标题')
     return
@@ -123,21 +100,17 @@ const handleSubmit = async (isDraft = false) => {
 
   submitting.value = true
   try {
-    // 处理标签
     let tagsJson = ''
     if (formData.tags.trim()) {
       const tagsArray = formData.tags
         .split(',')
-        .map((tag) => tag.trim())
-        .filter((tag) => tag)
+        .map(tag => tag.trim())
+        .filter(tag => tag)
       tagsJson = JSON.stringify(tagsArray)
     }
 
-    console.log('>>> [发布帖子] 调用 API，status:', isDraft ? 0 : 1)
-
     let res
     if (isEditMode.value && postId.value) {
-      // 更新帖子
       res = await updatePost({
         id: postId.value,
         title: formData.title,
@@ -148,7 +121,6 @@ const handleSubmit = async (isDraft = false) => {
         status: isDraft ? 0 : 1,
       })
     } else {
-      // 创建新帖子
       res = await createPost({
         title: formData.title,
         content: formData.content,
@@ -161,57 +133,38 @@ const handleSubmit = async (isDraft = false) => {
       })
     }
 
-    console.log('>>> [发布帖子] API 响应:', res)
-    console.log('>>> [发布帖子] 响应 code:', res.code)
-
     if (res.code === 0) {
       ElMessage.success(
         isDraft ? '保存草稿成功' : isEditMode.value ? '更新成功' : '发布成功'
       )
 
-      // 只有发布成功时才跳转并清空表单
       if (!isDraft) {
-        console.log('>>> [发布帖子] 发布成功，清空表单并跳转到社区列表')
-        // 清空表单
         resetForm()
-        // 返回社区列表
         router.push('/community')
-      } else {
-        console.log('>>> [发布帖子] 草稿保存成功')
-        // 草稿保存成功，不跳转，保留在当前页面
-        // 如果是新建草稿，需要切换到编辑模式
-        if (!isEditMode.value && res.data) {
-          // 假设后端返回了新创建的帖子ID
-          const newPostId = res.data.id || res.data
-          if (newPostId) {
-            isEditMode.value = true
-            postId.value = newPostId
-            // 更新浏览器URL，但不刷新页面
-            router.replace(`/community/edit/${newPostId}`)
-          }
+      } else if (!isEditMode.value && res.data) {
+        const newPostId = res.data.id || res.data
+        if (newPostId) {
+          isEditMode.value = true
+          postId.value = newPostId
+          router.replace(`/community/edit/${newPostId}`)
         }
       }
     } else {
-      console.log('>>> [发布帖子] 失败，错误信息:', res.message)
       ElMessage.error(res.message || (isDraft ? '保存失败' : '发布失败'))
     }
   } catch (error) {
-    console.error('>>> [发布帖子] 异常:', error)
+    console.error('提交帖子失败:', error)
     ElMessage.error(isDraft ? '保存失败' : '发布失败')
   } finally {
     submitting.value = false
-    console.log('>>> [发布帖子] 结束')
   }
 }
 
-// 返回（清空表单）
 const goBack = () => {
-  // 清空表单
   resetForm()
   router.push('/community')
 }
 
-// 检查登录状态
 onMounted(() => {
   if (!userStore.userInfo?.userId) {
     ElMessage.warning('请先登录')
@@ -219,31 +172,24 @@ onMounted(() => {
     return
   }
 
-  // 检查是否为编辑模式
   const id = route.params.id
   if (id) {
-    console.log('>>> [onMounted] 编辑模式，postId:', id)
     isEditMode.value = true
     postId.value = Number(id)
     loadPostDetail(postId.value)
   } else {
-    console.log('>>> [onMounted] 新建模式')
-    // 新建模式，确保表单是空的
     resetForm()
   }
 })
 
-// 监听路由变化（处理从详情页点击编辑的情况）
 watch(
   () => route.params.id,
-  (newId) => {
+  newId => {
     if (newId) {
-      console.log('>>> [路由监听] 切换到编辑模式，postId:', newId)
       isEditMode.value = true
       postId.value = Number(newId)
       loadPostDetail(postId.value)
     } else {
-      console.log('>>> [路由监听] 切换到新建模式')
       resetForm()
     }
   }
@@ -253,98 +199,114 @@ watch(
 <template>
   <div class="create-post-container">
     <div v-loading="loading" class="create-content">
-      <!-- 头部 -->
-      <div class="create-header">
+      <section class="create-header">
         <el-button class="back-btn" @click="goBack">
           <i class="i-carbon-arrow-left mr-1" />
-          返回
+          返回社区
         </el-button>
+        <p class="header-kicker">{{ isEditMode ? 'Edit Post' : 'Create Post' }}</p>
         <h1 class="title">{{ isEditMode ? '编辑帖子' : '发布帖子' }}</h1>
-      </div>
+        <p class="header-desc">
+          用更完整的标题、封面和内容，把你的观点与作品展示得更清楚一些。
+        </p>
+      </section>
 
-      <!-- 表单 -->
       <el-form :model="formData" label-width="80px" class="create-form">
-        <!-- 标题 -->
-        <el-form-item label="标题" required>
-          <el-input
-            v-model="formData.title"
-            placeholder="请输入帖子标题"
-            maxlength="200"
-            show-word-limit
-            size="large"
-          />
-        </el-form-item>
-
-        <!-- 分类 -->
-        <el-form-item label="分类" required>
-          <el-radio-group v-model="formData.category">
-            <el-radio
-              v-for="cat in categories"
-              :key="cat.value"
-              :label="cat.value"
-              border
-            >
-              {{ cat.label }}
-            </el-radio>
-          </el-radio-group>
-        </el-form-item>
-
-        <!-- 标签 -->
-        <el-form-item label="标签">
-          <el-input
-            v-model="formData.tags"
-            placeholder="输入标签，用逗号分隔，如：AI-MV,新手,分享"
-            maxlength="100"
-          />
-          <div class="form-tip">标签可以帮助其他用户更容易找到你的帖子</div>
-        </el-form-item>
-
-        <!-- 封面 -->
-        <el-form-item label="封面图">
-          <el-input
-            v-model="formData.coverUrl"
-            placeholder="请输入封面图URL（可选）"
-          />
-          <div v-if="formData.coverUrl" class="cover-preview">
-            <img :src="formData.coverUrl" alt="封面预览" />
+        <div class="form-panel">
+          <div class="panel-head">
+            <h3>基础信息</h3>
+            <p>先补充标题、分类和标签，让帖子更容易被看到。</p>
           </div>
-        </el-form-item>
 
-        <!-- 内容 -->
-        <el-form-item label="内容" required>
-          <el-input
-            v-model="formData.content"
-            type="textarea"
-            :rows="15"
-            placeholder="分享你的想法、经验或问题..."
-            maxlength="10000"
-            show-word-limit
-          />
-        </el-form-item>
+          <el-form-item label="标题" required>
+            <el-input
+              v-model="formData.title"
+              placeholder="请输入帖子标题"
+              maxlength="200"
+              show-word-limit
+              size="large"
+            />
+          </el-form-item>
 
-        <!-- 图片上传（仅新建模式显示） -->
-        <el-form-item v-if="!isEditMode" label="图片">
-          <ImageUploader v-model="formData.images" :max-count="9" />
-        </el-form-item>
+          <el-form-item label="分类" required>
+            <el-radio-group v-model="formData.category">
+              <el-radio
+                v-for="cat in categories"
+                :key="cat.value"
+                :label="cat.value"
+                border
+              >
+                {{ cat.label }}
+              </el-radio>
+            </el-radio-group>
+          </el-form-item>
 
-        <!-- MV选择（仅新建模式显示） -->
-        <el-form-item v-if="!isEditMode" label="MV作品">
-          <MvSelector v-model="formData.mvId" />
-        </el-form-item>
+          <el-form-item label="标签">
+            <el-input
+              v-model="formData.tags"
+              placeholder="输入标签，用逗号分隔，例如：AI-MV, 新手, 分享"
+              maxlength="100"
+            />
+            <div class="form-tip">标签能帮助其他用户更快理解帖子主题。</div>
+          </el-form-item>
+        </div>
 
-        <!-- 操作按钮 -->
+        <div class="form-panel">
+          <div class="panel-head">
+            <h3>封面与内容</h3>
+            <p>封面负责第一眼印象，正文负责把想法说完整。</p>
+          </div>
+
+          <el-form-item label="封面图">
+            <el-input
+              v-model="formData.coverUrl"
+              placeholder="请输入封面图 URL（可选）"
+            />
+            <div v-if="formData.coverUrl" class="cover-preview">
+              <img :src="formData.coverUrl" alt="封面预览" />
+            </div>
+          </el-form-item>
+
+          <el-form-item label="内容" required>
+            <el-input
+              v-model="formData.content"
+              type="textarea"
+              :rows="15"
+              placeholder="分享你的想法、经验、问题或作品说明..."
+              maxlength="10000"
+              show-word-limit
+            />
+          </el-form-item>
+        </div>
+
+        <div v-if="!isEditMode" class="form-panel">
+          <div class="panel-head">
+            <h3>素材补充</h3>
+            <p>你可以继续补充图片或 MV，让帖子展示更完整。</p>
+          </div>
+
+          <el-form-item label="图片">
+            <ImageUploader v-model="formData.images" :max-count="9" />
+          </el-form-item>
+
+          <el-form-item label="MV作品">
+            <MvSelector v-model="formData.mvId" />
+          </el-form-item>
+        </div>
+
         <el-form-item>
           <div class="form-actions">
-            <el-button @click="goBack">取消</el-button>
-            <el-button :loading="submitting" @click="handleSubmit(true)">
+            <el-button class="cancel-btn" @click="goBack">取消</el-button>
+            <el-button class="draft-btn" :loading="submitting" @click="handleSubmit(true)">
               保存草稿
             </el-button>
             <el-button
+              class="submit-btn"
               type="primary"
               :loading="submitting"
               @click="handleSubmit(false)"
             >
-              {{ isEditMode ? '更新' : '发布' }}
+              {{ isEditMode ? '更新帖子' : '立即发布' }}
             </el-button>
           </div>
         </el-form-item>
@@ -361,56 +323,125 @@ watch(
 }
 
 .create-content {
-  background: var(--el-bg-color);
-  border-radius: 16px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.97), rgba(248, 250, 255, 0.95));
+  border-radius: 28px;
   padding: 32px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 22px 46px rgba(15, 23, 42, 0.08);
 }
 
 .create-header {
   margin-bottom: 32px;
+  padding: 26px;
+  border-radius: 24px;
+  background:
+    radial-gradient(circle at top left, rgba(255, 255, 255, 0.86), transparent 36%),
+    linear-gradient(135deg, rgba(238, 245, 255, 0.96), rgba(255, 242, 232, 0.92));
+}
 
-  .back-btn {
-    margin-bottom: 16px;
-  }
+.back-btn {
+  margin-bottom: 16px;
+  border-radius: 999px;
+  border: 1px solid rgba(87, 114, 239, 0.12);
+  background: rgba(255, 255, 255, 0.78);
+}
 
-  .title {
-    font-size: 28px;
-    font-weight: 700;
-    margin: 0;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-  }
+.header-kicker {
+  margin: 0 0 8px;
+  font-size: 12px;
+  color: #6d73d5;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+.title {
+  font-size: 34px;
+  font-weight: 700;
+  margin: 0 0 10px;
+  color: #2f3447;
+}
+
+.header-desc {
+  max-width: 620px;
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.8;
+  color: #6b7280;
 }
 
 .create-form {
-  .form-tip {
-    font-size: 12px;
-    color: var(--el-text-color-secondary);
-    margin-top: 4px;
-  }
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
 
-  .cover-preview {
-    margin-top: 12px;
-    width: 100%;
-    max-width: 400px;
-    border-radius: 8px;
-    overflow: hidden;
+.form-panel {
+  padding: 24px;
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.82);
+  border: 1px solid rgba(232, 236, 245, 0.9);
+}
 
-    img {
-      width: 100%;
-      height: auto;
-      display: block;
-    }
-  }
+.panel-head {
+  margin-bottom: 18px;
+}
 
-  .form-actions {
-    display: flex;
-    gap: 12px;
-    justify-content: flex-end;
-    width: 100%;
-  }
+.panel-head h3 {
+  margin: 0 0 8px;
+  font-size: 20px;
+  color: #2f3447;
+}
+
+.panel-head p {
+  margin: 0;
+  font-size: 14px;
+  color: #7b8399;
+  line-height: 1.7;
+}
+
+.form-tip {
+  font-size: 12px;
+  color: #7b8399;
+  margin-top: 6px;
+}
+
+.cover-preview {
+  margin-top: 14px;
+  width: 100%;
+  max-width: 400px;
+  border-radius: 18px;
+  overflow: hidden;
+  box-shadow: 0 16px 26px rgba(15, 23, 42, 0.08);
+}
+
+.cover-preview img {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.form-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  width: 100%;
+  padding-top: 8px;
+}
+
+.cancel-btn,
+.draft-btn,
+.submit-btn {
+  min-width: 120px;
+  border-radius: 999px;
+}
+
+.draft-btn {
+  background: #fff7f0;
+  border-color: #ffd9b3;
+  color: #c27a35;
+}
+
+.submit-btn {
+  box-shadow: 0 14px 26px rgba(64, 158, 255, 0.24);
 }
 
 :deep(.el-radio.is-bordered) {
@@ -420,6 +451,27 @@ watch(
 
 :deep(.el-textarea__inner) {
   font-family: inherit;
-  line-height: 1.6;
+  line-height: 1.8;
+  border-radius: 18px;
+}
+
+:deep(.el-input__wrapper) {
+  border-radius: 16px;
+}
+
+@media (max-width: 768px) {
+  .create-content {
+    padding: 22px;
+  }
+
+  .create-header,
+  .form-panel {
+    padding: 20px;
+  }
+
+  .form-actions {
+    flex-wrap: wrap;
+    justify-content: flex-start;
+  }
 }
 </style>

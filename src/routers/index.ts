@@ -57,7 +57,7 @@ const router = createRouter({
       component: () => import('@/pages/favorite-playlists/index.vue'),
     },
 
-    //AI创作页面路由
+    // AI创作页面路由
     {
       path: '/ai',
       name: 'AiCreate',
@@ -67,7 +67,7 @@ const router = createRouter({
       },
     },
 
-    //社区页面路由
+    // 社区页面路由
     {
       path: '/community',
       name: 'Community',
@@ -91,12 +91,6 @@ const router = createRouter({
       name: 'CommunityFavorite',
       component: () => import('@/pages/community/favorite/index.vue'),
       meta: { title: '我的收藏' },
-    },
-    {
-      path: '/community/tags',
-      name: 'CommunityTags',
-      component: () => import('@/pages/community/tags.vue'),
-      meta: { title: '标签广场' },
     },
     {
       path: '/community/edit/:id',

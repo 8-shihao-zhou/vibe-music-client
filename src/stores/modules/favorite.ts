@@ -1,5 +1,9 @@
 import { defineStore } from 'pinia'
-import { getFavoritePlaylists, collectPlaylist, cancelCollectPlaylist } from '@/api/system'
+import {
+  getFavoritePlaylists,
+  collectPlaylist,
+  cancelCollectPlaylist,
+} from '@/api/system'
 import type { ResultTable } from '@/api/system'
 import { ElMessage } from 'element-plus'
 import coverImg from '@/assets/cover.png'
@@ -13,11 +17,12 @@ interface FavoritePlaylist {
 export const useFavoriteStore = defineStore('favorite', {
   state: () => ({
     favoritePlaylists: [] as FavoritePlaylist[],
-    loading: false
+    loading: false,
+    loaded: false,
   }),
 
   actions: {
-    // 获取收藏的歌单列表
+    // 获取收藏歌单列表
     async getFavoritePlaylists() {
       try {
         this.loading = true
@@ -25,22 +30,25 @@ export const useFavoriteStore = defineStore('favorite', {
           pageNum: 1,
           pageSize: 50,
           title: '',
-          style: ''
+          style: '',
         })
+
         if (res.code === 0 && res.data) {
           const data = res.data as ResultTable['data']
-          if (data?.items) {
-            this.favoritePlaylists = data.items.map(item => ({
-              id: item.playlistId,
-              name: item.title,
-              coverImgUrl: item.coverUrl ?? coverImg
-            }))
-          }
+          this.favoritePlaylists = (data?.items || []).map((item) => ({
+            id: item.playlistId,
+            name: item.title,
+            coverImgUrl: item.coverUrl ?? coverImg,
+          }))
+        } else {
+          this.favoritePlaylists = []
         }
       } catch (error) {
+        this.favoritePlaylists = []
         ElMessage.error('获取收藏歌单失败')
       } finally {
         this.loading = false
+        this.loaded = true
       }
     },
 
@@ -50,10 +58,10 @@ export const useFavoriteStore = defineStore('favorite', {
         const res = await collectPlaylist(playlistId)
         if (res.code === 0) {
           ElMessage.success('收藏成功')
-          // 重新获取收藏列表
-          this.getFavoritePlaylists()
+          await this.getFavoritePlaylists()
           return true
         }
+        ElMessage.warning(res.message || '收藏失败')
         return false
       } catch (error) {
         ElMessage.error('收藏失败')
@@ -67,10 +75,12 @@ export const useFavoriteStore = defineStore('favorite', {
         const res = await cancelCollectPlaylist(playlistId)
         if (res.code === 0) {
           ElMessage.success('取消收藏成功')
-          // 从列表中移除
-          this.favoritePlaylists = this.favoritePlaylists.filter(item => item.id !== playlistId)
+          this.favoritePlaylists = this.favoritePlaylists.filter(
+            (item) => item.id !== playlistId
+          )
           return true
         }
+        ElMessage.warning(res.message || '取消收藏失败')
         return false
       } catch (error) {
         ElMessage.error('取消收藏失败')
@@ -81,6 +91,7 @@ export const useFavoriteStore = defineStore('favorite', {
     // 清空收藏列表
     clearFavoritePlaylists() {
       this.favoritePlaylists = []
-    }
-  }
-}) 
+      this.loaded = false
+    },
+  },
+})

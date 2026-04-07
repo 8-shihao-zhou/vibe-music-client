@@ -26,10 +26,17 @@ const {
   seek,
 } = useAudioPlayer()
 
+/**
+ * 统一处理喜欢状态，兼容接口返回数字和字符串两种情况。
+ */
+const normalizeLikeStatus = (likeStatus: unknown) => {
+  return Number(likeStatus) === 1 ? 1 : 0
+}
+
 // 获取当前播放歌曲的喜欢状态
 const currentSongLikeStatus = computed(() => {
   const currentTrack = audioStore.trackList[audioStore.currentSongIndex]
-  return currentTrack?.likeStatus || 0
+  return normalizeLikeStatus(currentTrack?.likeStatus)
 })
 
 // 更新所有相同歌曲的喜欢状态

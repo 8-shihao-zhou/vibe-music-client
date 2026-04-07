@@ -1,651 +1,912 @@
-/* eslint-disable */
+<script setup lang="ts">
+import { computed, onMounted, ref } from 'vue'
+import { Icon } from '@iconify/vue'
+import { useRouter } from 'vue-router'
+import {
+  getAllSongs,
+  getRecommendedPlaylists,
+  getRecommendedSongs,
+  getStyleList,
+} from '@/api/system'
+import type { Song } from '@/api/interface'
+import { formatMillisecondsToTime } from '@/utils'
+import { useAudioPlayer } from '@/hooks/useAudioPlayer'
+import { UserStore } from '@/stores/modules/user'
+import { AudioStore } from '@/stores/modules/audio'
+import defaultAlbum from '@/assets/default_album.jpg'
+import coverImg from '@/assets/cover.png'
+
+interface PlaylistPreview {
+  id: number
+  title: string
+  coverUrl: string
+}
+
+interface GenrePreview {
+  styleId: number
+  name: string
+  songCount: number
+}
+
+const router = useRouter()
+const userStore = UserStore()
+const audioStore = AudioStore()
+const { loadTrack, play } = useAudioPlayer()
+
+const loading = ref(false)
+const highlightSongs = ref<Song[]>([])
+const latestSongs = ref<Song[]>([])
+const playlists = ref<PlaylistPreview[]>([])
+const genres = ref<GenrePreview[]>([])
+
+const quickEntries = [
+  {
+    title: '每日推荐',
+    desc: '看看今天适合循环播放的歌曲',
+    icon: 'ri:calendar-2-line',
+    route: '/daily',
+  },
+  {
+    title: '曲风探索',
+    desc: '按氛围和风格找到想听的歌',
+    icon: 'ri:price-tag-3-line',
+    route: '/genre',
+  },
+  {
+    title: '精选歌单',
+    desc: '快速进入不同主题歌单',
+    icon: 'ri:album-line',
+    route: '/playlist',
+  },
+  {
+    title: '音乐社区',
+    desc: '看看大家最近在聊什么',
+    icon: 'ri:discuss-line',
+    route: '/community',
+  },
+]
+
+const welcomeText = computed(() =>
+  userStore.isLoggedIn
+    ? '回来继续听你喜欢的内容吧。'
+    : '在这里发现歌曲、歌单和你感兴趣的音乐内容。'
+)
+
+const summaryCards = computed(() => [
+  {
+    label: '首页精选',
+    value: highlightSongs.value.length,
+    tip: '适合直接开听',
+  },
+  {
+    label: '推荐歌单',
+    value: playlists.value.length,
+    tip: '快速进入主题场景',
+  },
+  {
+    label: '热门曲风',
+    value: genres.value.length,
+    tip: '按风格继续逛',
+  },
+])
+
+// 打乱数组后再截取，避免首页每次都是固定内容
+const pickRandomItems = <T,>(items: T[], count: number) => {
+  const copied = [...items]
+  for (let i = copied.length - 1; i > 0; i -= 1) {
+    const randomIndex = Math.floor(Math.random() * (i + 1))
+    ;[copied[i], copied[randomIndex]] = [copied[randomIndex], copied[i]]
+  }
+  return copied.slice(0, count)
+}
+
+// 让首页展示数量在可控范围内随机，避免内容过少单调或过多撑高页面
+const getRandomCount = (min: number, max: number) => {
+  return Math.floor(Math.random() * (max - min + 1)) + min
+}
+
+const fetchHomeData = async () => {
+  loading.value = true
+  try {
+    const songDisplayCount = getRandomCount(4, 7)
+    const playlistDisplayCount = getRandomCount(3, 5)
+    const genreDisplayCount = getRandomCount(6, 9)
+
+    const [recommendSongsRes, latestSongsRes, playlistsRes, stylesRes] =
+      await Promise.allSettled([
+        getRecommendedSongs(),
+        getAllSongs({
+          pageNum: 1,
+          pageSize: 24,
+          songName: '',
+          artistName: '',
+          album: '',
+        }),
+        getRecommendedPlaylists(),
+        getStyleList(),
+      ])
+
+    if (
+      recommendSongsRes.status === 'fulfilled' &&
+      recommendSongsRes.value.code === 0
+    ) {
+      highlightSongs.value = pickRandomItems(
+        (recommendSongsRes.value.data as Song[]) || [],
+        songDisplayCount
+      )
+    }
+
+    if (
+      latestSongsRes.status === 'fulfilled' &&
+      latestSongsRes.value.code === 0
+    ) {
+      latestSongs.value = pickRandomItems(
+        latestSongsRes.value.data?.items || [],
+        songDisplayCount
+      )
+    }
+
+    if (playlistsRes.status === 'fulfilled' && playlistsRes.value.code === 0) {
+      const playlistSource = ((playlistsRes.value.data as any[]) || []).map(
+        (item) => ({
+          id: item.playlistId,
+          title: item.title,
+          coverUrl: item.coverUrl || coverImg,
+        })
+      )
+      playlists.value = pickRandomItems(playlistSource, playlistDisplayCount)
+    }
+
+    if (stylesRes.status === 'fulfilled' && stylesRes.value.code === 0) {
+      const genreSource = ((stylesRes.value.data as any[]) || []).map(
+        (item) => ({
+          styleId: item.styleId,
+          name: item.name,
+          songCount: Number(item.songCount || 0),
+        })
+      )
+      genres.value = pickRandomItems(genreSource, genreDisplayCount)
+    }
+
+    if (!highlightSongs.value.length) {
+      highlightSongs.value = latestSongs.value
+    }
+  } finally {
+    loading.value = false
+  }
+}
+
+const playSong = async (song: Song) => {
+  const sourceSongs = highlightSongs.value.length
+    ? highlightSongs.value
+    : latestSongs.value
+
+  const trackList = sourceSongs
+    .filter((item) => item.audioUrl)
+    .map((item) => ({
+      id: String(item.songId),
+      title: item.songName,
+      artist: item.artistName,
+      album: item.album,
+      cover: item.coverUrl || defaultAlbum,
+      url: item.audioUrl,
+      duration: Number(item.duration) || 0,
+      likeStatus: Number(item.likeStatus) === 1 ? 1 : 0,
+    }))
+
+  const targetIndex = trackList.findIndex(
+    (item) => Number(item.id) === song.songId
+  )
+  if (targetIndex < 0) return
+
+  audioStore.setAudioStore('trackList', trackList)
+  audioStore.setAudioStore('currentSongIndex', targetIndex)
+  await loadTrack()
+  play()
+}
+
+onMounted(fetchHomeData)
+</script>
+
 <template>
-  <div class="ai-page-container">
-    <div class="page-header">
-      <h2>✨ AI 音乐视频创作</h2>
-      <p class="subtitle">上传您喜欢的音乐，AI 将为您生成专属 MV</p>
-    </div>
+  <div class="home-page">
+    <section class="hero-section">
+      <div class="hero-copy">
+        <p class="hero-kicker">AI Music Home</p>
+        <h1>今天想听什么？从这里快速开始。</h1>
+        <p class="hero-desc">
+          {{ welcomeText }}
+          你可以在这里快速播放推荐内容，也可以进入曲库、歌单、曲风和社区继续探索。
+        </p>
 
-    <div class="content-wrapper">
-      <!-- 左侧：上传区 -->
-      <div class="left-panel">
-        <el-card class="vibe-card upload-card" shadow="hover">
-          <template #header>
-            <div class="card-header">
-              <span>🎵 开始创作</span>
-            </div>
-          </template>
-          <div class="upload-container">
-            <el-upload
-              class="upload-area"
-              drag
-              action="#"
-              :http-request="handleUpload"
-              :show-file-list="false"
-              accept=".mp3"
-              :disabled="loading"
-            >
-              <div v-if="!loading" class="upload-placeholder">
-                <el-icon class="upload-icon"><Headset /></el-icon>
-                <div class="text">点击或拖拽 MP3 到此处</div>
-                <div class="sub-text">支持 15-60秒 音频</div>
-              </div>
-              <div v-else class="loading-placeholder">
-                <el-progress type="dashboard" :percentage="progress" />
-                <p class="loading-tips">AI 正在渲染中，请稍候...</p>
-              </div>
-            </el-upload>
-          </div>
-        </el-card>
+        <div class="hero-actions">
+          <button class="primary-action" @click="router.push('/daily')">
+            去看今日推荐
+          </button>
+          <button class="secondary-action" @click="router.push('/library')">
+            打开完整曲库
+          </button>
+        </div>
       </div>
 
-      <!-- 右侧：历史列表 (如果生效了，这里应该是一行行的列表) -->
-      <div class="right-panel">
-        <el-card class="vibe-card history-card" shadow="hover">
-          <template #header>
-            <div class="card-header">
-              <span>💿 我的作品库</span>
-              <el-button
-                link
-                type="primary"
-                :icon="Refresh"
-                @click="fetchHistory"
-                >刷新</el-button
-              >
-            </div>
-          </template>
+      <div class="hero-summary">
+        <div
+          v-for="item in summaryCards"
+          :key="item.label"
+          class="summary-card"
+        >
+          <span class="summary-label">{{ item.label }}</span>
+          <strong>{{ item.value }}</strong>
+          <span class="summary-tip">{{ item.tip }}</span>
+        </div>
+      </div>
 
-          <div class="history-list">
-            <el-empty
-              v-if="historyList.length === 0"
-              description="暂无作品，快去左边创作吧！"
+      <div class="hero-glow hero-glow-a"></div>
+      <div class="hero-glow hero-glow-b"></div>
+    </section>
+
+    <section class="quick-grid">
+      <button
+        v-for="item in quickEntries"
+        :key="item.route"
+        class="quick-card"
+        @click="router.push(item.route)"
+      >
+        <div class="quick-icon">
+          <Icon :icon="item.icon" />
+        </div>
+        <div class="quick-main">
+          <div class="quick-title">{{ item.title }}</div>
+          <div class="quick-desc">{{ item.desc }}</div>
+        </div>
+        <icon-ri:arrow-right-up-line class="quick-arrow" />
+      </button>
+    </section>
+
+    <section class="content-grid">
+      <div class="panel songs-panel">
+        <div class="panel-head">
+          <div>
+            <p class="panel-kicker">Quick Play</p>
+            <h2>首页精选歌曲</h2>
+          </div>
+          <el-button text @click="router.push('/library')">查看全部</el-button>
+        </div>
+
+        <div v-if="loading" class="panel-state">
+          <icon-ri:loader-4-line class="animate-spin text-xl" />
+          <span>正在加载首页内容...</span>
+        </div>
+
+        <div v-else-if="highlightSongs.length === 0" class="panel-state">
+          <icon-ri:music-2-line class="text-xl" />
+          <span>暂时还没有可展示的歌曲</span>
+        </div>
+
+        <div v-else class="song-list">
+          <div
+            v-for="song in highlightSongs"
+            :key="song.songId"
+            class="song-card"
+            @click="playSong(song)"
+          >
+            <el-image
+              :src="song.coverUrl || defaultAlbum"
+              :alt="song.songName"
+              fit="cover"
+              lazy
+              class="song-cover"
             />
-
-            <div
-              v-else
-              v-for="(item, index) in historyList"
-              :key="index"
-              class="history-item"
-              @click="playVideo(item)"
-            >
-              <div class="item-icon">
-                <el-icon><VideoPlay /></el-icon>
-              </div>
-              <div class="item-info">
-                <div class="item-name">{{ item.fileName }}</div>
-                <div class="item-meta">
-                  <span>{{ item.createTime }}</span>
-                  <span class="dot">·</span>
-                  <span>{{ item.size }}</span>
-                </div>
-              </div>
-              <div class="item-action">
-                <el-button
-                  circle
-                  :icon="Download"
-                  @click.stop="downloadVideo(item)"
-                />
+            <div class="song-main">
+              <div class="song-name">{{ song.songName }}</div>
+              <div class="song-meta">
+                <span>{{ song.artistName }}</span>
+                <span>·</span>
+                <span>{{
+                  formatMillisecondsToTime(Number(song.duration) * 1000)
+                }}</span>
               </div>
             </div>
+            <button class="song-play">
+              <icon-tabler:player-play-filled />
+            </button>
           </div>
-        </el-card>
+        </div>
       </div>
-    </div>
 
-    <!-- 弹窗播放器 -->
-    <el-dialog
-      v-model="dialogVisible"
-      title="作品预览"
-      width="800px"
-      align-center
-      destroy-on-close
-      append-to-body
-    >
-      <video
-        v-if="currentVideoUrl"
-        :src="currentVideoUrl"
-        controls
-        autoplay
-        width="100%"
-        style="border-radius: 8px; background: #000; max-height: 60vh"
-      ></video>
-    </el-dialog>
+      <div class="side-panels">
+        <div class="panel">
+          <div class="panel-head">
+            <div>
+              <p class="panel-kicker">Playlists</p>
+              <h2>推荐歌单</h2>
+            </div>
+            <el-button text @click="router.push('/playlist')"
+              >查看更多</el-button
+            >
+          </div>
+
+          <div v-if="playlists.length === 0" class="panel-state small">
+            <span>暂无歌单推荐</span>
+          </div>
+
+          <div v-else class="playlist-list">
+            <div
+              v-for="playlist in playlists"
+              :key="playlist.id"
+              class="playlist-card"
+              @click="router.push(`/playlist/${playlist.id}`)"
+            >
+              <el-image
+                :src="playlist.coverUrl"
+                :alt="playlist.title"
+                fit="cover"
+                lazy
+                class="playlist-cover"
+              />
+              <div class="playlist-name">{{ playlist.title }}</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head">
+            <div>
+              <p class="panel-kicker">Genres</p>
+              <h2>热门曲风</h2>
+            </div>
+            <el-button text @click="router.push('/genre')">去逛曲风</el-button>
+          </div>
+
+          <div class="genre-list">
+            <button
+              v-for="genre in genres"
+              :key="genre.styleId"
+              class="genre-chip"
+              @click="
+                router.push(
+                  `/genre/${genre.styleId}?name=${encodeURIComponent(genre.name)}`
+                )
+              "
+            >
+              <span>{{ genre.name }}</span>
+              <small>{{ genre.songCount }} 首</small>
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
   </div>
 </template>
 
-<script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue'
-import { Headset, VideoPlay, Download, Refresh } from '@element-plus/icons-vue'
-import { ElMessage } from 'element-plus'
-import { generateVideoApi, getHistoryApi } from '@/api/ai'
-
-const loading = ref(false)
-const progress = ref(0)
-let timer: any = null
-
-const historyList = ref<any[]>([])
-const dialogVisible = ref(false)
-const currentVideoUrl = ref('')
-
-onMounted(() => {
-  fetchHistory()
-})
-
-const fetchHistory = async () => {
-  try {
-    const res = await getHistoryApi()
-    const data = res.data || res
-    if (data.code === 0 || data.code === 200) {
-      historyList.value = data.data
-      console.log('历史记录刷新成功', data.data)
-    }
-  } catch (error) {
-    console.error('获取历史失败', error)
-  }
-}
-
-const handleUpload = async (options: any) => {
-  const file = options.file
-  if (file.type !== 'audio/mpeg') {
-    ElMessage.error('请上传 MP3 格式！')
-    return
-  }
-
-  loading.value = true
-  startFakeProgress()
-
-  const formData = new FormData()
-  formData.append('file', file)
-
-  try {
-    const res = await generateVideoApi(formData)
-    const data = res.data || res
-
-    if (data.code === 0 || data.code === 200) {
-      progress.value = 100
-      ElMessage.success('生成成功！已加入作品库')
-      await fetchHistory()
-
-      // 自动播放最新一个
-      if (historyList.value.length > 0) {
-        playVideo(historyList.value[0])
-      }
-    } else {
-      ElMessage.error(data.message || '生成失败')
-    }
-  } catch (error) {
-    ElMessage.error('请求超时或服务异常', error)
-  } finally {
-    loading.value = false
-    stopFakeProgress()
-  }
-}
-
-const playVideo = (item: any) => {
-  currentVideoUrl.value = item.url
-  dialogVisible.value = true
-}
-
-const downloadVideo = (item: any) => {
-  const link = document.createElement('a')
-  link.href = item.url
-  link.setAttribute('download', item.fileName)
-  document.body.appendChild(link)
-  link.click()
-  document.body.removeChild(link)
-}
-
-const startFakeProgress = () => {
-  progress.value = 0
-  timer = setInterval(() => {
-    if (progress.value < 95) progress.value += 1
-  }, 1000)
-}
-const stopFakeProgress = () => {
-  if (timer) clearInterval(timer)
-}
-
-onUnmounted(() => stopFakeProgress())
-</script>
-
 <style scoped>
-.ai-page-container {
-  padding: 32px;
+.home-page {
   height: 100%;
-  box-sizing: border-box;
-  display: flex;
-  flex-direction: column;
-  position: relative;
-  overflow: hidden;
-}
-
-/* 浅色模式 */
-html.light .ai-page-container {
-  background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
-}
-
-/* 暗色模式 */
-html.dark .ai-page-container {
-  background: linear-gradient(135deg, rgba(26, 26, 46, 0.5) 0%, rgba(15, 52, 96, 0.5) 100%);
-}
-
-.ai-page-container::before {
-  content: '';
-  position: absolute;
-  top: -50%;
-  right: -50%;
-  width: 100%;
-  height: 100%;
-  background: radial-gradient(circle, rgba(102, 126, 234, 0.1) 0%, transparent 70%);
-  animation: float 20s ease-in-out infinite;
-}
-
-@keyframes float {
-  0%, 100% { transform: translate(0, 0) rotate(0deg); }
-  50% { transform: translate(-20px, 20px) rotate(180deg); }
-}
-
-.page-header {
-  margin-bottom: 32px;
-  text-align: center;
-  position: relative;
-  z-index: 1;
-}
-
-.page-header h2 {
-  font-size: 42px;
-  font-weight: 700;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  margin-bottom: 12px;
-  filter: drop-shadow(0 2px 8px rgba(102, 126, 234, 0.3));
-}
-
-.subtitle {
-  font-size: 16px;
-  font-weight: 300;
-  letter-spacing: 0.5px;
-}
-
-html.light .subtitle {
-  color: rgba(0, 0, 0, 0.65);
-}
-
-html.dark .subtitle {
-  color: rgba(255, 255, 255, 0.75);
-}
-
-.content-wrapper {
-  display: flex;
-  gap: 28px;
-  flex: 1;
-  min-height: 0;
-  position: relative;
-  z-index: 1;
-}
-
-.left-panel,
-.right-panel {
-  flex: 1;
-  height: 100%;
-  min-width: 0;
-}
-
-.vibe-card {
-  height: 100%;
-  border-radius: 24px;
-  display: flex;
-  flex-direction: column;
-  backdrop-filter: blur(20px);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-  transition: all 0.3s ease;
-}
-
-html.light .vibe-card {
-  background: rgba(255, 255, 255, 0.95);
-  border: 1px solid rgba(102, 126, 234, 0.2);
-}
-
-html.dark .vibe-card {
-  background: rgba(30, 30, 46, 0.95);
-  border: 1px solid rgba(102, 126, 234, 0.3);
-}
-
-.vibe-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 12px 48px rgba(102, 126, 234, 0.2);
-}
-
-:deep(.el-card__header) {
-  border-bottom: 1px solid rgba(102, 126, 234, 0.1);
-  padding: 20px 24px;
-}
-
-html.light :deep(.el-card__header) {
-  background: linear-gradient(135deg, #f8f9ff 0%, #fff 100%);
-}
-
-html.dark :deep(.el-card__header) {
-  background: linear-gradient(135deg, rgba(40, 40, 60, 0.8) 0%, rgba(30, 30, 46, 0.8) 100%);
-}
-
-:deep(.el-card__body) {
-  flex: 1;
-  padding: 0;
-  overflow: hidden;
-  position: relative;
-  display: flex;
-  flex-direction: column;
-}
-
-.upload-container {
-  flex: 1;
-  padding: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.upload-area {
-  width: 100%;
-}
-
-.upload-area :deep(.el-upload-dragger) {
-  height: 360px;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  border-radius: 20px;
-  border: 2px dashed rgba(102, 126, 234, 0.3);
-  transition: all 0.3s ease;
-}
-
-html.light .upload-area :deep(.el-upload-dragger) {
-  background: linear-gradient(135deg, #f5f7ff 0%, #fef5ff 100%);
-}
-
-html.dark .upload-area :deep(.el-upload-dragger) {
-  background: linear-gradient(135deg, rgba(40, 40, 60, 0.5) 0%, rgba(50, 40, 70, 0.5) 100%);
-}
-
-.upload-area :deep(.el-upload-dragger:hover) {
-  border-color: #667eea;
-  transform: scale(1.02);
-}
-
-html.light .upload-area :deep(.el-upload-dragger:hover) {
-  background: linear-gradient(135deg, #eef1ff 0%, #fdeeff 100%);
-}
-
-html.dark .upload-area :deep(.el-upload-dragger:hover) {
-  background: linear-gradient(135deg, rgba(50, 50, 70, 0.6) 0%, rgba(60, 50, 80, 0.6) 100%);
-}
-
-.upload-icon {
-  font-size: 64px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  margin-bottom: 24px;
-  animation: pulse 2s ease-in-out infinite;
-}
-
-@keyframes pulse {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.1); }
-}
-
-.text {
-  font-size: 18px;
-  font-weight: 600;
-  margin-bottom: 8px;
-}
-
-html.light .text {
-  color: #303133;
-}
-
-html.dark .text {
-  color: #e0e0e0;
-}
-
-.sub-text {
-  font-size: 14px;
-}
-
-html.light .sub-text {
-  color: #909399;
-}
-
-html.dark .sub-text {
-  color: #a0a0a0;
-}
-
-.loading-placeholder {
-  text-align: center;
-}
-
-.loading-tips {
-  margin-top: 24px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  font-size: 16px;
-  font-weight: 600;
-  animation: shimmer 2s ease-in-out infinite;
-}
-
-@keyframes shimmer {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.6; }
-}
-
-/* 列表样式 */
-.history-list {
-  flex: 1;
   overflow-y: auto;
   padding: 20px;
 }
 
-.history-list::-webkit-scrollbar {
-  width: 6px;
-}
-
-.history-list::-webkit-scrollbar-thumb {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  border-radius: 10px;
-}
-
-.history-item {
-  display: flex;
-  align-items: center;
-  padding: 16px 20px;
-  margin-bottom: 12px;
-  border-radius: 16px;
-  cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+.hero-section {
   position: relative;
   overflow: hidden;
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(280px, 0.9fr);
+  gap: 20px;
+  padding: 28px;
+  border-radius: 30px;
+  min-height: 280px;
 }
 
-html.light .history-item {
-  background: linear-gradient(135deg, #f8f9ff 0%, #fff 100%);
-  border: 1px solid rgba(102, 126, 234, 0.1);
+html.light .hero-section {
+  background: radial-gradient(
+      circle at top left,
+      rgba(255, 255, 255, 0.85) 0%,
+      rgba(255, 255, 255, 0) 34%
+    ),
+    linear-gradient(
+      135deg,
+      rgba(76, 110, 245, 0.96) 0%,
+      rgba(124, 77, 255, 0.92) 52%,
+      rgba(16, 185, 129, 0.9) 100%
+    );
+  box-shadow: 0 24px 60px rgba(69, 88, 170, 0.18);
 }
 
-html.dark .history-item {
-  background: linear-gradient(135deg, rgba(40, 40, 60, 0.6) 0%, rgba(30, 30, 46, 0.6) 100%);
-  border: 1px solid rgba(102, 126, 234, 0.2);
+html.dark .hero-section {
+  background: radial-gradient(
+      circle at top left,
+      rgba(255, 255, 255, 0.1) 0%,
+      rgba(255, 255, 255, 0) 34%
+    ),
+    linear-gradient(
+      135deg,
+      rgba(58, 75, 170, 0.96) 0%,
+      rgba(95, 62, 186, 0.94) 52%,
+      rgba(6, 108, 97, 0.92) 100%
+    );
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.28);
 }
 
-.history-item::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 4px;
-  height: 100%;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  transform: scaleY(0);
-  transition: transform 0.3s ease;
+.hero-copy,
+.hero-summary {
+  position: relative;
+  z-index: 1;
 }
 
-.history-item:hover::before {
-  transform: scaleY(1);
+.hero-kicker {
+  margin: 0 0 12px;
+  font-size: 12px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.74);
+  font-weight: 700;
 }
 
-.history-item:hover {
-  box-shadow: 0 8px 24px rgba(102, 126, 234, 0.2);
-  border-color: rgba(102, 126, 234, 0.4);
-  transform: translateX(8px);
-}
-
-html.light .history-item:hover {
-  background: linear-gradient(135deg, #fff 0%, #f8f9ff 100%);
-}
-
-html.dark .history-item:hover {
-  background: linear-gradient(135deg, rgba(50, 50, 70, 0.7) 0%, rgba(40, 40, 60, 0.7) 100%);
-}
-
-.item-icon {
-  width: 48px;
-  height: 48px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+.hero-copy h1 {
+  margin: 0;
+  max-width: 720px;
+  font-size: clamp(30px, 4vw, 42px);
+  line-height: 1.15;
   color: #fff;
+}
+
+.hero-desc {
+  margin: 16px 0 0;
+  max-width: 620px;
+  font-size: 14px;
+  line-height: 1.8;
+  color: rgba(255, 255, 255, 0.82);
+}
+
+.hero-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.primary-action,
+.secondary-action {
+  height: 44px;
+  padding: 0 18px;
   border-radius: 14px;
+  font-size: 14px;
+  font-weight: 600;
+  transition:
+    transform 0.25s ease,
+    box-shadow 0.25s ease,
+    background 0.25s ease;
+}
+
+.primary-action {
+  border: none;
+  color: #27324e;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 10px 24px rgba(21, 32, 76, 0.18);
+}
+
+.secondary-action {
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(12px);
+}
+
+.primary-action:hover,
+.secondary-action:hover {
+  transform: translateY(-2px);
+}
+
+.hero-summary {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+  align-self: stretch;
+}
+
+.summary-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 72px;
+  padding: 18px 20px;
+  border-radius: 22px;
+  backdrop-filter: blur(16px);
+}
+
+html.light .summary-card {
+  background: rgba(255, 255, 255, 0.16);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+html.dark .summary-card {
+  background: rgba(255, 255, 255, 0.09);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.summary-label,
+.summary-tip {
+  color: rgba(255, 255, 255, 0.74);
+}
+
+.summary-card strong {
+  margin: 8px 0 6px;
+  font-size: 28px;
+  line-height: 1;
+  color: #fff;
+}
+
+.summary-label {
+  font-size: 12px;
+}
+
+.summary-tip {
+  font-size: 12px;
+}
+
+.hero-glow {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.hero-glow-a {
+  width: 220px;
+  height: 220px;
+  right: -40px;
+  top: -60px;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.hero-glow-b {
+  width: 260px;
+  height: 260px;
+  right: 120px;
+  bottom: -140px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.quick-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 18px;
+}
+
+.quick-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 18px;
+  border-radius: 22px;
+  border: 1px solid transparent;
+  text-align: left;
+  transition:
+    transform 0.25s ease,
+    box-shadow 0.25s ease,
+    border-color 0.25s ease;
+}
+
+html.light .quick-card {
+  background: rgba(255, 255, 255, 0.84);
+  border-color: rgba(125, 140, 220, 0.12);
+  box-shadow: 0 12px 28px rgba(88, 101, 168, 0.08);
+}
+
+html.dark .quick-card {
+  background: rgba(28, 34, 54, 0.72);
+  border-color: rgba(125, 140, 220, 0.1);
+  box-shadow: 0 18px 36px rgba(0, 0, 0, 0.2);
+}
+
+.quick-card:hover {
+  transform: translateY(-3px);
+}
+
+.quick-icon {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 24px;
-  margin-right: 16px;
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
-  transition: all 0.3s ease;
+  width: 46px;
+  height: 46px;
+  border-radius: 14px;
+  flex-shrink: 0;
+  font-size: 22px;
+  color: #fff;
+  background: linear-gradient(135deg, #4c6ef5 0%, #7c4dff 100%);
 }
 
-.history-item:hover .item-icon {
-  transform: rotate(360deg) scale(1.1);
-}
-
-.item-info {
+.quick-main {
+  min-width: 0;
   flex: 1;
+}
+
+.quick-title {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.quick-desc {
+  margin-top: 6px;
+  font-size: 13px;
+  line-height: 1.6;
+  color: #7b88ab;
+}
+
+html.dark .quick-title {
+  color: #eef2ff;
+}
+
+html.dark .quick-desc {
+  color: #a8b5d8;
+}
+
+.quick-arrow {
+  font-size: 18px;
+  color: #90a0c6;
+}
+
+.content-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(320px, 0.9fr);
+  gap: 18px;
+  margin-top: 18px;
+  min-height: 0;
+}
+
+.side-panels {
+  display: grid;
+  gap: 18px;
+}
+
+.panel {
+  border-radius: 28px;
+  padding: 22px;
+}
+
+html.light .panel {
+  background: rgba(255, 255, 255, 0.82);
+  border: 1px solid rgba(125, 140, 220, 0.12);
+  box-shadow: 0 16px 42px rgba(88, 101, 168, 0.08);
+}
+
+html.dark .panel {
+  background: rgba(28, 34, 54, 0.72);
+  border: 1px solid rgba(125, 140, 220, 0.1);
+  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.22);
+}
+
+.panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.panel-kicker {
+  margin: 0 0 8px;
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #6b7adc;
+  font-weight: 700;
+}
+
+.panel-head h2 {
+  margin: 0;
+  font-size: 22px;
+  line-height: 1.2;
+  color: #27324e;
+}
+
+html.dark .panel-head h2 {
+  color: #eef2ff;
+}
+
+.panel-state {
+  min-height: 180px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  border-radius: 22px;
+  color: #8190b3;
+}
+
+html.light .panel-state {
+  background: rgba(245, 247, 255, 0.82);
+}
+
+html.dark .panel-state {
+  background: rgba(34, 40, 63, 0.82);
+  color: #a8b5d8;
+}
+
+.panel-state.small {
+  min-height: 120px;
+}
+
+.song-list {
+  display: grid;
+  gap: 12px;
+}
+
+.song-card {
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr) auto;
+  gap: 14px;
+  align-items: center;
+  padding: 12px;
+  border-radius: 20px;
+  cursor: pointer;
+  transition:
+    transform 0.25s ease,
+    box-shadow 0.25s ease,
+    border-color 0.25s ease;
+}
+
+html.light .song-card {
+  background: rgba(247, 249, 255, 0.9);
+  border: 1px solid rgba(125, 140, 220, 0.1);
+}
+
+html.dark .song-card {
+  background: rgba(34, 40, 63, 0.82);
+  border: 1px solid rgba(125, 140, 220, 0.1);
+}
+
+.song-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 26px rgba(88, 101, 168, 0.12);
+}
+
+.song-cover {
+  width: 64px;
+  height: 64px;
+  border-radius: 18px;
+  overflow: hidden;
+}
+
+.song-main {
   min-width: 0;
 }
 
-.item-name {
+.song-name {
   font-size: 15px;
-  font-weight: 600;
-  margin-bottom: 6px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  font-weight: 700;
+  line-height: 1.4;
+  color: #27324e;
 }
 
-html.light .item-name {
-  color: #303133;
+html.dark .song-name {
+  color: #eef2ff;
 }
 
-html.dark .item-name {
-  color: #e0e0e0;
-}
-
-.item-meta {
-  font-size: 13px;
-}
-
-html.light .item-meta {
-  color: #909399;
-}
-
-html.dark .item-meta {
-  color: #a0a0a0;
-}
-
-.dot {
-  margin: 0 8px;
-}
-
-.item-action :deep(.el-button) {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  border: none;
-  color: #fff;
-  transition: all 0.3s ease;
-}
-
-.item-action :deep(.el-button:hover) {
-  transform: scale(1.1);
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
-}
-
-.card-header {
+.song-meta {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  font-weight: 600;
+  gap: 8px;
+  margin-top: 6px;
+  font-size: 13px;
+  color: #7b88ab;
+}
+
+html.dark .song-meta {
+  color: #a8b5d8;
+}
+
+.song-play {
+  width: 42px;
+  height: 42px;
+  border: none;
+  border-radius: 50%;
+  color: #fff;
   font-size: 16px;
+  background: linear-gradient(135deg, #4c6ef5 0%, #7c4dff 100%);
+  box-shadow: 0 10px 20px rgba(76, 110, 245, 0.24);
 }
 
-html.light .card-header {
-  color: #303133;
+.playlist-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
 }
 
-html.dark .card-header {
-  color: #e0e0e0;
+.playlist-card {
+  cursor: pointer;
 }
 
-:deep(.el-dialog) {
+.playlist-cover {
+  width: 100%;
+  aspect-ratio: 1;
   border-radius: 20px;
   overflow: hidden;
 }
 
-:deep(.el-dialog__header) {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
-  color: #fff !important;
-  padding: 20px !important;
+.playlist-name {
+  margin-top: 10px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #27324e;
 }
 
-:deep(.el-dialog__title) {
-  color: #fff !important;
-  font-weight: 600 !important;
+html.dark .playlist-name {
+  color: #eef2ff;
 }
 
-:deep(.el-dialog__headerbtn) {
-  top: 20px !important;
-  right: 20px !important;
-  width: 32px !important;
-  height: 32px !important;
+.genre-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
 }
 
-:deep(.el-dialog__headerbtn .el-dialog__close) {
-  color: white !important;
-  font-size: 22px !important;
-  font-weight: bold !important;
-  width: 100% !important;
-  height: 100% !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  transition: all 0.3s ease !important;
+.genre-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 38px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(102, 126, 234, 0.14);
+  color: #425276;
+  background: rgba(102, 126, 234, 0.08);
+  transition:
+    transform 0.2s ease,
+    background 0.2s ease,
+    border-color 0.2s ease;
 }
 
-:deep(.el-dialog__headerbtn:hover) {
-  background: rgba(255, 255, 255, 0.2) !important;
-  border-radius: 8px !important;
+.genre-chip:hover {
+  transform: translateY(-1px);
+  background: rgba(102, 126, 234, 0.14);
 }
 
-:deep(.el-dialog__headerbtn:hover .el-dialog__close) {
-  color: white !important;
-  transform: scale(1.1) !important;
+html.dark .genre-chip {
+  color: #d8e1ff;
+  background: rgba(102, 126, 234, 0.14);
+  border-color: rgba(140, 156, 255, 0.16);
 }
 
-:deep(.el-dialog__body) {
-  padding: 24px;
+.genre-chip small {
+  opacity: 0.72;
 }
 
-:deep(.el-progress__text) {
-  font-weight: 600;
+@media (max-width: 1100px) {
+  .hero-section,
+  .content-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .quick-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .home-page {
+    padding: 14px;
+  }
+
+  .hero-section {
+    padding: 22px 18px;
+  }
+
+  .hero-actions {
+    flex-direction: column;
+  }
+
+  .quick-grid,
+  .playlist-list {
+    grid-template-columns: 1fr;
+  }
+
+  .song-card {
+    grid-template-columns: 56px minmax(0, 1fr) auto;
+  }
+
+  .song-cover {
+    width: 56px;
+    height: 56px;
+  }
 }
 </style>

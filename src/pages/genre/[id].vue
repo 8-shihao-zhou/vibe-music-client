@@ -8,6 +8,7 @@ defineOptions({ name: 'GenreDetail' })
 
 const route = useRoute()
 const router = useRouter()
+const isGenreDetailRoute = computed(() => route.name === 'GenreDetail')
 
 const styleId = computed(() => Number(route.params.id))
 const styleName = computed(() => (route.query.name as string) || '曲风')
@@ -23,6 +24,7 @@ const headerDescription = computed(
 )
 
 const fetchSongs = async () => {
+  if (!isGenreDetailRoute.value) return
   if (!styleId.value || Number.isNaN(styleId.value)) return
 
   loading.value = true
@@ -44,12 +46,13 @@ const fetchSongs = async () => {
 watch(
   styleId,
   () => {
+    if (!isGenreDetailRoute.value) return
     pageNum.value = 1
   },
   { immediate: false },
 )
 
-watch([styleId, pageNum], fetchSongs, { immediate: true })
+watch([() => route.name, styleId, pageNum], fetchSongs, { immediate: true })
 </script>
 
 <template>

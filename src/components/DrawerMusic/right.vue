@@ -6,22 +6,40 @@ import coverImg from '@/assets/cover.png'
 import { likeComment, addSongComment, getSongDetail, deleteComment } from '@/api/system'
 import { ElMessage } from 'element-plus'
 import { UserStore } from '@/stores/modules/user'
+import ReportDialog from '@/components/ReportDialog.vue'
 
 const songDetail = inject<Ref<SongDetail | null>>('songDetail')
 const userStore = UserStore()
 
-// 获取当前用户名
+// 获取当前用户名，决定评论操作按钮展示
 const currentUsername = computed(() => userStore.userInfo?.username || '')
 
 // 评论相关
 const commentContent = ref('')
 const maxLength = 180
+const showReportDialog = ref(false)
+const reportTargetId = ref(0)
 
-// 对评论进行排序，最新的显示在前面
+// 评论按最新优先排序
 const comments = computed(() => {
   if (!songDetail.value?.comments) return []
   return [...songDetail.value.comments].sort((a, b) => b.commentId - a.commentId)
 })
+
+// 打开评论举报弹窗
+const openReportDialog = (commentId: number) => {
+  if (!userStore.isLoggedIn) {
+    ElMessage.warning('请先登录')
+    return
+  }
+  reportTargetId.value = commentId
+  showReportDialog.value = true
+}
+
+// 举报成功后的提示
+const handleReportSuccess = () => {
+  ElMessage.success('举报已提交，感谢你的反馈')
+}
 
 // 发布评论
 const handleComment = async () => {
@@ -34,21 +52,21 @@ const handleComment = async () => {
     ElMessage.warning('请输入评论内容')
     return
   }
-  
+
   try {
     const songId = songDetail.value?.songId
     if (!songId) return
-    
+
     const content = commentContent.value.trim()
     const res = await addSongComment({
       songId,
       content
     })
-    
+
     if (res.code === 0) {
       ElMessage.success('评论发布成功')
       commentContent.value = ''
-      // 重新获取歌曲详情以更新评论列表
+
       const detailRes = await getSongDetail(songId)
       if (detailRes.code === 0 && detailRes.data) {
         songDetail.value = detailRes.data as unknown as SongDetail
@@ -69,7 +87,7 @@ const formatDate = (date: string) => {
   })
 }
 
-// 处理点赞
+// 点赞评论
 const handleLike = async (comment: any) => {
   if (!userStore.isLoggedIn) {
     ElMessage.warning('请先登录')
@@ -77,10 +95,8 @@ const handleLike = async (comment: any) => {
   }
 
   try {
-    // 调用点赞接口
     const res = await likeComment(comment.commentId)
     if (res.code === 0) {
-      // 更新评论的点赞数量
       if (songDetail.value && songDetail.value.comments) {
         const updatedComments = songDetail.value.comments.map(item => {
           if (item.commentId === comment.commentId) {
@@ -91,7 +107,7 @@ const handleLike = async (comment: any) => {
           }
           return item
         })
-        
+
         songDetail.value = {
           ...songDetail.value,
           comments: updatedComments
@@ -111,7 +127,6 @@ const handleDelete = async (comment: any) => {
     const res = await deleteComment(comment.commentId)
     if (res.code === 0) {
       ElMessage.success('删除成功')
-      // 重新获取歌曲详情以更新评论列表
       const songId = songDetail.value?.songId
       if (songId) {
         const detailRes = await getSongDetail(songId)
@@ -131,7 +146,6 @@ const handleDelete = async (comment: any) => {
 <template>
   <div class="h-full p-6 overflow-y-auto mr-16">
     <div v-if="songDetail" class="space-y-6">
-      <!-- 歌曲信息 -->
       <div class="space-y-2">
         <h3 class="text-xl font-semibold text-primary-foreground">歌曲信息</h3>
         <div class="grid grid-cols-2 gap-4 text-sm text-muted-foreground">
@@ -146,11 +160,11 @@ const handleDelete = async (comment: any) => {
         </div>
       </div>
 
-      <!-- 评论区 -->
       <div class="space-y-4">
-        <h3 class="text-xl font-semibold text-primary-foreground mt-12">评论（{{ formatNumber(songDetail.comments?.length || 0) }}）</h3>
-        
-        <!-- 评论输入框 -->
+        <h3 class="text-xl font-semibold text-primary-foreground mt-12">
+          评论（{{ formatNumber(songDetail.comments?.length || 0) }}）
+        </h3>
+
         <div class="mb-4">
           <div class="flex items-start gap-3">
             <div class="flex-1">
@@ -164,8 +178,11 @@ const handleDelete = async (comment: any) => {
                 show-word-limit
               />
               <div class="flex justify-end items-center mt-4">
-                <button @click="handleComment" :disabled="!commentContent.trim()"
-                  class="px-6 py-1.5 bg-primary text-white rounded-full text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-primary/90 transition-colors">
+                <button
+                  @click="handleComment"
+                  :disabled="!commentContent.trim()"
+                  class="px-6 py-1.5 bg-primary text-white rounded-full text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-primary/90 transition-colors"
+                >
                   发布
                 </button>
               </div>
@@ -173,7 +190,6 @@ const handleDelete = async (comment: any) => {
           </div>
         </div>
 
-        <!-- 评论列表 -->
         <div v-if="comments.length > 0" class="space-y-4">
           <template v-for="comment in comments" :key="comment.commentId">
             <div class="flex gap-3 group">
@@ -188,15 +204,23 @@ const handleDelete = async (comment: any) => {
                 <div class="flex items-center justify-between text-sm text-gray-400">
                   <span class="text-xs">{{ comment.createTime }}</span>
                   <div class="flex items-center gap-4">
-                    <!-- 如果是用户自己的评论，显示删除按钮 -->
-                    <button v-if="comment.username === currentUsername"
+                    <button
+                      v-if="comment.username === currentUsername"
                       class="flex items-center gap-1 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
                       @click="handleDelete(comment)"
                     >
                       <icon-material-symbols:delete-outline />
                       <span>删除</span>
                     </button>
-                    <button 
+                    <button
+                      v-else
+                      class="flex items-center gap-1 hover:text-amber-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                      @click="openReportDialog(comment.commentId)"
+                    >
+                      <icon-material-symbols:flag-outline-rounded />
+                      <span>举报</span>
+                    </button>
+                    <button
                       class="flex items-center gap-1 hover:text-gray-600"
                       @click="handleLike(comment)"
                     >
@@ -210,14 +234,23 @@ const handleDelete = async (comment: any) => {
             <div class="border-b border-gray-300/70"></div>
           </template>
         </div>
+
         <div v-else class="text-center py-8 text-gray-500">
           <p>暂无评论，快来抢沙发吧~</p>
         </div>
       </div>
     </div>
+
     <div v-else class="flex items-center justify-center h-full">
       <el-empty description="暂无歌曲信息" />
     </div>
+
+    <ReportDialog
+      v-model:visible="showReportDialog"
+      :target-type="2"
+      :target-id="reportTargetId"
+      @success="handleReportSuccess"
+    />
   </div>
 </template>
 

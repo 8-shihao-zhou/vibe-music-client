@@ -1,17 +1,17 @@
 export const MenuData = [
-  // 1. 最顶层：原来是推荐，现在改成【AI 创作】
+  // 顶部快捷入口
   {
     title: '',
     children: [
       {
-        title: 'AI 创作',
-        icon: 'ri:magic-line', // 魔棒图标
-        router: '/ai', // 对应生成页面
+        title: '首页',
+        icon: 'ri:home-5-line',
+        router: '/',
       },
     ],
   },
 
-  // 2. 发现栏目：第一项改成【社区】
+  // 发现
   {
     title: '发现',
     children: [
@@ -20,15 +20,12 @@ export const MenuData = [
       { title: '曲风', icon: 'ri:price-tag-3-line', router: '/genre' },
       { title: '歌手', icon: 'ri:user-star-line', router: '/artist' },
       { title: '歌单', icon: 'ri:album-line', router: '/playlist' },
-      {
-        title: '社区',
-        icon: 'ri:discuss-line',
-        router: '/community',
-      },
+      { title: '社区', icon: 'ri:discuss-line', router: '/community' },
+      { title: 'AI 创作', icon: 'ri:magic-line', router: '/ai' },
     ],
   },
 
-  // 3. 我的
+  // 我的
   {
     title: '我的',
     children: [

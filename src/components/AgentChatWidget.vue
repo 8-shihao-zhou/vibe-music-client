@@ -406,38 +406,40 @@ onBeforeUnmount(() => {
           </div>
         </div>
 
-        <div class="agent-quick-actions">
-          <button
-            v-for="item in quickActions"
-            :key="item"
-            class="agent-quick-btn"
-            :disabled="sending"
-            @click="handleQuickAction(item)"
-          >
-            {{ item }}
-          </button>
-        </div>
-
-        <div class="agent-input-area">
-          <el-input
-            v-model="inputMessage"
-            type="textarea"
-            :rows="3"
-            resize="none"
-            :disabled="sending"
-            placeholder="例如：播放歌曲 晴天，搜索歌手 周杰伦，或打开页面 积分中心"
-            @keydown.enter.exact.prevent="sendMessage"
-          />
-          <div class="agent-input-footer">
-            <span class="agent-input-tip">按 Enter 发送，Shift + Enter 换行</span>
-            <el-button
-              type="primary"
-              :loading="sending"
-              class="agent-send-btn"
-              @click="sendMessage"
+        <div class="agent-bottom-area">
+          <div class="agent-quick-actions">
+            <button
+              v-for="item in quickActions"
+              :key="item"
+              class="agent-quick-btn"
+              :disabled="sending"
+              @click="handleQuickAction(item)"
             >
-              发送
-            </el-button>
+              {{ item }}
+            </button>
+          </div>
+
+          <div class="agent-input-area">
+            <el-input
+              v-model="inputMessage"
+              type="textarea"
+              :rows="3"
+              resize="none"
+              :disabled="sending"
+              placeholder="例如：播放歌曲 晴天，搜索歌手 周杰伦，或打开页面 积分中心"
+              @keydown.enter.exact.prevent="sendMessage"
+            />
+            <div class="agent-input-footer">
+              <span class="agent-input-tip">按 Enter 发送，Shift + Enter 换行</span>
+              <el-button
+                type="primary"
+                :loading="sending"
+                class="agent-send-btn"
+                @click="sendMessage"
+              >
+                发送
+              </el-button>
+            </div>
           </div>
         </div>
       </div>
@@ -478,6 +480,7 @@ onBeforeUnmount(() => {
   overflow: hidden;
   border: 1px solid rgba(121, 139, 255, 0.18);
   box-shadow: 0 22px 60px rgba(72, 84, 150, 0.16);
+  min-height: 0;
 }
 
 html.light .agent-panel {
@@ -613,12 +616,22 @@ html.dark .agent-panel {
 
 .agent-message-list {
   flex: 1;
+   min-height: 0;
   min-height: 180px;
   overflow-y: auto;
-  padding: 16px;
+  padding: 16px 16px 22px;
   display: flex;
   flex-direction: column;
   gap: 12px;
+}
+
+.agent-bottom-area {
+  flex-shrink: 0;
+  padding-top: 10px;
+  border-top: 1px solid rgba(121, 139, 255, 0.12);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.76), rgba(247, 249, 255, 0.96));
+  backdrop-filter: blur(18px);
 }
 
 .agent-message-item {
@@ -879,6 +892,12 @@ html.dark .agent-quick-btn {
   color: #cbd6ff;
 }
 
+html.dark .agent-bottom-area {
+  background:
+    linear-gradient(180deg, rgba(28, 34, 53, 0.82), rgba(29, 35, 55, 0.96));
+  border-top-color: rgba(140, 157, 236, 0.14);
+}
+
 @keyframes agent-dot-pulse {
   0%,
   80%,
@@ -900,6 +919,7 @@ html.dark .agent-quick-btn {
 
   .agent-message-list {
     min-height: 160px;
+    padding-bottom: 18px;
   }
 
   .agent-panel {

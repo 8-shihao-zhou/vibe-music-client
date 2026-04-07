@@ -2,10 +2,12 @@
 import { formatTime } from '@/utils'
 import { Icon } from '@iconify/vue'
 import type { SongDetail } from '@/api/interface'
-import { ref, inject, type Ref } from 'vue'
+import { computed, ref, inject, type Ref } from 'vue'
 import { useAudioPlayer } from '@/hooks/useAudioPlayer'
 import vinylImg from '@/assets/vinyl.png'
 import Recently from '../../layout/components/footer/components/recently.vue'
+import defaultAlbum from '@/assets/default_album.jpg'
+import { normalizeMediaUrl } from '@/utils/media'
 
 const {
   currentTrack,
@@ -47,6 +49,10 @@ const playModes = {
 
 const currentMode = ref('order')
 
+const currentCover = computed(() => {
+  return normalizeMediaUrl(songDetail?.value?.coverUrl || currentTrack.cover) || defaultAlbum
+})
+
 const togglePlayMode = () => {
   const nextMode = playModes[currentMode.value].next
   currentMode.value = nextMode
@@ -61,11 +67,11 @@ const togglePlayMode = () => {
       <div :class="` ${isPlaying ? 'is-playing' : ''}`">
         <div class="album">
           <div class="album-art rounded-md" :style="{
-            backgroundImage: `url(${songDetail?.coverUrl || currentTrack.cover})`
+            backgroundImage: `url(${currentCover})`
           }"></div>
           <div class="vinyl" :style="{
             animationPlayState: isPlaying ? 'running' : 'paused',
-            backgroundImage: `url(${vinylImg}), url(${songDetail?.coverUrl || currentTrack.cover})`
+            backgroundImage: `url(${vinylImg}), url(${currentCover})`
           }"></div>
         </div>
       </div>

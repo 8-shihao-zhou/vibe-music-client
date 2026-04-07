@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useFavoriteStore } from '@/stores/modules/favorite'
 import { UserStore } from '@/stores/modules/user'
@@ -11,6 +11,24 @@ const user = UserStore()
 
 // 便于页面顶部展示收藏数量
 const favoriteCount = computed(() => favoriteStore.favoritePlaylists.length)
+
+// 进入页面时主动加载收藏歌单，避免刷新后列表为空
+onMounted(() => {
+  if (user.isLoggedIn) {
+    favoriteStore.getFavoritePlaylists()
+  }
+})
+
+watch(
+  () => user.isLoggedIn,
+  (loggedIn) => {
+    if (loggedIn) {
+      favoriteStore.getFavoritePlaylists()
+    } else {
+      favoriteStore.clearFavoritePlaylists()
+    }
+  }
+)
 </script>
 
 <template>

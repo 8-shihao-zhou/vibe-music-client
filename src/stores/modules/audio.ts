@@ -3,6 +3,7 @@ import piniaPersistConfig from '@/stores/helper/persist'
 import { trackListData } from '@/mock'
 import { AudioState, trackModel } from '@/stores/interface'
 import { Song } from '@/api/interface'
+import { normalizeMediaUrl } from '@/utils/media'
 /**
  * 音频
  */
@@ -34,12 +35,24 @@ export const AudioStore = defineStore({
       const tracksToAdd = Array.isArray(newTracks) ? newTracks : [newTracks]
       for (const track of tracksToAdd) {
         if (existingIds.has(track.id)) {
-          this.currentSongIndex = this.trackList.findIndex(
+          const existingIndex = this.trackList.findIndex(
             (existingTrack: { id: string }) => existingTrack.id === track.id
           )
+          if (existingIndex !== -1) {
+            // 已存在同一歌曲时，使用最新数据覆盖，避免本地持久化的旧封面长期不刷新
+            this.trackList[existingIndex] = {
+              ...this.trackList[existingIndex],
+              ...track,
+              cover: normalizeMediaUrl(track.cover) || track.cover,
+            }
+          }
+          this.currentSongIndex = existingIndex
           break
         } else {
-          this.trackList.push(track)
+          this.trackList.push({
+            ...track,
+            cover: normalizeMediaUrl(track.cover) || track.cover,
+          })
           this.currentSongIndex = this.trackList.length - 1
         }
       }
@@ -53,6 +66,25 @@ export const AudioStore = defineStore({
     // 设置当前页面的歌曲列表
     setCurrentPageSongs(songs: Song[]) {
       this.currentPageSongs = songs
+      if (!songs?.length || !this.trackList.length) return
+
+      // 页面重新取到最新歌曲数据后，同步修正播放队列中的封面与基础信息
+      this.trackList = this.trackList.map((track) => {
+        const matchedSong = songs.find(song => String(song.songId) === String(track.id))
+        if (!matchedSong) {
+          return track
+        }
+
+        return {
+          ...track,
+          title: matchedSong.songName,
+          artist: matchedSong.artistName,
+          album: matchedSong.album,
+          url: matchedSong.audioUrl || track.url,
+          duration: Number(matchedSong.duration) || track.duration,
+          cover: normalizeMediaUrl(matchedSong.coverUrl) || track.cover,
+        }
+      })
     }
   },
   persist: piniaPersistConfig('AudioStore'),

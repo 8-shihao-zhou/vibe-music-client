@@ -10,21 +10,16 @@ const selectedGender = ref('-1')
 const selectedArea = ref('-1')
 
 const route = useRoute()
+const isArtistPage = computed(() => route.path === '/artist')
 
-// 分页相关
 const currentPage = ref(1)
 const pageSize = ref(12)
 const total = ref(0)
 
-// 根据每页数量计算列数和间距
-const gridCols = computed(() => {
-  return 'grid-cols-4' // 统一使用4列布局
-})
-
-const gridGap = computed(() => {
-  if (pageSize.value === 24) return 'gap-x-12 gap-y-6' // 24条/页使用较小间距
-  return 'gap-x-16 gap-y-8' // 12条/页使用较大间距
-})
+const gridCols = computed(() => 'grid-cols-2 md:grid-cols-3 xl:grid-cols-4')
+const gridGap = computed(() =>
+  pageSize.value === 24 ? 'gap-5 lg:gap-6' : 'gap-6 lg:gap-7'
+)
 
 const state = reactive({
   size: 'default',
@@ -37,20 +32,58 @@ const state = reactive({
 
 const searchKeyword = ref('')
 
-// 切换菜单显示
+const fetchArtistList = () => {
+  if (!isArtistPage.value) return
+
+  const params = {
+    pageNum: currentPage.value,
+    pageSize: pageSize.value,
+    artistName: searchKeyword.value || null,
+    gender:
+      selectedGender.value === '-1'
+        ? null
+        : categories.value[0].subCategories.find(
+            (item) => item.id === selectedGender.value
+          )?.value,
+    area:
+      selectedArea.value === '-1'
+        ? null
+        : categories.value[1].subCategories.find(
+            (item) => item.id === selectedArea.value
+          )?.value,
+  }
+
+  getAllArtists(params).then((res) => {
+    if (res.code === 0 && res.data) {
+      artistList.value = res.data.items.map((item) => ({
+        artistId: item.artistId,
+        name: item.artistName,
+        picUrl: item.avatar,
+        alias: [],
+      }))
+      total.value = res.data.total
+      state.total = res.data.total
+    } else {
+      ElNotification({
+        type: 'error',
+        message: '获取歌手列表失败',
+        duration: 2000,
+      })
+    }
+  })
+}
+
 const toggleMenu = (index: number) => {
   categories.value[index].isOpen = !categories.value[index].isOpen
 }
 
-// 处理分页大小变化
 const handleSizeChange = () => {
   currentPage.value = 1
-  handleGetArtistList()
+  fetchArtistList()
 }
 
-// 处理页码变化
 const handleCurrentChange = () => {
-  handleGetArtistList()
+  fetchArtistList()
 }
 
 const handleSubCategoryClick = (id: string, index: number) => {
@@ -60,85 +93,31 @@ const handleSubCategoryClick = (id: string, index: number) => {
     selectedArea.value = id
   }
   currentPage.value = 1
-  handleGetArtistList()
+  fetchArtistList()
 }
 
 const handleGetArtistList = () => {
-  const params = {
-    pageNum: currentPage.value,
-    pageSize: pageSize.value,
-    artistName: searchKeyword.value || null,
-    gender:
-      selectedGender.value === '-1'
-        ? null
-        : categories.value[0].subCategories.find(
-            (item) => item.id === selectedGender.value
-          )?.value,
-    area:
-      selectedArea.value === '-1'
-        ? null
-        : categories.value[1].subCategories.find(
-            (item) => item.id === selectedArea.value
-          )?.value,
-  }
-
-  getAllArtists(params).then((res) => {
-    if (res.code === 0 && res.data) {
-      artistList.value = res.data.items.map((item) => ({
-        artistId: item.artistId,
-        name: item.artistName,
-        picUrl: item.avatar,
-        alias: [],
-      }))
-      total.value = res.data.total
-      state.total = res.data.total
-    } else {
-      ElNotification({
-        type: 'error',
-        message: '获取歌手列表失败',
-        duration: 2000,
-      })
-    }
-  })
+  fetchArtistList()
 }
 
 const handleSearch = () => {
-  const params = {
-    pageNum: currentPage.value,
-    pageSize: pageSize.value,
-    artistName: searchKeyword.value || null,
-    gender:
-      selectedGender.value === '-1'
-        ? null
-        : categories.value[0].subCategories.find(
-            (item) => item.id === selectedGender.value
-          )?.value,
-    area:
-      selectedArea.value === '-1'
-        ? null
-        : categories.value[1].subCategories.find(
-            (item) => item.id === selectedArea.value
-          )?.value,
-  }
+  fetchArtistList()
+}
 
-  getAllArtists(params).then((res) => {
-    if (res.code === 0 && res.data) {
-      artistList.value = res.data.items.map((item) => ({
-        artistId: item.artistId,
-        name: item.artistName,
-        picUrl: item.avatar,
-        alias: [],
-      }))
-      total.value = res.data.total
-      state.total = res.data.total
-    } else {
-      ElNotification({
-        type: 'error',
-        message: '获取歌手列表失败',
-        duration: 2000,
-      })
-    }
+const handleRouteSearch = () => {
+  currentPage.value = 1
+  router.push({
+    path: '/artist',
+    query: searchKeyword.value ? { query: searchKeyword.value } : {},
   })
+}
+
+const handleRouteReset = () => {
+  searchKeyword.value = ''
+  selectedGender.value = '-1'
+  selectedArea.value = '-1'
+  currentPage.value = 1
+  router.push({ path: '/artist' })
 }
 
 const handleReset = () => {
@@ -149,332 +128,236 @@ const handleReset = () => {
   handleGetArtistList()
 }
 
+watch(
+  () => route.query.query,
+  (newQuery) => {
+    searchKeyword.value = typeof newQuery === 'string' ? newQuery : ''
+    currentPage.value = 1
+    fetchArtistList()
+  },
+  { immediate: true }
+)
+
 onMounted(() => {
+  if (!isArtistPage.value) return
+  searchKeyword.value =
+    typeof route.query.query === 'string' ? route.query.query : ''
   handleGetArtistList()
 })
-</script>
-<template>
-  <div class="flex h-full artist-page-container">
-    <div class="w-64 sidebar-panel p-4">
-      <div class="flex items-center justify-between mb-4">
-        <h2 class="text-lg font-semibold page-title">歌手分类</h2>
-        <button
-          @click="handleReset"
-          class="inline-flex items-center text-sm text-muted-foreground hover:text-foreground reset-btn"
-        >
-          <icon-bx:reset class="mr-1 h-4 w-4" />
-          重置
-        </button>
-      </div>
 
-      <nav>
-        <div class="relative search-container">
-          <icon-akar-icons:search
-            class="lucide lucide-search absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground"
-          />
+onActivated(() => {
+  if (!isArtistPage.value) return
+  searchKeyword.value =
+    typeof route.query.query === 'string' ? route.query.query : ''
+  fetchArtistList()
+})
+</script>
+
+<template>
+  <div class="artist-page">
+    <aside class="artist-sidebar">
+      <div class="sidebar-card">
+        <div class="sidebar-header">
+          <div>
+            <p class="sidebar-kicker">Artist Filter</p>
+            <h2 class="sidebar-title">歌手筛选</h2>
+          </div>
+          <button class="reset-button" @click="handleRouteReset">
+            <icon-bx:reset class="h-4 w-4" />
+            重置
+          </button>
+        </div>
+
+        <div class="search-box">
+          <icon-akar-icons:search class="search-icon" />
           <input
             v-model="searchKeyword"
-            @keyup.enter="handleSearch"
-            class="search-input flex h-10 rounded-xl border border-input transform duration-300 bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-0 pl-10 w-56"
+            @keyup.enter="handleRouteSearch"
+            class="search-input"
             placeholder="搜索歌手"
           />
         </div>
 
-        <div class="mb-2 mt-4">
-          <button
-            class="category-btn inline-flex items-center justify-between gap-2 whitespace-nowrap rounded-xl text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2 w-full"
-            @click="toggleMenu(0)"
-          >
-            {{ categories[0].name }}
+        <div class="filter-section">
+          <button class="filter-trigger" @click="toggleMenu(0)">
+            <span>{{ categories[0].name }}</span>
             <icon-tabler:chevron-right
-              :style="{
-                transform: categories[0].isOpen
-                  ? 'rotate(90deg)'
-                  : 'rotate(0deg)',
-                transition: 'transform 0.3s ease',
-              }"
+              :style="{ transform: categories[0].isOpen ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform 0.3s ease' }"
             />
           </button>
-          <div v-show="categories[0].isOpen" class="ml-4 mt-1 space-y-1">
+          <div v-show="categories[0].isOpen" class="filter-list">
             <button
               v-for="(subCategory, subIndex) in categories[0].subCategories"
               :key="subIndex"
+              class="filter-chip"
+              :class="{ active: selectedGender === subCategory.id }"
               @click="handleSubCategoryClick(subCategory.id, 0)"
-              class="sub-category-btn inline-flex items-center gap-2 whitespace-nowrap text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 hover:text-accent-foreground h-9 rounded-lg px-3 w-48 justify-start"
-              :class="
-                selectedGender === subCategory.id
-                  ? 'bg-activeMenuBg text-accent-foreground'
-                  : 'hover:bg-hoverMenuBg text-foreground'
-              "
             >
               {{ subCategory.label }}
             </button>
           </div>
         </div>
-        <div class="mb-2">
-          <button
-            class="category-btn inline-flex items-center justify-between gap-2 whitespace-nowrap rounded-xl text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2 w-full"
-            @click="toggleMenu(1)"
-          >
-            {{ categories[1].name }}
+
+        <div class="filter-section">
+          <button class="filter-trigger" @click="toggleMenu(1)">
+            <span>{{ categories[1].name }}</span>
             <icon-tabler:chevron-right
-              :style="{
-                transform: categories[1].isOpen
-                  ? 'rotate(90deg)'
-                  : 'rotate(0deg)',
-                transition: 'transform 0.3s ease',
-              }"
+              :style="{ transform: categories[1].isOpen ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform 0.3s ease' }"
             />
           </button>
-          <div v-show="categories[1].isOpen" class="ml-4 mt-1 space-y-1">
+          <div v-show="categories[1].isOpen" class="filter-list">
             <button
               v-for="(subCategory, subIndex) in categories[1].subCategories"
               :key="subIndex"
+              class="filter-chip"
+              :class="{ active: selectedArea === subCategory.id }"
               @click="handleSubCategoryClick(subCategory.id, 1)"
-              class="sub-category-btn inline-flex items-center gap-2 whitespace-nowrap text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 hover:text-accent-foreground h-9 rounded-lg px-3 w-48 justify-start"
-              :class="
-                selectedArea === subCategory.id
-                  ? 'bg-activeMenuBg text-accent-foreground'
-                  : 'hover:bg-hoverMenuBg text-foreground'
-              "
             >
               {{ subCategory.label }}
             </button>
           </div>
         </div>
-      </nav>
-    </div>
-    <main class="flex-1 main-content overflow-y-auto">
-      <div class="p-2 md:p-4 lg:p-6">
-        <div class="w-[86%] mx-auto">
-          <div :class="['grid', gridCols, gridGap]">
-            <div
-              v-for="(artist, index) in artistList"
-              :key="index"
-              class="artist-card group relative rounded-full text-card-foreground shadow-md hover:shadow-xl"
-            >
-              <button
-                @click="router.push(`/artist/${artist.artistId}`)"
-                class="w-full h-full overflow-hidden rounded-full"
-              >
-                <div class="w-full h-full relative">
-                  <el-image
-                    lazy
-                    :alt="artist.name"
-                    class="h-full w-full object-cover transition-transform duration-300 ease-out group-hover:scale-110"
-                    :src="artist.picUrl + '?param=230y230'"
-                  />
-                  <div
-                    class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100"
-                  ></div>
-                  <div
-                    class="absolute bottom-0 left-0 right-0 px-4 py-3 text-white opacity-0 transition-opacity duration-300 group-hover:opacity-100 z-10"
-                  >
-                    <h2 class="mb-1 text-xl font-semibold">
-                      {{ artist.name }}
-                    </h2>
-                    <p
-                      class="mb-2 text-sm"
-                      v-if="artist.alias && artist.alias.length > 0"
-                    >
-                      {{ artist.alias.join() }}
-                    </p>
-                  </div>
-                </div>
-              </button>
-            </div>
+
+        <div class="sidebar-summary">
+          <div class="summary-card">
+            <span class="summary-label">当前页</span>
+            <strong>{{ currentPage }}</strong>
+          </div>
+          <div class="summary-card">
+            <span class="summary-label">歌手数量</span>
+            <strong>{{ total }}</strong>
           </div>
         </div>
       </div>
-      <!-- 分页 -->
-      <nav class="mx-auto flex w-full justify-center mt-6">
-        <el-pagination
-          v-model:page-size="pageSize"
-          v-model:currentPage="currentPage"
-          v-bind="state"
-          @size-change="handleSizeChange"
-          @current-change="handleCurrentChange"
-          class="custom-pagination"
-        />
-      </nav>
+    </aside>
+
+    <main class="artist-main">
+      <section class="artist-hero">
+        <div class="hero-copy">
+          <p class="hero-kicker">Artists</p>
+          <h1 class="hero-title">歌手</h1>
+          <p class="hero-subtitle">
+            按地区、性别或关键词快速查找想听的歌手，进入详情页继续浏览作品。
+          </p>
+        </div>
+        <div class="hero-note">
+          <div class="hero-note-chip">Discovery</div>
+          <div class="hero-note-title">从筛选到浏览更自然</div>
+          <p class="hero-note-text">
+            左侧筛选保持原逻辑不变，右侧改成更清晰的头像卡片布局。
+          </p>
+        </div>
+      </section>
+
+      <section class="artist-grid-panel">
+        <div class="panel-header">
+          <div>
+            <p class="panel-kicker">Artist List</p>
+            <h2 class="panel-title">全部歌手</h2>
+          </div>
+          <span class="panel-tip">点击头像卡片即可进入歌手详情</span>
+        </div>
+
+        <div :class="['artist-grid', 'grid', gridCols, gridGap]">
+          <div
+            v-for="artist in artistList"
+            :key="artist.artistId"
+            class="artist-card"
+          >
+            <button
+              class="artist-button"
+              @click="router.push(`/artist/${artist.artistId}`)"
+            >
+              <div class="artist-image-wrap">
+                <el-image
+                  lazy
+                  :alt="artist.name"
+                  class="artist-image"
+                  :src="artist.picUrl + '?param=230y230'"
+                />
+                <div class="artist-overlay"></div>
+              </div>
+              <div class="artist-info">
+                <h3 class="artist-name">{{ artist.name }}</h3>
+                <p v-if="artist.alias && artist.alias.length > 0" class="artist-alias">
+                  {{ artist.alias.join(' / ') }}
+                </p>
+                <span v-else class="artist-alias artist-alias-empty">进入主页查看歌曲与资料</span>
+              </div>
+            </button>
+          </div>
+        </div>
+
+        <nav class="pagination-wrap">
+          <el-pagination
+            v-model:page-size="pageSize"
+            v-model:currentPage="currentPage"
+            v-bind="state"
+            class="custom-pagination"
+            @size-change="handleSizeChange"
+            @current-change="handleCurrentChange"
+          />
+        </nav>
+      </section>
     </main>
   </div>
 </template>
 
 <style scoped>
-.artist-page-container {
-  position: relative;
-}
-
-/* 侧边栏 */
-.sidebar-panel {
-  backdrop-filter: blur(20px);
-  border-right: 1px solid rgba(102, 126, 234, 0.1);
-}
-
-html.light .sidebar-panel {
-  background: rgba(255, 255, 255, 0.85);
-}
-
-html.dark .sidebar-panel {
-  background: rgba(30, 30, 46, 0.85);
-}
-
-.page-title {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
-
-.reset-btn {
-  transition: all 0.3s ease;
-}
-
-.reset-btn:hover {
-  transform: scale(1.05);
-  color: #667eea;
-}
-
-.search-container {
-  margin-bottom: 16px;
-}
-
-.search-input {
-  border: 1px solid rgba(102, 126, 234, 0.2);
-  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.1);
-  transition: all 0.3s ease;
-}
-
-html.light .search-input {
-  background: rgba(255, 255, 255, 0.95);
-}
-
-html.dark .search-input {
-  background: rgba(40, 40, 60, 0.95);
-  color: #e0e0e0;
-}
-
-.search-input:focus {
-  border-color: #667eea;
-  box-shadow: 0 4px 16px rgba(102, 126, 234, 0.25);
-}
-
-.category-btn {
-  transition: all 0.3s ease;
-}
-
-html.light .category-btn:hover {
-  background: rgba(102, 126, 234, 0.08);
-}
-
-html.dark .category-btn:hover {
-  background: rgba(102, 126, 234, 0.15);
-}
-
-.sub-category-btn {
-  transition: all 0.3s ease;
-}
-
-.sub-category-btn:hover {
-  transform: translateX(4px);
-}
-
-/* 主内容区 */
-.main-content {
-  backdrop-filter: blur(20px);
-}
-
-html.light .main-content {
-  background: linear-gradient(
-    135deg,
-    rgba(255, 255, 255, 0.9) 0%,
-    rgba(248, 249, 255, 0.9) 100%
-  );
-}
-
-html.dark .main-content {
-  background: linear-gradient(
-    135deg,
-    rgba(30, 30, 46, 0.6) 0%,
-    rgba(26, 26, 46, 0.6) 100%
-  );
-}
-
-/* 歌手卡片 */
-.artist-card {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  border: 2px solid transparent;
-}
-
-.artist-card:hover {
-  transform: translateY(-8px);
-  border-color: rgba(102, 126, 234, 0.3);
-  box-shadow: 0 12px 32px rgba(102, 126, 234, 0.25);
-}
-
-/* 分页器 */
-:deep(.custom-pagination .el-pagination__total),
-:deep(.custom-pagination .el-pagination__jump) {
-  color: #667eea;
-  font-weight: 500;
-}
-
-/* 固定分页大小选择器的宽度，防止跳动 */
-:deep(.custom-pagination .el-pagination__sizes) {
-  min-width: 120px;
-}
-
-:deep(.custom-pagination .el-select) {
-  width: 120px;
-}
-
-:deep(.custom-pagination .el-input__wrapper) {
-  width: 120px;
-}
-
-:deep(.custom-pagination .el-pager li) {
-  border-radius: 8px;
-  margin: 0 4px;
-  transition: all 0.3s ease;
-}
-
-html.light :deep(.custom-pagination .el-pager li) {
-  background: rgba(255, 255, 255, 0.8);
-}
-
-html.dark :deep(.custom-pagination .el-pager li) {
-  background: rgba(40, 40, 60, 0.8);
-}
-
-:deep(.custom-pagination .el-pager li:hover) {
-  background: rgba(102, 126, 234, 0.15);
-  color: #667eea;
-}
-
-:deep(.custom-pagination .el-pager li.is-active) {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-}
-
-:deep(.custom-pagination .btn-prev),
-:deep(.custom-pagination .btn-next) {
-  border-radius: 8px;
-  transition: all 0.3s ease;
-}
-
-html.light :deep(.custom-pagination .btn-prev),
-html.light :deep(.custom-pagination .btn-next) {
-  background: rgba(255, 255, 255, 0.8);
-}
-
-html.dark :deep(.custom-pagination .btn-prev),
-html.dark :deep(.custom-pagination .btn-next) {
-  background: rgba(40, 40, 60, 0.8);
-}
-
-:deep(.custom-pagination .btn-prev:hover),
-:deep(.custom-pagination .btn-next:hover) {
-  background: rgba(102, 126, 234, 0.15);
-  color: #667eea;
-}
+.artist-page { display:grid; grid-template-columns:280px minmax(0,1fr); gap:20px; min-height:100%; padding:20px; background:radial-gradient(circle at top left, rgba(118,163,255,.12), transparent 26%), radial-gradient(circle at top right, rgba(255,194,210,.12), transparent 22%), linear-gradient(180deg, rgba(246,249,255,.96), rgba(252,252,255,.98)); }
+.artist-sidebar,.artist-main{min-width:0}
+.sidebar-card,.artist-hero,.artist-grid-panel{border:1px solid rgba(140,168,230,.16);background:linear-gradient(180deg, rgba(255,255,255,.96), rgba(247,250,255,.94)),#fff;box-shadow:0 18px 38px rgba(87,111,167,.1)}
+.sidebar-card{position:sticky;top:20px;padding:22px;border-radius:28px}
+.sidebar-header,.panel-header{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.sidebar-kicker,.panel-kicker,.hero-kicker{margin:0 0 6px;font-size:12px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#6f7ee2}
+.sidebar-title,.panel-title{margin:0;font-size:24px;color:#233451}
+.reset-button{display:inline-flex;align-items:center;gap:6px;min-height:36px;padding:0 12px;border:1px solid rgba(143,168,215,.2);border-radius:12px;background:rgba(255,255,255,.88);color:#4f6280;font-size:13px;font-weight:600;transition:all .25s ease}
+.reset-button:hover{border-color:rgba(102,126,234,.28);color:#5974d5;box-shadow:0 10px 20px rgba(103,126,214,.12)}
+.search-box{position:relative;margin-top:18px}
+.search-icon{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:#8793aa;font-size:16px}
+.search-input{width:100%;min-height:46px;padding:0 14px 0 42px;border:1px solid rgba(143,168,215,.2);border-radius:16px;background:rgba(255,255,255,.92);color:#2a3a56;font-size:14px;transition:all .25s ease;box-shadow:0 10px 20px rgba(108,131,177,.08)}
+.search-input:focus{outline:none;border-color:rgba(93,119,215,.36);box-shadow:0 12px 22px rgba(97,123,182,.14)}
+.filter-section{margin-top:18px}
+.filter-trigger{display:flex;align-items:center;justify-content:space-between;width:100%;min-height:42px;padding:0 14px;border:1px solid rgba(144,171,222,.14);border-radius:14px;background:rgba(245,248,255,.84);color:#3d5174;font-size:14px;font-weight:700;transition:all .25s ease}
+.filter-list{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px}
+.filter-chip{min-height:34px;padding:0 12px;border:1px solid rgba(143,168,215,.18);border-radius:999px;background:rgba(255,255,255,.94);color:#5a6b87;font-size:13px;transition:all .25s ease}
+.filter-chip:hover{border-color:rgba(102,126,234,.28);color:#5974d5}
+.filter-chip.active{border-color:transparent;background:linear-gradient(135deg,#5f87e6 0%,#7d7fe8 58%,#eb8fa8 100%);color:#fff;box-shadow:0 10px 20px rgba(103,126,214,.2)}
+.sidebar-summary{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:22px}
+.summary-card{padding:14px;border:1px solid rgba(145,172,228,.14);border-radius:18px;background:rgba(255,255,255,.82)}
+.summary-label{display:block;font-size:12px;color:#7a88a1}
+.summary-card strong{display:block;margin-top:8px;font-size:20px;color:#233451}
+.artist-main{display:flex;flex-direction:column;gap:20px}
+.artist-hero{display:grid;grid-template-columns:minmax(0,1.4fr) 320px;gap:22px;padding:28px;border-radius:30px}
+.hero-title{margin:0;font-size:40px;line-height:1.12;color:#223350}
+.hero-subtitle{max-width:720px;margin:14px 0 0;font-size:15px;line-height:1.85;color:#687891}
+.hero-note{padding:22px;border:1px solid rgba(142,170,228,.15);border-radius:24px;background:linear-gradient(180deg, rgba(255,255,255,.92), rgba(246,250,255,.9)),#fff;box-shadow:0 16px 32px rgba(89,116,172,.1)}
+.hero-note-chip{display:inline-flex;align-items:center;height:28px;padding:0 10px;border-radius:999px;background:rgba(99,125,214,.12);color:#5671cf;font-size:12px;font-weight:700}
+.hero-note-title{margin-top:16px;font-size:20px;font-weight:700;line-height:1.4;color:#233451}
+.hero-note-text{margin:10px 0 0;font-size:14px;line-height:1.8;color:#6f809a}
+.artist-grid-panel{padding:22px;border-radius:28px}
+.panel-tip{font-size:13px;color:#7b88a4}
+.artist-card{border-radius:28px;background:linear-gradient(180deg, rgba(255,255,255,.98), rgba(248,251,255,.94)),#fff;border:1px solid rgba(144,170,223,.14);box-shadow:0 14px 28px rgba(91,116,172,.1);overflow:hidden;transition:transform .28s ease, box-shadow .28s ease, border-color .28s ease}
+.artist-card:hover{transform:translateY(-6px);border-color:rgba(109,142,218,.24);box-shadow:0 18px 34px rgba(91,116,172,.15)}
+.artist-button{width:100%;padding:18px;text-align:left}
+.artist-image-wrap{position:relative;aspect-ratio:1/1;overflow:hidden;border-radius:999px}
+.artist-image{width:100%;height:100%;object-fit:cover;transition:transform .35s ease}
+.artist-card:hover .artist-image{transform:scale(1.06)}
+.artist-overlay{position:absolute;inset:0;border-radius:999px;box-shadow:inset 0 -24px 44px rgba(20,33,61,.18);pointer-events:none}
+.artist-info{padding:16px 6px 4px;text-align:center}
+.artist-name{margin:0;font-size:18px;font-weight:700;color:#243653}
+.artist-alias{margin:8px 0 0;font-size:13px;line-height:1.7;color:#73829d}
+.artist-alias-empty{color:#8490a6}
+.pagination-wrap{display:flex;justify-content:center;margin-top:22px}
+:deep(.custom-pagination .el-pagination__total),:deep(.custom-pagination .el-pagination__jump){color:#687892;font-weight:500}
+:deep(.custom-pagination .el-pagination__sizes){min-width:120px}
+:deep(.custom-pagination .el-select),:deep(.custom-pagination .el-input__wrapper){width:120px}
+:deep(.custom-pagination .el-pager li){border-radius:10px;margin:0 4px;transition:all .25s ease}
+:deep(.custom-pagination .el-pager li:hover){background:rgba(102,126,234,.12);color:#5d76d7}
+:deep(.custom-pagination .el-pager li.is-active){background:linear-gradient(135deg,#5f87e6 0%,#7d7fe8 58%,#eb8fa8 100%);color:#fff;box-shadow:0 10px 20px rgba(103,126,214,.22)}
+:deep(.custom-pagination .btn-prev),:deep(.custom-pagination .btn-next){border-radius:10px;transition:all .25s ease}
+:deep(.custom-pagination .btn-prev:hover),:deep(.custom-pagination .btn-next:hover){background:rgba(102,126,234,.12);color:#5d76d7}
+@media (max-width:1200px){.artist-page{grid-template-columns:1fr}.sidebar-card{position:static}}
+@media (max-width:900px){.artist-hero{grid-template-columns:1fr}}
+@media (max-width:768px){.artist-page{padding:14px}.sidebar-card,.artist-hero,.artist-grid-panel{padding:18px 16px;border-radius:22px}.hero-title{font-size:30px}.panel-header{flex-direction:column;align-items:flex-start}}
 </style>

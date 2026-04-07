@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { ref, reactive, onMounted, watch } from 'vue'
 import type { FormInstance, FormRules } from 'element-plus'
 import { ElMessage, ElMessageBox } from 'element-plus'
@@ -41,20 +41,20 @@ const userForm = reactive({
   introduction: userStore.userInfo.introduction || '',
 })
 
-// 表单验证规则
+// 琛ㄥ崟楠岃瘉瑙勫垯
 const userRules = reactive<FormRules>({
   username: [
     { required: true, message: '请输入用户名', trigger: 'blur' },
     {
       pattern: /^[a-zA-Z0-9_-]{4,16}$/,
-      message: '用户名格式：4-16位字符（字母、数字、下划线、连字符）',
+      message: '用户名格式为 4-16 位字符，可包含字母、数字、下划线和连字符',
       trigger: 'blur',
     },
   ],
   phone: [
     {
       pattern: /^1[3-9]\d{9}$/,
-      message: '请输入正确的手机号码',
+      message: '请输入正确的手机号',
       trigger: 'blur',
     },
   ],
@@ -63,11 +63,11 @@ const userRules = reactive<FormRules>({
     { type: 'email', message: '请输入正确的邮箱格式', trigger: 'blur' },
   ],
   introduction: [
-    { max: 100, message: '简介不能超过100个字符', trigger: 'blur' },
+    { max: 100, message: '简介不能超过 100 个字符', trigger: 'blur' },
   ],
 })
 
-// 检查登录状态
+// 妫€鏌ョ櫥褰曠姸鎬?
 onMounted(() => {
   if (!userStore.isLoggedIn) {
     authVisible.value = true
@@ -78,7 +78,7 @@ onMounted(() => {
   }
 })
 
-// 监听登录状态变化，登录后立即加载数据（解决刷新时 token 未就绪的竞态问题）
+// 鐩戝惉鐧诲綍鐘舵€佸彉鍖栵紝鐧诲綍鍚庣珛鍗冲姞杞芥暟鎹紙瑙ｅ喅鍒锋柊鏃?token 鏈氨缁殑绔炴€侀棶棰橈級
 watch(
   () => userStore.isLoggedIn,
   (loggedIn) => {
@@ -90,11 +90,11 @@ watch(
   }
 )
 
-// 监听路由变化，当从通知页面返回时刷新未读数量
+// 鐩戝惉璺敱鍙樺寲锛屽綋浠庨€氱煡椤甸潰杩斿洖鏃跺埛鏂版湭璇绘暟閲?
 watch(
   () => router.currentRoute.value.path,
   (newPath, oldPath) => {
-    // 当从通知页面返回到个人中心时，刷新未读数量
+    // 褰撲粠閫氱煡椤甸潰杩斿洖鍒颁釜浜轰腑蹇冩椂锛屽埛鏂版湭璇绘暟閲?
     if (newPath === '/user' && oldPath?.startsWith('/notification')) {
       console.log('从通知页面返回，刷新未读数量')
       loadUnreadCount()
@@ -102,11 +102,11 @@ watch(
   }
 )
 
-// 监听用户变化，自动刷新未读数量
+// 鐩戝惉鐢ㄦ埛鍙樺寲锛岃嚜鍔ㄥ埛鏂版湭璇绘暟閲?
 watch(
   () => userStore.userInfo.userId,
   (newUserId, oldUserId) => {
-    // 当用户ID变化时，重新加载未读数量
+    // 褰撶敤鎴稩D鍙樺寲鏃讹紝閲嶆柊鍔犺浇鏈鏁伴噺
     if (newUserId !== oldUserId) {
       console.log('用户切换，重新加载未读数量')
       if (newUserId) {
@@ -120,7 +120,7 @@ watch(
   }
 )
 
-// 加载未读消息数量
+// 鍔犺浇鏈娑堟伅鏁伴噺
 const loadUnreadCount = async () => {
   try {
     const response: any = await http('get', '/notification/user/unread-count')
@@ -128,11 +128,11 @@ const loadUnreadCount = async () => {
       unreadCount.value = response.data?.count || 0
     }
   } catch (error) {
-    console.error('加载未读消息数量失败:', error)
+    console.error('鍔犺浇鏈娑堟伅鏁伴噺澶辫触:', error)
   }
 }
 
-// 加载用户积分
+// 鍔犺浇鐢ㄦ埛绉垎
 const loadUserPoints = async () => {
   try {
     const response = await getUserPoints()
@@ -140,11 +140,11 @@ const loadUserPoints = async () => {
       userPoints.value = response.data?.availablePoints || 0
     }
   } catch (error) {
-    console.error('加载用户积分失败:', error)
+    console.error('鍔犺浇鐢ㄦ埛绉垎澶辫触:', error)
   }
 }
 
-// 加载商城特权装扮
+// 鍔犺浇鍟嗗煄鐗规潈瑁呮壆
 const loadMallPrivileges = async () => {
   try {
     const res = await getMallItems()
@@ -166,11 +166,11 @@ const loadMallPrivileges = async () => {
       currentAvatarFrame.value = activeFrame?.itemCode || 'default'
     }
   } catch (error) {
-    console.error('加载装扮失败:', error)
+    console.error('鍔犺浇瑁呮壆澶辫触:', error)
   }
 }
 
-// 切换昵称颜色
+// 鍒囨崲鏄电О棰滆壊
 const handleNicknameColorChange = async (colorCode: string) => {
   try {
     loading.value = true
@@ -178,19 +178,19 @@ const handleNicknameColorChange = async (colorCode: string) => {
       colorCode === 'default' ? 'default' : getColorFromCode(colorCode)
     const res = await togglePrivilege('NICKNAME_COLOR', value)
     if (res.code === 0) {
-      ElMessage.success('昵称颜色切换成功')
+      ElMessage.success('鏄电О棰滆壊鍒囨崲鎴愬姛')
       currentNicknameColor.value = colorCode
     } else {
-      ElMessage.error(res.message || '切换失败')
+      ElMessage.error(res.message || '鍒囨崲澶辫触')
     }
   } catch (error: any) {
-    ElMessage.error(error.message || '切换失败')
+    ElMessage.error(error.message || '鍒囨崲澶辫触')
   } finally {
     loading.value = false
   }
 }
 
-// 切换头像框
+// 鍒囨崲澶村儚妗?
 const handleAvatarFrameChange = async (frameCode: string) => {
   try {
     loading.value = true
@@ -201,10 +201,10 @@ const handleAvatarFrameChange = async (frameCode: string) => {
       ElMessage.success('头像框切换成功')
       currentAvatarFrame.value = frameCode
     } else {
-      ElMessage.error(res.message || '切换失败')
+      ElMessage.error(res.message || '鍒囨崲澶辫触')
     }
   } catch (error: any) {
-    ElMessage.error(error.message || '切换失败')
+    ElMessage.error(error.message || '鍒囨崲澶辫触')
   } finally {
     loading.value = false
   }
@@ -236,27 +236,27 @@ const getFrameStyleFromCode = (code: string) => {
   }
 }
 
-// 跳转到通知页面
+// 璺宠浆鍒伴€氱煡椤甸潰
 const goToNotifications = () => {
   router.push('/notification')
 }
 
-// 跳转到社区个人中心
+// 璺宠浆鍒扮ぞ鍖轰釜浜轰腑蹇?
 const goToCommunityProfile = () => {
   const userId = userStore.userInfo?.userId
   if (userId) {
     router.push(`/community/user/${userId}`)
   } else {
-    ElMessage.warning('请先登录')
+      ElMessage.warning('请先登录')
   }
 }
 
-// 跳转到积分中心
+// 璺宠浆鍒扮Н鍒嗕腑蹇?
 const goToPoints = () => {
   router.push('/points')
 }
 
-// 处理头像上传
+// 澶勭悊澶村儚涓婁紶
 const handleAvatarClick = () => {
   const input = document.createElement('input')
   input.type = 'file'
@@ -279,35 +279,35 @@ const handleAvatarClick = () => {
   input.click()
 }
 
-// 重置裁剪
+// 閲嶇疆瑁佸壀
 const reset = () => {
   if (cropper.value) {
     cropper.value.refresh()
   }
 }
 
-// 缩放
+// 缂╂斁
 const changeScale = (num: number) => {
   if (cropper.value) {
     cropper.value.changeScale(num)
   }
 }
 
-// 向左旋转
+// 鍚戝乏鏃嬭浆
 const rotateLeft = () => {
   if (cropper.value) {
     cropper.value.rotateLeft()
   }
 }
 
-// 向右旋转
+// 鍚戝彸鏃嬭浆
 const rotateRight = () => {
   if (cropper.value) {
     cropper.value.rotateRight()
   }
 }
 
-// 确认裁剪
+// 纭瑁佸壀
 const handleCropConfirm = async () => {
   if (!cropper.value) return
   cropper.value.getCropData(async (base64: string) => {
@@ -321,27 +321,27 @@ const handleCropConfirm = async () => {
       const res = await updateUserAvatar(formData)
 
       if (res.code === 0) {
-        // 重新获取用户信息以更新头像URL
+        // 閲嶆柊鑾峰彇鐢ㄦ埛淇℃伅浠ユ洿鏂板ご鍍廢RL
         const userInfoResponse = await getUserInfo()
         if (userInfoResponse.code === 0) {
           userStore.setUserInfo(userInfoResponse.data, userStore.userInfo.token)
-          ElMessage.success('头像更新成功')
+          ElMessage.success('澶村儚鏇存柊鎴愬姛')
           cropperVisible.value = false
           cropperImg.value = ''
         } else {
-          ElMessage.error(userInfoResponse.message || '获取用户信息失败')
+          ElMessage.error(userInfoResponse.message || '鑾峰彇鐢ㄦ埛淇℃伅澶辫触')
         }
       } else {
-        ElMessage.error(res.message || '头像更新失败')
+        ElMessage.error(res.message || '澶村儚鏇存柊澶辫触')
       }
     } catch (error: any) {
-      console.error('头像更新错误:', error)
-      ElMessage.error(error.message || '头像更新失败')
+      console.error('澶村儚鏇存柊閿欒:', error)
+      ElMessage.error(error.message || '澶村儚鏇存柊澶辫触')
     }
   })
 }
 
-// 处理表单提交
+// 澶勭悊琛ㄥ崟鎻愪氦
 const handleSubmit = async () => {
   if (!userFormRef.value) return
   await userFormRef.value.validate(async (valid) => {
@@ -352,12 +352,12 @@ const handleSubmit = async () => {
         if (response.code === 0) {
           const userInfoResponse = await getUserInfo()
           userStore.setUserInfo(userInfoResponse.data, userStore.userInfo.token)
-          ElMessage.success('更新成功')
+          ElMessage.success('鏇存柊鎴愬姛')
         } else {
-          ElMessage.error(response.message || '更新失败')
+          ElMessage.error(response.message || '鏇存柊澶辫触')
         }
       } catch (error: any) {
-        ElMessage.error(error.message || '更新失败')
+        ElMessage.error(error.message || '鏇存柊澶辫触')
       } finally {
         loading.value = false
       }
@@ -365,7 +365,7 @@ const handleSubmit = async () => {
   })
 }
 
-// 处理账号注销
+// 澶勭悊璐﹀彿娉ㄩ攢
 const handleDelete = async () => {
   try {
     await ElMessageBox.confirm(
@@ -381,346 +381,552 @@ const handleDelete = async () => {
     const response = await deleteUser()
     if (response.code === 0) {
       userStore.clearUserInfo()
-      ElMessage.success('账号已注销')
+      ElMessage.success('璐﹀彿宸叉敞閿€')
       router.push('/')
     } else {
-      ElMessage.error(response.message || '注销失败')
+      ElMessage.error(response.message || '娉ㄩ攢澶辫触')
     }
   } catch (error: any) {
     if (error !== 'cancel') {
-      ElMessage.error(error.message || '注销失败')
+      ElMessage.error(error.message || '娉ㄩ攢澶辫触')
     }
   } finally {
     loading.value = false
   }
 }
 </script>
-
 <template>
-  <div class="user-container">
-    <h2 class="username">个人中心</h2>
+  <div class="user-page">
+    <section class="profile-hero">
+      <div class="hero-main">
+        <p class="hero-kicker">Profile Center</p>
+        <h1 class="hero-title">个人中心</h1>
+        <p class="hero-subtitle">
+          在这里管理头像、昵称、联系方式和个性装扮，也可以快速进入通知、社区主页和积分中心。
+        </p>
 
-    <!-- 通知入口 -->
-    <div class="notification-entry" @click="goToNotifications">
-      <div class="notification-content">
-        <icon-ep:bell class="notification-icon" />
-        <span class="notification-text">我的通知</span>
+        <div class="hero-stats">
+          <div class="stat-card">
+            <span class="stat-label">未读通知</span>
+            <strong>{{ unreadCount }}</strong>
+          </div>
+          <div class="stat-card">
+            <span class="stat-label">当前积分</span>
+            <strong>{{ userPoints }}</strong>
+          </div>
+          <div class="stat-card">
+            <span class="stat-label">当前账号</span>
+            <strong>{{ userForm.username || '未设置昵称' }}</strong>
+          </div>
+        </div>
       </div>
-      <div class="notification-right">
-        <el-badge
-          v-if="unreadCount > 0"
-          :value="unreadCount"
-          :max="99"
-          class="mr-4"
-        />
-        <icon-ep:arrow-right class="arrow-icon" />
-      </div>
-    </div>
 
-    <!-- 社区个人中心入口 -->
-    <div class="notification-entry" @click="goToCommunityProfile">
-      <div class="notification-content">
-        <icon-ep:user class="notification-icon" />
-        <span class="notification-text">社区个人中心</span>
-      </div>
-      <div class="notification-right">
-        <icon-ep:arrow-right class="arrow-icon" />
-      </div>
-    </div>
-
-    <!-- 积分中心入口 -->
-    <div class="notification-entry" @click="goToPoints">
-      <div class="notification-content">
-        <icon-ep:trophy class="notification-icon" style="color: #f59e0b" />
-        <span class="notification-text">积分中心</span>
-      </div>
-      <div class="notification-right">
-        <span v-if="userPoints > 0" class="points-badge"
-          >{{ userPoints }} 积分</span
-        >
-        <icon-ep:arrow-right class="arrow-icon" />
-      </div>
-    </div>
-
-    <div class="section">
-      <div class="section-title">头像</div>
-      <div
-        class="user-header"
-        style="
-          display: flex;
-          align-items: flex-start;
-          justify-content: space-between;
-          gap: 40px;
-        "
-      >
-        <div class="avatar-wrapper" @click="handleAvatarClick">
+      <div class="hero-avatar-card">
+        <div class="avatar-wrapper avatar-wrapper-large" @click="handleAvatarClick">
           <el-avatar
             :src="userStore.userInfo.avatarUrl || defaultAvatar"
-            :size="100"
+            :size="112"
           />
           <div class="avatar-hover">
             <icon-ic:outline-photo-camera class="camera-icon" />
             <span>更新头像</span>
           </div>
         </div>
-
-        <!-- 头像框设置 -->
-        <div
-          v-if="avatarFrames.length > 0"
-          class="privilege-section"
-          style="width: 160px; align-self: center"
-        >
-          <el-select
-            v-model="currentAvatarFrame"
-            @change="handleAvatarFrameChange"
-            placeholder="头像框"
-            style="width: 100%"
-          >
-            <el-option label="默认头像框" value="default"></el-option>
-            <el-option
-              v-for="item in avatarFrames"
-              :key="item.itemCode"
-              :label="item.itemName"
-              :value="item.itemCode"
-            ></el-option>
-          </el-select>
+        <div class="avatar-meta">
+          <div class="avatar-name">{{ userForm.username || '未设置昵称' }}</div>
+          <div class="avatar-email">{{ userForm.email || '未绑定邮箱' }}</div>
         </div>
       </div>
-    </div>
 
-    <!-- 头像裁剪弹窗 -->
-    <el-dialog
-      v-model="cropperVisible"
-      title="裁剪头像"
-      width="600px"
-      :close-on-click-modal="false"
-      :close-on-press-escape="false"
-    >
-      <div class="cropper-container">
-        <vue-cropper
-          ref="cropper"
-          :img="cropperImg"
-          :info="true"
-          :canScale="true"
-          :autoCrop="true"
-          :fixedBox="true"
-          :canMove="true"
-          :canMoveBox="true"
-          :centerBox="true"
-          :infoTrue="true"
-          :fixed="true"
-          :fixedNumber="[1, 1]"
-          :high="true"
-          mode="cover"
-          :round="true"
-        />
-      </div>
-      <template #footer>
-        <div class="dialog-footer">
-          <div class="flex justify-between items-center w-full">
-            <div class="flex">
-              <el-button size="mini" type="info" @click="reset" class="mr-1"
-                >重置</el-button
-              >
-              <el-button size="mini" plain @click="changeScale(1)" class="mr-1">
-                <icon-ph:magnifying-glass-plus-light class="mr-0.5" />放大
-              </el-button>
-              <el-button
-                size="mini"
-                plain
-                @click="changeScale(-1)"
-                class="mr-1"
-              >
-                <icon-ph:magnifying-glass-minus-light class="mr-0.5" />缩小
-              </el-button>
-              <el-button size="mini" plain @click="rotateLeft" class="mr-1">
-                <icon-grommet-icons:rotate-left class="mr-0.5" />左旋转
-              </el-button>
-              <el-button size="mini" plain @click="rotateRight" class="mr-1">
-                <icon-grommet-icons:rotate-right class="mr-0.5" />右旋转
-              </el-button>
-            </div>
-            <div class="flex">
-              <el-button
-                size="mini"
-                type="warning"
-                plain
-                @click="cropperVisible = false"
-                class="mr-3"
-                >取消</el-button
-              >
-              <el-button size="mini" type="primary" @click="handleCropConfirm"
-                >确认</el-button
-              >
-            </div>
+      <div class="hero-glow hero-glow-a" />
+      <div class="hero-glow hero-glow-b" />
+    </section>
+
+    <section class="quick-entry-grid">
+      <button class="quick-entry-card" @click="goToNotifications">
+        <div class="quick-entry-left">
+          <div class="entry-icon entry-icon-primary">
+            <icon-ep:bell />
+          </div>
+          <div>
+            <div class="entry-title">我的通知</div>
+            <div class="entry-desc">查看系统消息与互动提醒</div>
           </div>
         </div>
-      </template>
-    </el-dialog>
-
-    <el-form
-      ref="userFormRef"
-      :model="userForm"
-      :rules="userRules"
-      label-width="0"
-      size="large"
-      class="user-form"
-    >
-      <div class="section">
-        <div class="section-title">用户名</div>
-        <div
-          style="
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 40px;
-          "
-        >
-          <el-form-item prop="username" style="flex: 1; margin-bottom: 0">
-            <el-input v-model="userForm.username" placeholder="用户名" />
-          </el-form-item>
-
-          <!-- 昵称颜色设置 -->
-          <div
-            v-if="nicknameColors.length > 0"
-            class="privilege-section"
-            style="width: 160px; flex-shrink: 0"
-          >
-            <el-select
-              v-model="currentNicknameColor"
-              @change="handleNicknameColorChange"
-              placeholder="昵称颜色"
-              style="width: 100%"
-            >
-              <el-option label="默认颜色" value="default"></el-option>
-              <el-option
-                v-for="item in nicknameColors"
-                :key="item.itemCode"
-                :label="item.itemName"
-                :value="item.itemCode"
-              ></el-option>
-            </el-select>
-          </div>
-        </div>
-      </div>
-
-      <div class="section">
-        <div class="section-title">邮箱</div>
-        <el-form-item prop="email">
-          <el-input v-model="userForm.email" placeholder="邮箱" />
-        </el-form-item>
-      </div>
-
-      <div class="section">
-        <div class="section-title">联系电话</div>
-        <el-form-item prop="phone">
-          <el-input v-model="userForm.phone" placeholder="联系电话" />
-        </el-form-item>
-      </div>
-
-      <div class="section">
-        <div class="section-title">简介</div>
-        <el-form-item prop="introduction">
-          <el-input
-            v-model="userForm.introduction"
-            type="textarea"
-            :rows="4"
-            placeholder="编辑个人简介"
-            maxlength="100"
-            show-word-limit
+        <div class="quick-entry-right">
+          <el-badge
+            v-if="unreadCount > 0"
+            :value="unreadCount"
+            :max="99"
           />
-        </el-form-item>
+          <icon-ep:arrow-right class="arrow-icon" />
+        </div>
+      </button>
+
+      <button class="quick-entry-card" @click="goToCommunityProfile">
+        <div class="quick-entry-left">
+          <div class="entry-icon entry-icon-secondary">
+            <icon-ep:user />
+          </div>
+          <div>
+            <div class="entry-title">社区个人中心</div>
+            <div class="entry-desc">进入社区主页查看动态与内容</div>
+          </div>
+        </div>
+        <div class="quick-entry-right">
+          <icon-ep:arrow-right class="arrow-icon" />
+        </div>
+      </button>
+
+      <button class="quick-entry-card" @click="goToPoints">
+        <div class="quick-entry-left">
+          <div class="entry-icon entry-icon-gold">
+            <icon-ep:trophy />
+          </div>
+          <div>
+            <div class="entry-title">积分中心</div>
+            <div class="entry-desc">查看积分并使用已购买装扮</div>
+          </div>
+        </div>
+        <div class="quick-entry-right">
+          <span v-if="userPoints > 0" class="points-badge">
+            {{ userPoints }} 积分
+          </span>
+          <icon-ep:arrow-right class="arrow-icon" />
+        </div>
+      </button>
+    </section>
+
+    <section class="profile-panel">
+      <div class="panel-header">
+        <div>
+          <p class="panel-kicker">Profile Settings</p>
+          <h2 class="panel-title">资料设置</h2>
+        </div>
+        <span class="panel-tip">修改后记得保存，装扮切换会即时生效</span>
       </div>
 
-      <el-form-item class="button-group">
-        <div class="flex justify-between w-full">
-          <el-button
-            type="primary"
-            :loading="loading"
-            @click="handleSubmit"
-            class="submit-btn"
-          >
-            更新信息
-          </el-button>
-          <el-button
-            type="danger"
-            :loading="loading"
-            @click="handleDelete"
-            class="submit-btn"
-          >
-            注销账号
-          </el-button>
-        </div>
-      </el-form-item>
-    </el-form>
+      <div class="avatar-setting-card">
+        <div class="section-title">头像与装扮</div>
+        <div class="avatar-setting-body">
+          <div class="avatar-wrapper" @click="handleAvatarClick">
+            <el-avatar
+              :src="userStore.userInfo.avatarUrl || defaultAvatar"
+              :size="100"
+            />
+            <div class="avatar-hover">
+              <icon-ic:outline-photo-camera class="camera-icon" />
+              <span>更新头像</span>
+            </div>
+          </div>
 
-    <!-- 登录对话框 -->
-    <AuthTabs v-model="authVisible" />
+          <div class="avatar-setting-actions">
+            <div class="setting-tip">
+              点击头像即可上传并裁剪新的头像图片。
+            </div>
+
+            <div
+              v-if="avatarFrames.length > 0"
+              class="privilege-section"
+            >
+              <span class="field-tip">头像框</span>
+              <el-select
+                v-model="currentAvatarFrame"
+                @change="handleAvatarFrameChange"
+                placeholder="选择头像框"
+                style="width: 100%"
+              >
+                <el-option label="默认头像框" value="default"></el-option>
+                <el-option
+                  v-for="item in avatarFrames"
+                  :key="item.itemCode"
+                  :label="item.itemName"
+                  :value="item.itemCode"
+                ></el-option>
+              </el-select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <el-dialog
+        v-model="cropperVisible"
+        title="裁剪头像"
+        width="600px"
+        :close-on-click-modal="false"
+        :close-on-press-escape="false"
+      >
+        <div class="cropper-container">
+          <vue-cropper
+            ref="cropper"
+            :img="cropperImg"
+            :info="true"
+            :canScale="true"
+            :autoCrop="true"
+            :fixedBox="true"
+            :canMove="true"
+            :canMoveBox="true"
+            :centerBox="true"
+            :infoTrue="true"
+            :fixed="true"
+            :fixedNumber="[1, 1]"
+            :high="true"
+            mode="cover"
+            :round="true"
+          />
+        </div>
+        <template #footer>
+          <div class="dialog-footer">
+            <div class="flex justify-between items-center w-full">
+              <div class="flex">
+                <el-button size="mini" type="info" @click="reset" class="mr-1">
+                  重置
+                </el-button>
+                <el-button size="mini" plain @click="changeScale(1)" class="mr-1">
+                  <icon-ph:magnifying-glass-plus-light class="mr-0.5" />放大
+                </el-button>
+                <el-button
+                  size="mini"
+                  plain
+                  @click="changeScale(-1)"
+                  class="mr-1"
+                >
+                  <icon-ph:magnifying-glass-minus-light class="mr-0.5" />缩小
+                </el-button>
+                <el-button size="mini" plain @click="rotateLeft" class="mr-1">
+                  <icon-grommet-icons:rotate-left class="mr-0.5" />左旋转
+                </el-button>
+                <el-button size="mini" plain @click="rotateRight" class="mr-1">
+                  <icon-grommet-icons:rotate-right class="mr-0.5" />右旋转
+                </el-button>
+              </div>
+              <div class="flex">
+                <el-button
+                  size="mini"
+                  type="warning"
+                  plain
+                  @click="cropperVisible = false"
+                  class="mr-3"
+                >
+                  取消
+                </el-button>
+                <el-button size="mini" type="primary" @click="handleCropConfirm">
+                  确认
+                </el-button>
+              </div>
+            </div>
+          </div>
+        </template>
+      </el-dialog>
+
+      <el-form
+        ref="userFormRef"
+        :model="userForm"
+        :rules="userRules"
+        label-width="0"
+        size="large"
+        class="user-form"
+      >
+        <div class="form-grid">
+          <div class="section section-span-full">
+            <div class="section-title">用户名称</div>
+            <div class="inline-setting-row">
+              <el-form-item prop="username" style="flex: 1; margin-bottom: 0">
+                <el-input v-model="userForm.username" placeholder="请输入用户名" />
+              </el-form-item>
+
+              <div
+                v-if="nicknameColors.length > 0"
+                class="privilege-section privilege-section-inline"
+              >
+                <el-select
+                  v-model="currentNicknameColor"
+                  @change="handleNicknameColorChange"
+                  placeholder="选择昵称颜色"
+                  style="width: 100%"
+                >
+                  <el-option label="默认颜色" value="default"></el-option>
+                  <el-option
+                    v-for="item in nicknameColors"
+                    :key="item.itemCode"
+                    :label="item.itemName"
+                    :value="item.itemCode"
+                  ></el-option>
+                </el-select>
+              </div>
+            </div>
+          </div>
+
+          <div class="section">
+            <div class="section-title">邮箱</div>
+            <el-form-item prop="email">
+              <el-input v-model="userForm.email" placeholder="请输入邮箱" />
+            </el-form-item>
+          </div>
+
+          <div class="section">
+            <div class="section-title">联系电话</div>
+            <el-form-item prop="phone">
+              <el-input v-model="userForm.phone" placeholder="请输入联系电话" />
+            </el-form-item>
+          </div>
+
+          <div class="section section-span-full">
+            <div class="section-title">简介</div>
+            <el-form-item prop="introduction">
+              <el-input
+                v-model="userForm.introduction"
+                type="textarea"
+                :rows="4"
+                placeholder="编辑一段简短的个人简介"
+                maxlength="100"
+                show-word-limit
+              />
+            </el-form-item>
+          </div>
+        </div>
+
+        <el-form-item class="button-group">
+          <div class="button-row">
+            <el-button
+              type="primary"
+              :loading="loading"
+              @click="handleSubmit"
+              class="submit-btn"
+            >
+              保存资料
+            </el-button>
+            <el-button
+              type="danger"
+              :loading="loading"
+              @click="handleDelete"
+              class="submit-btn"
+            >
+              注销账号
+            </el-button>
+          </div>
+        </el-form-item>
+      </el-form>
+
+      <AuthTabs v-model="authVisible" />
+    </section>
   </div>
 </template>
 
 <style scoped>
-.user-container {
-  max-width: 1000px;
-  margin: 30px auto;
-  padding: 30px 40px 15px;
-  background-color: var(--el-bg-color);
-  border-radius: 12px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+.user-page {
+  min-height: 100%;
+  padding: 20px;
+  background:
+    radial-gradient(circle at top left, rgba(117, 139, 255, 0.12), transparent 28%),
+    radial-gradient(circle at top right, rgba(255, 194, 210, 0.12), transparent 24%),
+    linear-gradient(180deg, rgba(247, 249, 255, 0.95), rgba(252, 252, 255, 0.98));
 }
 
-.user-header {
-  text-align: left;
-  margin-bottom: 20px;
+.profile-hero {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) 260px;
+  gap: 24px;
+  padding: 28px;
+  overflow: hidden;
+  border: 1px solid rgba(140, 168, 230, 0.16);
+  border-radius: 30px;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(250, 245, 255, 0.92)),
+    #fff;
+  box-shadow: 0 22px 52px rgba(91, 118, 179, 0.13);
+}
+
+.hero-main,
+.hero-avatar-card {
+  position: relative;
+  z-index: 1;
+}
+
+.hero-kicker {
+  margin: 0 0 10px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #6e7ee0;
+}
+
+.hero-title {
+  margin: 0;
+  font-size: 40px;
+  line-height: 1.12;
+  color: #223350;
+}
+
+.hero-subtitle {
+  max-width: 720px;
+  margin: 14px 0 0;
+  font-size: 15px;
+  line-height: 1.8;
+  color: #687891;
+}
+
+.hero-stats {
   display: flex;
+  gap: 14px;
+  margin-top: 22px;
+  flex-wrap: wrap;
 }
 
-.username {
-  margin: 0 0 20px 0;
-  font-size: 20px;
-  color: var(--el-text-color-primary);
-  font-weight: normal;
+.stat-card {
+  min-width: 150px;
+  padding: 14px 16px;
+  border: 1px solid rgba(146, 174, 226, 0.18);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.76);
+  box-shadow: 0 10px 22px rgba(98, 123, 178, 0.1);
 }
 
-.notification-entry {
+.stat-label {
+  display: block;
+  font-size: 12px;
+  color: #7b89a4;
+}
+
+.stat-card strong {
+  display: block;
+  margin-top: 8px;
+  font-size: 22px;
+  color: #253754;
+}
+
+.hero-avatar-card {
   display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 24px;
+  border-radius: 26px;
+  background: rgba(255, 255, 255, 0.68);
+  box-shadow: 0 18px 36px rgba(94, 118, 176, 0.12);
+  backdrop-filter: blur(14px);
+}
+
+.avatar-meta {
+  text-align: center;
+}
+
+.avatar-name {
+  font-size: 18px;
+  font-weight: 700;
+  color: #253754;
+}
+
+.avatar-email {
+  margin-top: 6px;
+  font-size: 13px;
+  color: #74839f;
+}
+
+.hero-glow {
+  position: absolute;
+  border-radius: 999px;
+  pointer-events: none;
+}
+
+.hero-glow-a {
+  top: -70px;
+  right: 180px;
+  width: 180px;
+  height: 180px;
+  background: radial-gradient(circle, rgba(134, 172, 255, 0.24), transparent 70%);
+}
+
+.hero-glow-b {
+  right: -40px;
+  bottom: -46px;
+  width: 240px;
+  height: 240px;
+  background: radial-gradient(circle, rgba(255, 191, 208, 0.24), transparent 70%);
+}
+
+.quick-entry-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  margin-top: 22px;
+}
+
+.quick-entry-card {
+  display: flex;
+  align-items: center;
   justify-content: space-between;
-  align-items: center;
-  padding: 16px 20px;
-  margin-bottom: 24px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  border-radius: 12px;
-  cursor: pointer;
-  transition: all 0.3s;
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+  gap: 16px;
+  padding: 18px 20px;
+  border: 1px solid rgba(140, 168, 228, 0.14);
+  border-radius: 24px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(247, 250, 255, 0.94)),
+    #fff;
+  box-shadow: 0 18px 38px rgba(86, 111, 168, 0.1);
+  text-align: left;
+  transition: transform 0.28s ease, box-shadow 0.28s ease, border-color 0.28s ease;
 }
 
-.notification-entry:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
+.quick-entry-card:hover {
+  transform: translateY(-3px);
+  border-color: rgba(109, 142, 218, 0.24);
+  box-shadow: 0 20px 34px rgba(91, 116, 172, 0.15);
 }
 
-.notification-content {
+.quick-entry-left,
+.quick-entry-right {
   display: flex;
   align-items: center;
-  color: white;
 }
 
-.notification-icon {
-  font-size: 24px;
-  margin-right: 12px;
+.quick-entry-left {
+  gap: 14px;
+  min-width: 0;
 }
 
-.notification-text {
+.quick-entry-right {
+  gap: 10px;
+  color: #7f8cab;
+}
+
+.entry-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 16px;
+  font-size: 22px;
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.entry-icon-primary {
+  background: linear-gradient(135deg, #5e84e7 0%, #7b7be8 100%);
+}
+
+.entry-icon-secondary {
+  background: linear-gradient(135deg, #4f9cf3 0%, #6d7ef2 100%);
+}
+
+.entry-icon-gold {
+  background: linear-gradient(135deg, #f5b342 0%, #f08b38 100%);
+}
+
+.entry-title {
   font-size: 16px;
-  font-weight: 500;
+  font-weight: 700;
+  color: #253754;
 }
 
-.notification-right {
-  display: flex;
-  align-items: center;
-  color: white;
-  gap: 8px;
+.entry-desc {
+  margin-top: 6px;
+  font-size: 13px;
+  color: #7c89a4;
 }
 
 .points-badge {
@@ -733,8 +939,79 @@ const handleDelete = async () => {
   border: 1px solid rgba(245, 158, 11, 0.3);
 }
 
-.arrow-icon {
-  font-size: 20px;
+.profile-panel {
+  margin-top: 24px;
+  padding: 22px;
+  border: 1px solid rgba(138, 167, 228, 0.14);
+  border-radius: 28px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(247, 250, 255, 0.94)),
+    #fff;
+  box-shadow: 0 18px 38px rgba(87, 111, 167, 0.1);
+}
+
+.panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.panel-kicker {
+  margin: 0 0 6px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #6f7ee2;
+}
+
+.panel-title {
+  margin: 0;
+  font-size: 24px;
+  color: #233451;
+}
+
+.panel-tip {
+  font-size: 13px;
+  color: #7b89a4;
+}
+
+.avatar-setting-card {
+  margin-bottom: 22px;
+  padding: 22px;
+  border: 1px solid rgba(144, 171, 222, 0.16);
+  border-radius: 24px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(248, 250, 255, 0.94));
+}
+
+.avatar-setting-body {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 28px;
+}
+
+.avatar-setting-actions {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.setting-tip {
+  font-size: 14px;
+  line-height: 1.8;
+  color: #6f7f98;
+}
+
+.field-tip {
+  display: inline-block;
+  margin-bottom: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #6f7ee2;
 }
 
 .user-form {
@@ -742,38 +1019,75 @@ const handleDelete = async () => {
   margin: 0;
 }
 
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px 20px;
+}
+
+.section {
+  margin-bottom: 0;
+  padding: 20px;
+  border: 1px solid rgba(144, 171, 222, 0.14);
+  border-radius: 22px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.9), rgba(249, 251, 255, 0.92));
+}
+
+.section-span-full {
+  grid-column: 1 / -1;
+}
+
+.section-title {
+  margin-bottom: 10px;
+  color: #667791;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.inline-setting-row {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.privilege-section {
+  width: 180px;
+  flex-shrink: 0;
+}
+
+.privilege-section-inline {
+  align-self: flex-end;
+}
+
 :deep(.el-form-item) {
-  margin-bottom: 24px;
+  margin-bottom: 0;
 }
 
 :deep(.el-input__wrapper) {
-  border-radius: 8px;
+  min-height: 46px;
+  border-radius: 14px;
   background-color: var(--el-fill-color-blank);
-  box-shadow: 0 0 0 1px var(--el-border-color) inset !important;
+  box-shadow: 0 0 0 1px rgba(144, 171, 222, 0.16) inset !important;
 }
 
 :deep(.el-input__wrapper:hover) {
-  box-shadow: 0 0 0 1px var(--el-border-color-hover) inset !important;
+  box-shadow: 0 0 0 1px rgba(103, 126, 214, 0.3) inset !important;
 }
 
 :deep(.el-input__wrapper.is-focus) {
   box-shadow: 0 0 0 1px var(--el-color-primary) inset !important;
 }
 
-.submit-btn {
-  border-radius: 8px;
-  width: 140px;
-}
-
 :deep(.el-textarea__inner) {
-  border-radius: 8px;
+  border-radius: 16px;
   resize: none;
   background-color: var(--el-fill-color-blank);
-  box-shadow: 0 0 0 1px var(--el-border-color) inset !important;
+  box-shadow: 0 0 0 1px rgba(144, 171, 222, 0.16) inset !important;
 }
 
 :deep(.el-textarea__inner:hover) {
-  box-shadow: 0 0 0 1px var(--el-border-color-hover) inset !important;
+  box-shadow: 0 0 0 1px rgba(103, 126, 214, 0.3) inset !important;
 }
 
 :deep(.el-textarea__inner:focus) {
@@ -786,16 +1100,6 @@ const handleDelete = async () => {
   cursor: not-allowed;
 }
 
-.section {
-  margin-bottom: 24px;
-}
-
-.section-title {
-  margin-bottom: 8px;
-  color: var(--el-text-color-regular);
-  font-size: 14px;
-}
-
 .avatar-wrapper {
   position: relative;
   cursor: pointer;
@@ -803,6 +1107,11 @@ const handleDelete = async () => {
   height: 100px;
   border-radius: 50%;
   overflow: hidden;
+}
+
+.avatar-wrapper-large {
+  width: 112px;
+  height: 112px;
 }
 
 .avatar-hover {
@@ -832,7 +1141,19 @@ const handleDelete = async () => {
 }
 
 .button-group {
-  margin-top: 40px;
+  margin-top: 24px;
+}
+
+.button-row {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.submit-btn {
+  min-width: 140px;
+  height: 44px;
+  border-radius: 14px;
 }
 
 .cropper-container {
@@ -844,7 +1165,6 @@ const handleDelete = async () => {
   padding-top: 10px;
 }
 
-/* 对话框按钮样式优化 */
 :deep(.el-dialog__header) {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
   color: white !important;
@@ -883,5 +1203,69 @@ const handleDelete = async () => {
 :deep(.el-dialog__headerbtn:hover .el-dialog__close) {
   color: white !important;
   transform: scale(1.1) !important;
+}
+
+@media (max-width: 1100px) {
+  .profile-hero {
+    grid-template-columns: 1fr;
+  }
+
+  .hero-avatar-card {
+    align-items: flex-start;
+  }
+
+  .avatar-meta {
+    text-align: left;
+  }
+
+  .quick-entry-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .user-page {
+    padding: 14px;
+  }
+
+  .profile-hero,
+  .profile-panel,
+  .avatar-setting-card {
+    padding: 18px 16px;
+    border-radius: 22px;
+  }
+
+  .hero-title {
+    font-size: 30px;
+  }
+
+  .hero-stats,
+  .button-row,
+  .avatar-setting-body,
+  .inline-setting-row,
+  .panel-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .section-span-full {
+    grid-column: auto;
+  }
+
+  .privilege-section {
+    width: 100%;
+  }
+
+  .submit-btn {
+    width: 100%;
+  }
+
+  .button-row {
+    gap: 12px;
+  }
 }
 </style>

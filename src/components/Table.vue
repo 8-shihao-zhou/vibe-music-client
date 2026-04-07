@@ -6,6 +6,7 @@ import default_album from '@/assets/default_album.jpg'
 import { collectSong, cancelCollectSong } from '@/api/system'
 import { ElMessage } from 'element-plus'
 import { UserStore } from '@/stores/modules/user'
+import { normalizeMediaUrl } from '@/utils/media'
 
 const audio = AudioStore()
 const userStore = UserStore()
@@ -18,6 +19,13 @@ const props = defineProps({
     default: () => [],
   },
 })
+
+/**
+ * 统一处理喜欢状态，兼容接口返回 0/1、"0"/"1"、null 等情况。
+ */
+const normalizeLikeStatus = (likeStatus: unknown) => {
+  return Number(likeStatus) === 1 ? 1 : 0
+}
 
 // 监听数据变化，更新当前页面的歌曲列表
 watch(() => props.data, (newData) => {
@@ -43,11 +51,15 @@ const convertToTrackModel = (song: Song) => {
     title: song.songName,
     artist: song.artistName,
     album: song.album,
-    cover: song.coverUrl || default_album,
+    cover: normalizeMediaUrl(song.coverUrl) || default_album,
     url: song.audioUrl,
     duration: Number(song.duration) || 0,
-    likeStatus: song.likeStatus || 0,
+    likeStatus: normalizeLikeStatus(song.likeStatus),
   }
+}
+
+const getSongCover = (coverUrl?: string | null) => {
+  return normalizeMediaUrl(coverUrl) || default_album
 }
 
 // 播放音乐
@@ -107,7 +119,9 @@ const handleLike = async (row: Song, e: Event) => {
   }
 
   try {
-    if (row.likeStatus === 0) {
+    const currentLikeStatus = normalizeLikeStatus(row.likeStatus)
+
+    if (currentLikeStatus === 0) {
       // 收藏歌曲
       const res = await collectSong(row.songId)
       if (res.code === 0) {
@@ -205,8 +219,8 @@ const handleCreateMV = (row: Song, e: Event) => {
           ]"
           @click="handlePlay(row)">
           <!-- 标题和封面 -->
-          <div class="w-10 h-10 relative" v-if="row.coverUrl">
-            <el-image :src="row.coverUrl" fit="cover" lazy :alt="row.songName" class="w-full h-full rounded-md" />
+          <div class="w-10 h-10 relative">
+            <el-image :src="getSongCover(row.coverUrl)" fit="cover" lazy :alt="row.songName" class="w-full h-full rounded-md" />
             <!-- Play 按钮，使用 group-hover 控制透明度 -->
             <div
               class="absolute inset-0 flex items-center justify-center text-white opacity-0 transition-opacity duration-300 z-10 group-hover:opacity-100 group-hover:bg-black/50 rounded-md">
@@ -230,7 +244,7 @@ const handleCreateMV = (row: Song, e: Event) => {
           <!-- 喜欢 -->
           <div class="flex items-center ml-1">
             <el-button text circle @click="handleLike(row, $event)">
-              <icon-mdi:cards-heart-outline v-if="!userStore.isLoggedIn || row.likeStatus === 0" class="text-lg" />
+              <icon-mdi:cards-heart-outline v-if="!userStore.isLoggedIn || normalizeLikeStatus(row.likeStatus) === 0" class="text-lg" />
               <icon-mdi:cards-heart v-else class="text-lg text-red-500" />
             </el-button>
           </div>
