@@ -37,14 +37,14 @@ export default [
   {
     rules: {
       'vue/multi-word-component-names': [
-        'error',
+        'off',
         {
           ignores: ['index'], //需要忽略的组件名
         },
       ],
       // 'vue/no-unused-vars': 'error',
       'prettier/prettier': [
-        'warn',
+        'off',
         {
           // endOfLine: "auto"
         },

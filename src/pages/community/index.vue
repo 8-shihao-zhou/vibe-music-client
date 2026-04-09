@@ -3282,4 +3282,61 @@ onMounted(() => {
     top: -3px;
   }
 }
+
+html.dark .community-container {
+  background:
+    radial-gradient(circle at top left, rgba(79, 112, 196, 0.2), transparent 26%),
+    radial-gradient(circle at top right, rgba(171, 92, 144, 0.16), transparent 22%),
+    linear-gradient(180deg, rgba(17, 23, 38, 0.98), rgba(10, 15, 28, 1));
+  border-radius: 28px;
+}
+
+html.dark .community-header .header-left .subtitle,
+html.dark .filter-bar .hot-tags-section .section-header .section-subtitle,
+html.dark .post-list .post-card .post-excerpt,
+html.dark .post-list .post-card .time,
+html.dark .post-list .post-card .stat-item,
+html.dark .post-list .post-card .stat-label,
+html.dark .pagination :deep(.el-pagination__total) {
+  color: #aab7d6 !important;
+}
+
+html.dark .filter-bar,
+html.dark .filter-bar .hot-tags-section,
+html.dark .post-list .post-card {
+  background: linear-gradient(180deg, rgba(26, 34, 54, 0.94), rgba(20, 27, 44, 0.96));
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.24);
+}
+
+html.dark .filter-bar,
+html.dark .post-list .post-card,
+html.dark .filter-bar .hot-tags-section .hot-tags .tag-item {
+  border-color: rgba(117, 138, 196, 0.18) !important;
+}
+
+html.dark .filter-bar .category-tabs .category-tab,
+html.dark .filter-bar .hot-tags-section .hot-tags .tag-item,
+html.dark .filter-bar .hot-tags-section .section-header .tag-filter-status {
+  background: rgba(255, 255, 255, 0.06);
+  color: #c6d2ee;
+}
+
+html.dark .filter-bar .hot-tags-section .section-header .section-title,
+html.dark .post-list .post-card .post-title,
+html.dark .post-list .post-card .username {
+  color: #eef3ff !important;
+}
+
+html.dark .filter-bar .search-sort :deep(.el-input__wrapper),
+html.dark .filter-bar .search-sort :deep(.el-select__wrapper) {
+  background: rgba(255, 255, 255, 0.06);
+  box-shadow: 0 0 0 1px rgba(142, 163, 224, 0.16) inset !important;
+}
+
+html.dark .pagination :deep(.btn-prev),
+html.dark .pagination :deep(.btn-next),
+html.dark .pagination :deep(.el-pager li) {
+  background: rgba(255, 255, 255, 0.04);
+  color: #c8d3ef;
+}
 </style>

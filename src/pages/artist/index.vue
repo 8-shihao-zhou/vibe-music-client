@@ -360,4 +360,13 @@ onActivated(() => {
 @media (max-width:1200px){.artist-page{grid-template-columns:1fr}.sidebar-card{position:static}}
 @media (max-width:900px){.artist-hero{grid-template-columns:1fr}}
 @media (max-width:768px){.artist-page{padding:14px}.sidebar-card,.artist-hero,.artist-grid-panel{padding:18px 16px;border-radius:22px}.hero-title{font-size:30px}.panel-header{flex-direction:column;align-items:flex-start}}
+
+html.dark .artist-page{background:radial-gradient(circle at top left, rgba(79,112,196,.22), transparent 28%),radial-gradient(circle at top right, rgba(171,92,144,.18), transparent 24%),linear-gradient(180deg, rgba(17,23,38,.98), rgba(10,15,28,1))}
+html.dark .sidebar-card,html.dark .artist-hero,html.dark .artist-grid-panel,html.dark .hero-note,html.dark .artist-card{border-color:rgba(117,138,196,.18);background:linear-gradient(180deg, rgba(26,34,54,.94), rgba(20,27,44,.96)),#182133;box-shadow:0 18px 40px rgba(0,0,0,.26)}
+html.dark .reset-button,html.dark .summary-card,html.dark .filter-trigger,html.dark .filter-chip{border-color:rgba(142,163,224,.16);background:rgba(255,255,255,.06);color:#c6d2ee}
+html.dark .search-input{border-color:rgba(142,163,224,.16);background:rgba(255,255,255,.06);box-shadow:none;color:#e9efff}
+html.dark .sidebar-title,html.dark .panel-title,html.dark .hero-title,html.dark .hero-note-title,html.dark .artist-name,html.dark .summary-card strong{color:#eef3ff}
+html.dark .hero-subtitle,html.dark .hero-note-text,html.dark .panel-tip,html.dark .artist-alias,html.dark .artist-alias-empty,html.dark .summary-label,html.dark :deep(.custom-pagination .el-pagination__total),html.dark :deep(.custom-pagination .el-pagination__jump){color:#aab7d6}
+html.dark :deep(.custom-pagination .btn-prev),html.dark :deep(.custom-pagination .btn-next),html.dark :deep(.custom-pagination .el-pager li){background:rgba(255,255,255,.04);color:#c8d3ef}
+html.dark :deep(.custom-pagination .btn-prev:hover),html.dark :deep(.custom-pagination .btn-next:hover),html.dark :deep(.custom-pagination .el-pager li:hover){background:rgba(103,126,214,.18);color:#dfe7ff}
 </style>

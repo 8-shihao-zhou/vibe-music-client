@@ -332,6 +332,7 @@ const editDialogVisible = ref(false)
 const editingMv = ref<AiHistoryItem | null>(null)
 const newMvName = ref('')
 
+//音乐视频风格配置列表
 const styleOptions = [
   { code: 'healing', label: '梦幻治愈', description: '柔和光影、轻盈氛围' },
   { code: 'cyberpunk', label: '赛博霓虹', description: '霓虹夜景、未来感画面' },
@@ -341,22 +342,31 @@ const styleOptions = [
   { code: 'stage', label: '舞台热力', description: '灯光节奏、现场能量' },
 ] as const
 
+//轮询定时器（用于定时查询AI任务状态）
 let pollTimer: number | null = null
+
+//任务状态缓存（避免重复请求，提高页面流畅度）
 const taskStatusCache = new Map<number, string>()
 
+//计算属性：用户是否已登录（必须有token才算登录）
 const isLoggedIn = computed(() => userStore.isLoggedIn && !!userStore.userInfo?.token)
+
+//计算属性：当前正在进行中的任务数量（排队中 + 处理中）
 const activeTaskCount = computed(() =>
   taskList.value.filter(task => task.status === 'QUEUED' || task.status === 'PROCESSING').length,
 )
+
+//计算属性：获取当前选中风格的中文名（用于页面显示）
 const selectedStyleLabel = computed(
   () => styleOptions.find(item => item.code === selectedStyleCode.value)?.label || '梦幻治愈',
 )
 
+//点击AI创作功能时，如果未登录，提示用户去登录
 const handleLogin = () => {
   ElMessage.info('请点击右上角登录后再使用 AI 创作功能')
 }
 
-// 从曲库跳转时读取歌曲信息
+//从曲库跳转时读取歌曲信息
 const syncSongSelectionFromRoute = () => {
   const audioUrl = typeof route.query.audioUrl === 'string' ? route.query.audioUrl : ''
   const songName = typeof route.query.songName === 'string' ? route.query.songName : ''
@@ -366,22 +376,28 @@ const syncSongSelectionFromRoute = () => {
     return
   }
 
+  //拼接显示的歌曲信息（歌名 - 歌手）
   const nextInfo = artistName ? `${songName} - ${artistName}` : songName
+
+  //判断歌曲信息是否发生变化（避免重复提示）
   const hasChanged =
     selectedAudioUrl.value !== audioUrl ||
     selectedSongName.value !== songName ||
     selectedArtistName.value !== artistName
 
+  //更新当前选中的歌曲信息
   selectedAudioUrl.value = audioUrl
   selectedSongName.value = songName
   selectedArtistName.value = artistName
   selectedSongInfo.value = nextInfo
 
+  //如果歌曲发生变化，给出成功提示
   if (hasChanged) {
     ElMessage.success(`已选择歌曲：${nextInfo}`)
   }
 }
 
+//清空当前选中的歌曲信息
 const clearSelection = () => {
   selectedSongInfo.value = ''
   selectedSongName.value = ''
@@ -389,6 +405,7 @@ const clearSelection = () => {
   selectedAudioUrl.value = ''
 }
 
+//根据后端状态码，返回中文状态文本
 const getStatusLabel = (status?: string) => {
   switch (status) {
     case 'QUEUED':
@@ -404,6 +421,7 @@ const getStatusLabel = (status?: string) => {
   }
 }
 
+//根据任务状态，返回侧边提示文字
 const getTaskSideTip = (status?: string) => {
   if (status === 'PROCESSING') {
     return '后台生成中'
@@ -417,6 +435,7 @@ const getTaskSideTip = (status?: string) => {
   return '请稍后重试'
 }
 
+//获取用户的作品历史记录
 const fetchHistory = async () => {
   if (!isLoggedIn.value) {
     historyList.value = []
@@ -433,14 +452,17 @@ const fetchHistory = async () => {
   }
 }
 
+//监听任务状态变化，弹出成功/失败提示
 const notifyTaskStatusChange = (task: AiVideoTaskItem) => {
   const previousStatus = taskStatusCache.get(task.id)
   taskStatusCache.set(task.id, task.status)
 
+  //状态没变就不提示
   if (!previousStatus || previousStatus === task.status) {
     return
   }
 
+  //状态变化时弹出消息
   if (task.status === 'SUCCESS') {
     ElMessage.success(`${task.songName} 的 MV 已生成完成`)
   } else if (task.status === 'FAILED') {
@@ -448,6 +470,7 @@ const notifyTaskStatusChange = (task: AiVideoTaskItem) => {
   }
 }
 
+//获取AI视频任务列表（排队/生成/完成/失败）
 const fetchTaskList = async () => {
   if (!isLoggedIn.value) {
     taskList.value = []
@@ -461,10 +484,12 @@ const fetchTaskList = async () => {
       taskList.value = res.data || []
       taskList.value.forEach(notifyTaskStatusChange)
 
+      //遍历任务，检查状态是否变化并提示
       const shouldPolling = taskList.value.some(
         task => task.status === 'QUEUED' || task.status === 'PROCESSING',
       )
 
+      //有任务在跑 → 开启轮询；没有 → 关闭轮询
       if (shouldPolling) {
         startTaskPolling()
       } else {
@@ -476,10 +501,12 @@ const fetchTaskList = async () => {
   }
 }
 
+//统一获取任务 + 作品数据
 const fetchAiData = async () => {
   await Promise.all([fetchTaskList(), fetchHistory()])
 }
 
+//开启任务轮询：每8秒刷新一次任务状态
 const startTaskPolling = () => {
   if (pollTimer) {
     return
@@ -490,6 +517,7 @@ const startTaskPolling = () => {
   }, 8000)
 }
 
+//停止轮询
 const stopTaskPolling = () => {
   if (pollTimer) {
     window.clearInterval(pollTimer)
@@ -497,8 +525,10 @@ const stopTaskPolling = () => {
   }
 }
 
+//删除AI任务
 const handleDeleteTask = async (task: AiVideoTaskItem) => {
   try {
+    //弹出确认框
     await ElMessageBox.confirm(
       `确定删除任务“${task.songName}${task.artistName ? ` - ${task.artistName}` : ''}”吗？`,
       '删除任务',
@@ -509,6 +539,7 @@ const handleDeleteTask = async (task: AiVideoTaskItem) => {
       },
     )
 
+    //调用删除接口
     const res = await deleteVideoTaskApi(task.id)
     if (res.code === 0) {
       taskStatusCache.delete(task.id)
@@ -519,6 +550,7 @@ const handleDeleteTask = async (task: AiVideoTaskItem) => {
 
     ElMessage.error(res.message || '删除任务失败')
   } catch (error: any) {
+    //用户取消删除
     if (error === 'cancel' || error === 'close' || error?.message === 'cancel') {
       return
     }
@@ -527,12 +559,15 @@ const handleDeleteTask = async (task: AiVideoTaskItem) => {
   }
 }
 
+//创建AI视频生成任务（核心提交函数）
 const handleCreateTask = async () => {
+  //登录校验
   if (!isLoggedIn.value) {
     ElMessage.warning('请先登录')
     return
   }
 
+  //歌曲信息校验
   if (!selectedAudioUrl.value || !selectedSongName.value) {
     ElMessage.warning('请先从曲库选择歌曲')
     return
@@ -540,6 +575,7 @@ const handleCreateTask = async () => {
 
   submitting.value = true
   try {
+    //调用创建任务接口
     const res = await createVideoTaskApi({
       songName: selectedSongName.value,
       artistName: selectedArtistName.value,
@@ -563,19 +599,13 @@ const handleCreateTask = async () => {
   }
 }
 
+//播放视频：打开弹窗并赋值URL
 const playVideo = (item: AiHistoryItem) => {
   currentVideoUrl.value = item.url
   dialogVisible.value = true
 }
 
-const previewTaskVideo = (task: AiVideoTaskItem) => {
-  if (!task.mvUrl) {
-    return
-  }
-  currentVideoUrl.value = task.mvUrl
-  dialogVisible.value = true
-}
-
+//下载视频
 const downloadVideo = (item: AiHistoryItem) => {
   const link = document.createElement('a')
   link.href = item.url
@@ -585,6 +615,7 @@ const downloadVideo = (item: AiHistoryItem) => {
   document.body.removeChild(link)
 }
 
+//打开重命名弹窗
 const openEditDialog = (item: AiHistoryItem) => {
   editingMv.value = item
   let name = item.mvName || item.fileName
@@ -595,6 +626,7 @@ const openEditDialog = (item: AiHistoryItem) => {
   editDialogVisible.value = true
 }
 
+//保存MV重命名
 const saveMvName = async () => {
   if (!editingMv.value) {
     return
@@ -619,6 +651,7 @@ const saveMvName = async () => {
   }
 }
 
+//监听路由变化：从曲库跳转过来时自动同步歌曲
 watch(
   () => route.query,
   () => {
@@ -627,6 +660,7 @@ watch(
   { immediate: true },
 )
 
+//监听用户ID变化：切换账号时清空数据并重新加载
 watch(
   () => userStore.userInfo?.userId,
   async (newUserId, oldUserId) => {
@@ -634,10 +668,12 @@ watch(
       return
     }
 
+    //清空列表和缓存
     historyList.value = []
     taskList.value = []
     taskStatusCache.clear()
 
+    //已登录 → 拉取数据；未登录 → 停止轮询
     if (isLoggedIn.value) {
       await fetchAiData()
     } else {
@@ -646,12 +682,14 @@ watch(
   },
 )
 
+//页面挂载完成：已登录则加载数据
 onMounted(async () => {
   if (isLoggedIn.value) {
     await fetchAiData()
   }
 })
 
+//页面卸载：停止轮询，避免内存泄漏
 onUnmounted(() => {
   stopTaskPolling()
 })

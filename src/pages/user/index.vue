@@ -1268,4 +1268,55 @@ const handleDelete = async () => {
     gap: 12px;
   }
 }
+
+html.dark .user-page {
+  background:
+    radial-gradient(circle at top left, rgba(79, 112, 196, 0.22), transparent 28%),
+    radial-gradient(circle at top right, rgba(171, 92, 144, 0.18), transparent 24%),
+    linear-gradient(180deg, rgba(17, 23, 38, 0.98), rgba(10, 15, 28, 1));
+}
+
+html.dark .profile-hero,
+html.dark .quick-entry-card,
+html.dark .profile-panel,
+html.dark .avatar-setting-card,
+html.dark .section,
+html.dark .hero-avatar-card,
+html.dark .stat-card {
+  border-color: rgba(117, 138, 196, 0.18);
+  background:
+    linear-gradient(180deg, rgba(26, 34, 54, 0.94), rgba(20, 27, 44, 0.96)),
+    #182133;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.26);
+}
+
+html.dark .hero-title,
+html.dark .panel-title,
+html.dark .entry-title,
+html.dark .avatar-name,
+html.dark .stat-card strong {
+  color: #eef3ff;
+}
+
+html.dark .hero-subtitle,
+html.dark .panel-tip,
+html.dark .entry-desc,
+html.dark .avatar-email,
+html.dark .setting-tip,
+html.dark .section-title,
+html.dark .stat-label {
+  color: #aab7d6;
+}
+
+html.dark .quick-entry-right {
+  color: #aab7d6;
+}
+
+html.dark :deep(.el-input__wrapper),
+html.dark :deep(.el-textarea__inner),
+html.dark :deep(.el-input.is-disabled .el-input__wrapper) {
+  background-color: rgba(255, 255, 255, 0.06);
+  color: #e9efff;
+  box-shadow: 0 0 0 1px rgba(142, 163, 224, 0.16) inset !important;
+}
 </style>

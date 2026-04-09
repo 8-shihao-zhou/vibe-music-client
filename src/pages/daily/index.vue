@@ -8,26 +8,31 @@ const userStore = UserStore()
 const songs = ref<Song[]>([])
 const loading = ref(false)
 
-// 今日日期展示
-const today = new Date()
+//今日日期展示
+const today = new Date() //获取当前系统时间
 const dateStr = today.toLocaleDateString('zh-CN', {
   month: 'long',
   day: 'numeric',
   weekday: 'long',
 })
 
+//获取每日推荐歌曲
 const fetchDaily = async () => {
-  loading.value = true
+  loading.value = true //开始请求 → 打开加载动画
   try {
+    //向后端发请求：拿每日推荐歌曲数据
     const res = await getRecommendedSongs()
+    //如果后端返回成功（code=0）并且有数据
     if (res.code === 0 && res.data) {
+      //把歌曲放进歌曲盒子 → 页面自动显示
       songs.value = res.data as Song[]
     }
   } finally {
-    loading.value = false
+    loading.value = false //结束请求 → 关闭加载动画
   }
 }
 
+//页面加载完成后，自动执行获取推荐歌曲
 onMounted(fetchDaily)
 </script>
 
@@ -54,7 +59,9 @@ onMounted(fetchDaily)
           </div>
           <div class="meta-card">
             <span class="meta-label">推荐状态</span>
-            <strong>{{ userStore.isLoggedIn ? '个性推荐' : '通用推荐' }}</strong>
+            <strong>{{
+              userStore.isLoggedIn ? '个性推荐' : '通用推荐'
+            }}</strong>
           </div>
         </div>
       </div>
@@ -68,9 +75,7 @@ onMounted(fetchDaily)
         <div class="playlist-preview">
           <div class="preview-chip">Today</div>
           <div class="preview-title">让今天的播放列表更有氛围</div>
-          <p class="preview-text">
-            轻松开听，不需要重新搜索，适合直接播放整组推荐。
-          </p>
+          <p class="preview-text">轻松开听。</p>
         </div>
       </div>
 
@@ -82,7 +87,7 @@ onMounted(fetchDaily)
       <icon-ri:information-line class="tip-icon" />
       <div>
         <div class="tip-title">登录后推荐会更懂你</div>
-        <div class="tip-text">系统会结合你的偏好、收藏和播放习惯生成更贴近口味的每日歌曲。</div>
+        <div class="tip-text">系统会为您推荐更贴近口味的每日歌曲。</div>
       </div>
     </section>
 
@@ -92,7 +97,7 @@ onMounted(fetchDaily)
           <p class="panel-kicker">Recommendation List</p>
           <h2 class="panel-title">今日歌曲清单</h2>
         </div>
-        <span class="panel-note">双击或点击播放按钮即可开始收听</span>
+        <span class="panel-note">点击播放按钮即可开始收听</span>
       </div>
 
       <div class="table-shell">
@@ -110,10 +115,21 @@ onMounted(fetchDaily)
 .daily-page {
   min-height: 100%;
   padding: 20px;
-  background:
-    radial-gradient(circle at top left, rgba(111, 156, 255, 0.12), transparent 26%),
-    radial-gradient(circle at top right, rgba(255, 191, 205, 0.13), transparent 22%),
-    linear-gradient(180deg, rgba(246, 249, 255, 0.96), rgba(252, 252, 255, 0.98));
+  background: radial-gradient(
+      circle at top left,
+      rgba(111, 156, 255, 0.12),
+      transparent 26%
+    ),
+    radial-gradient(
+      circle at top right,
+      rgba(255, 191, 205, 0.13),
+      transparent 22%
+    ),
+    linear-gradient(
+      180deg,
+      rgba(246, 249, 255, 0.96),
+      rgba(252, 252, 255, 0.98)
+    );
 }
 
 .daily-hero {
@@ -125,8 +141,11 @@ onMounted(fetchDaily)
   overflow: hidden;
   border: 1px solid rgba(141, 169, 229, 0.16);
   border-radius: 30px;
-  background:
-    linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(248, 244, 255, 0.93)),
+  background: linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.96),
+      rgba(248, 244, 255, 0.93)
+    ),
     #fff;
   box-shadow: 0 22px 48px rgba(88, 115, 173, 0.12);
 }
@@ -233,7 +252,10 @@ onMounted(fetchDaily)
   color: #fff;
   font-size: 14px;
   font-weight: 700;
-  transition: transform 0.25s ease, box-shadow 0.25s ease, opacity 0.25s ease;
+  transition:
+    transform 0.25s ease,
+    box-shadow 0.25s ease,
+    opacity 0.25s ease;
 }
 
 .refresh-button:hover {
@@ -255,8 +277,11 @@ onMounted(fetchDaily)
   padding: 22px;
   border: 1px solid rgba(142, 170, 228, 0.15);
   border-radius: 24px;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(246, 250, 255, 0.9)),
+  background: linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.92),
+      rgba(246, 250, 255, 0.9)
+    ),
     #fff;
   box-shadow: 0 16px 32px rgba(89, 116, 172, 0.1);
 }
@@ -299,7 +324,11 @@ onMounted(fetchDaily)
   right: 230px;
   width: 180px;
   height: 180px;
-  background: radial-gradient(circle, rgba(128, 168, 255, 0.26), transparent 70%);
+  background: radial-gradient(
+    circle,
+    rgba(128, 168, 255, 0.26),
+    transparent 70%
+  );
 }
 
 .hero-glow-b {
@@ -307,7 +336,11 @@ onMounted(fetchDaily)
   bottom: -54px;
   width: 250px;
   height: 250px;
-  background: radial-gradient(circle, rgba(255, 187, 205, 0.24), transparent 70%);
+  background: radial-gradient(
+    circle,
+    rgba(255, 187, 205, 0.24),
+    transparent 70%
+  );
 }
 
 .login-tip {
@@ -318,8 +351,11 @@ onMounted(fetchDaily)
   padding: 18px 20px;
   border: 1px solid rgba(143, 172, 228, 0.14);
   border-radius: 20px;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(246, 249, 255, 0.94)),
+  background: linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.96),
+      rgba(246, 249, 255, 0.94)
+    ),
     #fff;
   box-shadow: 0 14px 28px rgba(90, 118, 173, 0.09);
 }
@@ -348,8 +384,11 @@ onMounted(fetchDaily)
   padding: 22px;
   border: 1px solid rgba(143, 171, 229, 0.14);
   border-radius: 28px;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.97), rgba(247, 250, 255, 0.95)),
+  background: linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.97),
+      rgba(247, 250, 255, 0.95)
+    ),
     #fff;
   box-shadow: 0 18px 38px rgba(87, 112, 167, 0.1);
 }
@@ -449,5 +488,55 @@ onMounted(fetchDaily)
   .refresh-button {
     width: 100%;
   }
+}
+
+html.dark .daily-page {
+  background:
+    radial-gradient(circle at top left, rgba(79, 112, 196, 0.22), transparent 28%),
+    radial-gradient(circle at top right, rgba(171, 92, 144, 0.18), transparent 24%),
+    linear-gradient(180deg, rgba(17, 23, 38, 0.98), rgba(10, 15, 28, 1));
+}
+
+html.dark .daily-hero,
+html.dark .playlist-preview,
+html.dark .login-tip,
+html.dark .daily-table-panel {
+  border-color: rgba(117, 138, 196, 0.18);
+  background:
+    linear-gradient(180deg, rgba(26, 34, 54, 0.94), rgba(20, 27, 44, 0.96)),
+    #182133;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.26);
+}
+
+html.dark .hero-badge,
+html.dark .meta-card {
+  border-color: rgba(142, 163, 224, 0.16);
+  background: rgba(255, 255, 255, 0.06);
+  color: #c6d2ee;
+}
+
+html.dark .hero-title,
+html.dark .panel-title,
+html.dark .preview-title,
+html.dark .tip-title,
+html.dark .meta-card strong {
+  color: #eef3ff;
+}
+
+html.dark .hero-subtitle,
+html.dark .panel-note,
+html.dark .preview-text,
+html.dark .tip-text,
+html.dark .meta-label {
+  color: #aab7d6;
+}
+
+html.dark .table-shell {
+  border-color: rgba(120, 141, 197, 0.16);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+html.dark .loading-state {
+  color: #c8d3ef;
 }
 </style>

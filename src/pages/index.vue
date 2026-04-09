@@ -28,17 +28,20 @@ interface GenrePreview {
   songCount: number
 }
 
+//初始化实例
 const router = useRouter()
 const userStore = UserStore()
 const audioStore = AudioStore()
 const { loadTrack, play } = useAudioPlayer()
 
+//响应式数据
 const loading = ref(false)
 const highlightSongs = ref<Song[]>([])
 const latestSongs = ref<Song[]>([])
 const playlists = ref<PlaylistPreview[]>([])
 const genres = ref<GenrePreview[]>([])
 
+//快捷入口配置
 const quickEntries = [
   {
     title: '每日推荐',
@@ -66,12 +69,14 @@ const quickEntries = [
   },
 ]
 
+//根据登录状态自动切换欢迎语
 const welcomeText = computed(() =>
   userStore.isLoggedIn
     ? '回来继续听你喜欢的内容吧。'
     : '在这里发现歌曲、歌单和你感兴趣的音乐内容。'
 )
 
+//首页顶部统计卡片数据
 const summaryCards = computed(() => [
   {
     label: '首页精选',
@@ -90,28 +95,39 @@ const summaryCards = computed(() => [
   },
 ])
 
-// 打乱数组后再截取，避免首页每次都是固定内容
+//打乱数组后再截取，避免首页每次都是固定内容
 const pickRandomItems = <T,>(items: T[], count: number) => {
+  //复制原数组，不修改原来的数据
   const copied = [...items]
+
+  //循环：从后往前打乱数组
   for (let i = copied.length - 1; i > 0; i -= 1) {
+    //生成一个随机位置
     const randomIndex = Math.floor(Math.random() * (i + 1))
+
+    //交换位置：打乱
     ;[copied[i], copied[randomIndex]] = [copied[randomIndex], copied[i]]
   }
+
+  //截取前 count 个返回
   return copied.slice(0, count)
 }
 
-// 让首页展示数量在可控范围内随机，避免内容过少单调或过多撑高页面
+//让首页展示数量在可控范围内随机，避免内容过少单调或过多撑高页面
 const getRandomCount = (min: number, max: number) => {
   return Math.floor(Math.random() * (max - min + 1)) + min
 }
 
+//页面加载时请求所有首页数据
 const fetchHomeData = async () => {
   loading.value = true
   try {
+    //随机展示数量（每次打开首页不一样，更自然）
     const songDisplayCount = getRandomCount(4, 7)
     const playlistDisplayCount = getRandomCount(3, 5)
     const genreDisplayCount = getRandomCount(6, 9)
 
+    //同时请求 4 个接口（推荐歌曲、最新歌曲、歌单、曲风）
     const [recommendSongsRes, latestSongsRes, playlistsRes, stylesRes] =
       await Promise.allSettled([
         getRecommendedSongs(),
@@ -126,6 +142,7 @@ const fetchHomeData = async () => {
         getStyleList(),
       ])
 
+    //处理推荐歌曲
     if (
       recommendSongsRes.status === 'fulfilled' &&
       recommendSongsRes.value.code === 0
@@ -136,6 +153,7 @@ const fetchHomeData = async () => {
       )
     }
 
+    //处理最新歌曲
     if (
       latestSongsRes.status === 'fulfilled' &&
       latestSongsRes.value.code === 0
@@ -146,6 +164,7 @@ const fetchHomeData = async () => {
       )
     }
 
+    //处理推荐歌单
     if (playlistsRes.status === 'fulfilled' && playlistsRes.value.code === 0) {
       const playlistSource = ((playlistsRes.value.data as any[]) || []).map(
         (item) => ({
@@ -157,6 +176,7 @@ const fetchHomeData = async () => {
       playlists.value = pickRandomItems(playlistSource, playlistDisplayCount)
     }
 
+    //处理曲风列表
     if (stylesRes.status === 'fulfilled' && stylesRes.value.code === 0) {
       const genreSource = ((stylesRes.value.data as any[]) || []).map(
         (item) => ({
@@ -168,6 +188,7 @@ const fetchHomeData = async () => {
       genres.value = pickRandomItems(genreSource, genreDisplayCount)
     }
 
+    //如果没有精选歌曲，就用最新歌曲兜底
     if (!highlightSongs.value.length) {
       highlightSongs.value = latestSongs.value
     }
@@ -176,11 +197,14 @@ const fetchHomeData = async () => {
   }
 }
 
+//点击歌曲播放
 const playSong = async (song: Song) => {
+  //优先用精选歌曲作为播放列表
   const sourceSongs = highlightSongs.value.length
     ? highlightSongs.value
     : latestSongs.value
 
+  //过滤掉没有播放地址的歌曲，避免报错
   const trackList = sourceSongs
     .filter((item) => item.audioUrl)
     .map((item) => ({
@@ -194,13 +218,17 @@ const playSong = async (song: Song) => {
       likeStatus: Number(item.likeStatus) === 1 ? 1 : 0,
     }))
 
+  //找到当前点击的歌曲在列表中的位置
   const targetIndex = trackList.findIndex(
     (item) => Number(item.id) === song.songId
   )
   if (targetIndex < 0) return
 
+  //更新全局播放状态（所有页面同步）
   audioStore.setAudioStore('trackList', trackList)
   audioStore.setAudioStore('currentSongIndex', targetIndex)
+
+  //加载并播放
   await loadTrack()
   play()
 }

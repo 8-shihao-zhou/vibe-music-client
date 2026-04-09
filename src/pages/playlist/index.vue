@@ -363,4 +363,14 @@ onActivated(() => {
 :deep(.custom-pagination .el-pager li.is-active){background:linear-gradient(135deg,#5f87e6 0%,#7d7fe8 58%,#eb8fa8 100%);color:#fff;box-shadow:0 10px 20px rgba(103,126,214,.22)}
 @media (max-width:980px){.playlist-hero{grid-template-columns:1fr}}
 @media (max-width:768px){.playlist-page{padding:14px}.playlist-hero,.playlist-panel{padding:18px 16px;border-radius:22px}.hero-title{font-size:30px}.control-bar{flex-direction:column;align-items:stretch}.tabs-shell{width:100%;overflow-x:auto}.playlist-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}}
+
+html.dark .playlist-page{background:radial-gradient(circle at top left, rgba(79,112,196,.22), transparent 28%),radial-gradient(circle at top right, rgba(171,92,144,.18), transparent 24%),linear-gradient(180deg, rgba(17,23,38,.98), rgba(10,15,28,1))}
+html.dark .playlist-hero,html.dark .playlist-panel,html.dark .hero-note,html.dark .playlist-card,html.dark .empty-state{border-color:rgba(117,138,196,.18);background:linear-gradient(180deg, rgba(26,34,54,.94), rgba(20,27,44,.96)),#182133;box-shadow:0 18px 40px rgba(0,0,0,.26)}
+html.dark .hero-badge,html.dark .stat-card,html.dark .tabs-shell,html.dark .tag-chip{border-color:rgba(142,163,224,.16);background:rgba(255,255,255,.06);color:#c6d2ee}
+html.dark .search-input,html.dark :deep(.tag-select .el-input__wrapper){border-color:rgba(142,163,224,.16)!important;background:rgba(255,255,255,.06)!important;box-shadow:none!important;color:#e9efff}
+html.dark .hero-title,html.dark .panel-title,html.dark .note-title,html.dark .playlist-title,html.dark .empty-state-title,html.dark .stat-card strong{color:#eef3ff}
+html.dark .hero-subtitle,html.dark .note-text,html.dark .panel-tip,html.dark .playlist-meta,html.dark .empty-state-text,html.dark .stat-label,html.dark :deep(.custom-pagination .el-pagination__total),html.dark :deep(.custom-pagination .el-pagination__jump){color:#aab7d6}
+html.dark .empty-state-icon{background:linear-gradient(135deg, rgba(95,135,230,.22), rgba(235,143,168,.18));color:#9db4ff;box-shadow:none}
+html.dark :deep(.custom-pagination .btn-prev),html.dark :deep(.custom-pagination .btn-next),html.dark :deep(.custom-pagination .el-pager li){background:rgba(255,255,255,.04);color:#c8d3ef}
+html.dark :deep(.custom-pagination .btn-prev:hover),html.dark :deep(.custom-pagination .btn-next:hover),html.dark :deep(.custom-pagination .el-pager li:hover){background:rgba(103,126,214,.18);color:#dfe7ff}
 </style>

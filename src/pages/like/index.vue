@@ -553,4 +553,44 @@ onMounted(() => {
     border-radius: 22px;
   }
 }
+
+html.dark .like-page {
+  background:
+    radial-gradient(circle at top left, rgba(79, 112, 196, 0.22), transparent 28%),
+    radial-gradient(circle at top right, rgba(171, 92, 144, 0.18), transparent 24%),
+    linear-gradient(180deg, rgba(17, 23, 38, 0.98), rgba(10, 15, 28, 1));
+}
+
+html.dark .like-hero,
+html.dark .like-table-card,
+html.dark .meta-card {
+  border-color: rgba(117, 138, 196, 0.18);
+  background:
+    linear-gradient(180deg, rgba(26, 34, 54, 0.94), rgba(20, 27, 44, 0.96)),
+    #182133;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.26);
+}
+
+html.dark .search-input {
+  border-color: rgba(142, 163, 224, 0.16);
+  background: rgba(255, 255, 255, 0.06);
+  box-shadow: none;
+  color: #e9efff;
+}
+
+html.dark .hero-title,
+html.dark .section-title,
+html.dark .meta-card strong {
+  color: #eef3ff;
+}
+
+html.dark .hero-subtitle,
+html.dark .section-count,
+html.dark .meta-label {
+  color: #aab7d6;
+}
+
+html.dark .table-shell {
+  background: rgba(255, 255, 255, 0.04);
+}
 </style>

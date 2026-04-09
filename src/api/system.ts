@@ -1,11 +1,13 @@
-import { http, httpGet, httpUpload } from '@/utils/http'
+import { http, httpUpload } from '@/utils/http'
 
+//给后端返回的数据 “定规矩、定格式”
+//普通接口（获取详情、提交表单）
 export type Result = {
   code: number
   message: string
   data?: Array<any> | number | string | object
 }
-
+//分页列表接口（获取歌曲列表、歌单列表）
 export type ResultTable = {
   code: number
   message: string
@@ -192,13 +194,9 @@ export const submitSongRequest = (data: object) => {
 
 /** 查看我的收录请求列表 */
 export const getMySongRequests = (pageNum = 1, pageSize = 10) => {
-  return http<Result>(
-    
-   
-  
-    'get',
-    `/song-request/my?pageNum=${pageNum}&pageSize=${pageSize}`
-  )
+  return http<Result>('get', '/song-request/my', {
+    params: { pageNum, pageSize },
+  })
 }
 
 /** 上传收录申请的封面或音频文件 */
@@ -218,6 +216,12 @@ export const getStyleList = () => {
 }
 
 /** 按风格分页查询歌曲 */
-export const getSongsByStyle = (styleId: number, pageNum = 1, pageSize = 20) => {
-  return http<Result>('get', '/style/songs', { params: { styleId, pageNum, pageSize } })
+export const getSongsByStyle = (
+  styleId: number,
+  pageNum = 1,
+  pageSize = 20
+) => {
+  return http<Result>('get', '/style/songs', {
+    params: { styleId, pageNum, pageSize },
+  })
 }

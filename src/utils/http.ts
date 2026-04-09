@@ -1,3 +1,4 @@
+//整个项目的网络请求工具（axios 封装）
 import axios, {
   AxiosInstance,
   AxiosRequestConfig,
@@ -9,9 +10,10 @@ import 'nprogress/nprogress.css'
 import { UserStore } from '@/stores/modules/user'
 import { ElMessage } from 'element-plus'
 
+//创建一个 axios 实例
 const instance: AxiosInstance = axios.create({
-  baseURL: 'http://localhost:8080', // 设置为后端服务地址
-  timeout: 20000, // 设置超时时间 20秒
+  baseURL: 'http://localhost:8080', //设置为后端服务地址
+  timeout: 20000, //设置超时时间 20秒
   headers: {
     Accept: 'application/json, text/plain, */*',
     'Content-Type': 'application/json',
@@ -20,32 +22,32 @@ const instance: AxiosInstance = axios.create({
   withCredentials: false,
 })
 
-// 请求拦截器
+//请求拦截器（发请求前统一处理）
 instance.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
-    // 开启进度条
+    //开启进度条
     NProgress.start()
 
-    // 对于 FormData 请求，移除默认的 Content-Type 让浏览器自己设置 (带 boundary)
+    //对于FormData请求，移除默认的Content-Type让浏览器自己设置(带boundary)
     if (config.data instanceof FormData) {
       delete config.headers['Content-Type']
     }
 
-    // 只有登录请求不需要添加token
+    //只有登录请求不需要添加token
     if (config.url?.includes('/user/login')) {
       return config
     }
 
-    // 从 pinia 中获取token
+    //从pinia中获取token
     const userStore = UserStore()
     const token = userStore.userInfo?.token
 
     if (token) {
-      // 确保headers对象存在并且是正确的类型
+      //确保headers对象存在并且是正确的类型
       if (!config.headers) {
         config.headers = {} as AxiosRequestHeaders
       }
-      // 添加Bearer前缀（后端期望的格式）
+      //添加Bearer前缀（后端期望的格式）
       config.headers.Authorization = `Bearer ${token}`
       console.log(
         '🔑 [HTTP] 设置 Authorization 头:',
@@ -55,8 +57,8 @@ instance.interceptors.request.use(
       console.warn('⚠️ [HTTP] 未找到 token，用户可能未登录')
     }
 
-    // console.log('请求URL:', config.url)
-    // console.log('请求头:', config.headers)
+    //console.log('请求URL:', config.url)
+    //console.log('请求头:', config.headers)
     return config
   },
   (error) => {
@@ -65,22 +67,22 @@ instance.interceptors.request.use(
   }
 )
 
-// 响应拦截器
+//响应拦截器（收到后端结果后统一处理）
 instance.interceptors.response.use(
   (response) => {
-    // 关闭进度条
+    //关闭进度条
     NProgress.done()
     const { data } = response
     return data
   },
   (error) => {
-    // 关闭进度条
+    //关闭进度条
     NProgress.done()
 
     if (error.response) {
       switch (error.response.status) {
         case 401:
-          // 如果不是登录请求，则清除用户信息
+          //如果不是登录请求，则清除用户信息
           if (!error.config.url?.includes('/user/login')) {
             const userStore = UserStore()
             userStore.clearUserInfo()
@@ -109,7 +111,7 @@ instance.interceptors.response.use(
   }
 )
 
-// 封装request方法
+//封装request方法
 export const http = <T>(
   method: 'get' | 'post' | 'put' | 'delete' | 'patch',
   url: string,
@@ -118,18 +120,18 @@ export const http = <T>(
   return instance({ method, url, ...config })
 }
 
-// 封装get方法
+//封装get方法
 export const httpGet = <T>(url: string, params?: object): Promise<T> =>
   instance.get(url, { params })
 
-// 封装post方法
+//封装post方法
 export const httpPost = <T>(
   url: string,
   data?: object,
   header?: object
 ): Promise<T> => instance.post(url, data, { headers: header })
 
-// 封装upload方法
+//封装upload方法
 export const httpUpload = <T>(
   url: string,
   formData: FormData,
@@ -140,7 +142,7 @@ export const httpUpload = <T>(
       'Content-Type': 'multipart/form-data',
       ...header,
     },
-    // 添加转换请求，确保 axios 不会将 FormData 转为 json
+    //添加转换请求，确保 axios 不会将 FormData 转为 json
     transformRequest: [(data) => data],
   })
 }

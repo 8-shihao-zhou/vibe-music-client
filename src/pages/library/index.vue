@@ -6,17 +6,22 @@ import { useLibraryStore } from '@/stores/modules/library'
 const route = useRoute()
 const libraryStore = useLibraryStore()
 
+//接收父组件传来的 selected 参数
+//一般用于判断当前是否切换到了“曲库”这个页签
 const props = defineProps({
   selected: {
     type: String,
     default: '1',
   },
 })
+
+//从 store 中取出表格数据，供页面表格组件直接使用
 const tableData = computed(() => libraryStore.tableData)
 
-const currentPage = ref(1) // 当前页
-const pageSize = ref(20) // 每页显示数量
+const currentPage = ref(1) //当前页
+const pageSize = ref(20) //每页显示数量
 
+//分页器相关配置
 const state = reactive({
   size: 'default',
   disabled: false,
@@ -26,25 +31,32 @@ const state = reactive({
   pageSizes: [20, 30, 50],
 })
 
-// 监听分页大小变化
+//监听分页大小变化
+//当用户切换每页显示数量时，重新请求歌曲数据
 const handleSizeChange = () => {
   getSongs()
 }
 
-// 监听当前页变化
+//监听当前页变化
+//当用户点击下一页、上一页、页码按钮时，重新请求歌曲数据
 const handleCurrentChange = () => {
   getSongs()
 }
 
+//请求歌曲列表的方法
 const getSongs = () => {
+  //请求前先清空旧表格数据，避免页面展示旧内容
   libraryStore.setTableData(null)
+
+  //调用后端接口获取歌曲列表
   getAllSongs({
-    pageNum: currentPage.value,
-    pageSize: pageSize.value,
-    songName: (route.query.query as string) || '',
-    artistName: '',
-    album: '',
+    pageNum: currentPage.value,//当前页
+    pageSize: pageSize.value,//每页数量
+    songName: (route.query.query as string) || '',//从路由参数中读取搜索关键字
+    artistName: '',//当前这里没有按歌手筛选
+    album: '',//当前这里没有按专辑筛选
   }).then((res) => {
+    //请求成功后，把数据保存到 store，并更新分页总数
     if (res.code === 0 && res.data) {
       libraryStore.setTableData(res.data)
       state.total = res.data.total || 0
@@ -52,14 +64,17 @@ const getSongs = () => {
   })
 }
 
+//监听路由搜索参数和 selected 选中状态
 watch(
   () => [route.query.query, props.selected],
   (val) => {
+    //如果当前不是选中的模块，则不请求数据
     if (!val[1] || val[1] != '1') return
+    //当搜索关键字变化，或者切换到当前模块时，重新加载歌曲
     getSongs()
   },
   {
-    immediate: true,
+    immediate: true,//页面初始化时立即执行一次
   }
 )
 </script>
@@ -429,5 +444,64 @@ watch(
     min-width: 0;
     flex: 1 1 calc(50% - 8px);
   }
+}
+
+html.dark .library-page {
+  background:
+    radial-gradient(circle at top left, rgba(79, 112, 196, 0.22), transparent 28%),
+    radial-gradient(circle at top right, rgba(171, 92, 144, 0.18), transparent 24%),
+    linear-gradient(180deg, rgba(17, 23, 38, 0.98), rgba(10, 15, 28, 1));
+}
+
+html.dark .library-hero,
+html.dark .library-table-panel,
+html.dark .library-note-card {
+  border-color: rgba(117, 138, 196, 0.18);
+  background:
+    linear-gradient(180deg, rgba(26, 34, 54, 0.94), rgba(20, 27, 44, 0.96)),
+    #182133;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.26);
+}
+
+html.dark .hero-badge,
+html.dark .stat-card {
+  border-color: rgba(142, 163, 224, 0.16);
+  background: rgba(255, 255, 255, 0.06);
+  color: #c6d2ee;
+}
+
+html.dark .hero-title,
+html.dark .panel-title,
+html.dark .note-title,
+html.dark .stat-card strong {
+  color: #eef3ff;
+}
+
+html.dark .hero-subtitle,
+html.dark .panel-tip,
+html.dark .note-text,
+html.dark .stat-label,
+html.dark :deep(.library-pagination .el-pagination__total),
+html.dark :deep(.library-pagination .el-pagination__jump) {
+  color: #aab7d6;
+}
+
+html.dark .table-shell {
+  border-color: rgba(120, 141, 197, 0.16);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+html.dark :deep(.library-pagination .btn-prev),
+html.dark :deep(.library-pagination .btn-next),
+html.dark :deep(.library-pagination .el-pager li) {
+  background: rgba(255, 255, 255, 0.04);
+  color: #c8d3ef;
+}
+
+html.dark :deep(.library-pagination .btn-prev:hover),
+html.dark :deep(.library-pagination .btn-next:hover),
+html.dark :deep(.library-pagination .el-pager li:hover) {
+  background: rgba(103, 126, 214, 0.18);
+  color: #dfe7ff;
 }
 </style>

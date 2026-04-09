@@ -13,21 +13,33 @@ const user = UserStore()
 const router = useRouter()
 const feedbackDialogRef = ref<InstanceType<typeof FeedbackDialog> | null>(null)
 
+// const handleLogout = async () => {
+//   try {
+//     const response = await logout()
+//     if (response.code === 0) {
+//       user.clearUserInfo()
+//       ElMessage.success('退出登录成功')
+//     } else {
+//       ElMessage.error(response.message || '退出失败')
+//     }
+//   } catch (error: any) {
+//     console.error('退出登录错误:', error)
+//     ElMessage.error(error.message || '退出失败')
+//     user.clearUserInfo()
+//   }
+// }
 const handleLogout = async () => {
   try {
-    const response = await logout()
-    if (response.code === 0) {
-      user.clearUserInfo()
-      ElMessage.success('退出登录成功')
-    } else {
-      ElMessage.error(response.message || '退出失败')
-    }
-  } catch (error: any) {
-    console.error('退出登录错误:', error)
-    ElMessage.error(error.message || '退出失败')
+    await logout()
+  } catch (error) {
+    console.error('退出登录请求失败:', error)
+  } finally {
     user.clearUserInfo()
+    ElMessage.success('已退出登录')
+    router.push('/')
   }
 }
+
 
 const openFeedbackDialog = () => {
   feedbackDialogRef.value?.openDialog()
@@ -327,5 +339,15 @@ const handleSubmitRequest = async () => {
 .request-song-btn:hover {
   transform: translateY(-1px);
   box-shadow: 0 16px 30px rgba(98, 116, 224, 0.28);
+}
+
+html.dark .request-song-btn {
+  border-color: rgba(133, 149, 228, 0.24);
+  background: linear-gradient(135deg, #627cf2 0%, #8a63f8 100%);
+  box-shadow: 0 14px 28px rgba(50, 64, 128, 0.4);
+}
+
+html.dark .request-song-btn:hover {
+  box-shadow: 0 18px 34px rgba(60, 78, 148, 0.46);
 }
 </style>
